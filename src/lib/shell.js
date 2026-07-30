@@ -5,7 +5,11 @@ import { supabase } from './supabase.js';
 
 /* Routes that have a real page. Everything else in the nav is still a
    prototype — add the slug here as each page gets converted. */
-const BUILT = new Set(['dashboard', 'crm', 'clients', 'sales', 'projects', 'site-visits']);
+const BUILT = new Set([
+  'dashboard', 'crm', 'clients', 'sales',
+  'projects', 'site-visits',
+  'procurement', 'inventory'
+]);
 
 /* ---------- theme (runs before paint to avoid a flash) ---------- */
 export function initTheme() {

@@ -1,16 +1,9 @@
-
-   4 · CONTENT
-   ===================================================================== */
 .content{flex:1;padding:var(--s-5) var(--s-5) var(--s-6);max-width:1440px;width:100%;margin:0 auto}
-
-/* Greeting row */
 .hello{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s-4);
   flex-wrap:wrap;margin-bottom:var(--s-5)}
 .hello__hi{font-family:var(--font-display);font-weight:600;font-size:clamp(22px,2.4vw,29px);letter-spacing:-.02em}
 .hello__date{color:var(--text-2);font-size:14px;margin-top:4px}
 .hello__side{display:flex;align-items:center;gap:var(--s-3);flex-wrap:wrap}
-
-/* Weather chip */
 .weather{
   display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;
   border-radius:var(--r-pill);background:var(--surface);
@@ -19,8 +12,6 @@
 .weather svg{color:var(--warning)}
 .weather__temp{font-family:var(--font-display);font-weight:600;font-size:16px}
 .weather__meta{font-size:11.5px;color:var(--text-3);line-height:1.25}
-
-/* Generic card */
 .card{
   background:var(--surface);border:1px solid var(--hairline);
   border-radius:var(--r-lg);box-shadow:var(--shadow-1);
@@ -37,8 +28,6 @@
 .card__body{padding:var(--s-4) var(--s-5) var(--s-5)}
 .link-more{font-size:12.5px;font-weight:600;color:var(--accent);white-space:nowrap}
 .link-more:hover{color:var(--accent-strong)}
-
-/* KPI strip */
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s-4);margin-bottom:var(--s-4)}
 .kpi{padding:var(--s-4) var(--s-5)}
 .kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow-2)}
@@ -56,8 +45,6 @@
 .kpi__delta--up{color:var(--success);background:var(--success-soft)}
 .kpi__delta--down{color:var(--danger);background:var(--danger-soft)}
 .kpi__delta span{color:var(--text-3);font-weight:400;margin-left:2px}
-
-/* Grid rows */
 .row-charts{display:grid;grid-template-columns:1.55fr 1fr;gap:var(--s-4);margin-bottom:var(--s-4)}
 .row-mid{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:var(--s-4);margin-bottom:var(--s-4)}
 .row-bottom{display:grid;grid-template-columns:1fr 1.3fr;gap:var(--s-4)}
@@ -66,8 +53,6 @@
 .legend{display:flex;gap:16px;flex-wrap:wrap}
 .legend__item{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text-2)}
 .legend__swatch{width:10px;height:10px;border-radius:3px}
-
-/* Donut centre label */
 .donut-wrap{position:relative;height:200px;display:grid;place-items:center}
 .donut-centre{position:absolute;text-align:center;pointer-events:none}
 .donut-centre b{font-family:var(--font-display);font-size:28px;font-weight:700;display:block;line-height:1}
@@ -76,8 +61,6 @@
 .stage-row{display:flex;align-items:center;gap:10px;font-size:13px}
 .stage-row .legend__swatch{flex:none}
 .stage-row .n{margin-left:auto;font-family:var(--font-mono);color:var(--text-2)}
-
-/* Meetings */
 .meet{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--hairline)}
 .meet:last-child{border-bottom:none;padding-bottom:0}
 .meet__when{flex:none;width:56px;text-align:center;padding:7px 4px;border-radius:var(--r-sm);
@@ -94,8 +77,6 @@
 .chip--client{background:var(--accent-soft);color:var(--accent)}
 .chip--vendor{background:rgba(167,139,250,.15);color:var(--violet)}
 .chip--finance{background:var(--success-soft);color:var(--success)}
-
-/* Mini calendar */
 .cal__head{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s-3)}
 .cal__month{font-family:var(--font-display);font-weight:600;font-size:14.5px}
 .cal__nav{display:flex;gap:4px}
@@ -115,8 +96,6 @@
   width:4px;height:4px;border-radius:50%;background:var(--accent);
 }
 .cal__day.today.evt::after{background:#fff}
-
-/* Tasks */
 .task{display:flex;align-items:flex-start;gap:11px;padding:10px 0;border-bottom:1px solid var(--hairline)}
 .task:last-child{border-bottom:none;padding-bottom:0}
 .task__check{
@@ -133,8 +112,6 @@
 .pill-due{font-family:var(--font-mono);font-size:11px;padding:1px 7px;border-radius:var(--r-pill);
   background:var(--surface-2);border:1px solid var(--hairline);color:var(--text-2)}
 .pill-due.hot{background:var(--danger-soft);border-color:transparent;color:var(--danger)}
-
-/* Activity feed */
 .feed{position:relative}
 .feed::before{content:"";position:absolute;left:17px;top:8px;bottom:8px;width:1.5px;background:var(--hairline)}
 .act{display:flex;gap:13px;padding:10px 0;position:relative}
@@ -146,8 +123,6 @@
 .act__txt{font-size:13px;color:var(--text-2);line-height:1.45}
 .act__txt b{color:var(--text);font-weight:600}
 .act__time{font-family:var(--font-mono);font-size:11px;color:var(--text-3);margin-top:3px}
-
-/* Skeleton loading */
 .skeleton{position:relative;overflow:hidden;background:var(--surface-2) !important;
   border-radius:var(--r-xs);color:transparent !important;pointer-events:none}
 .skeleton *{visibility:hidden}
@@ -157,8 +132,6 @@
   animation:shimmer 1.3s infinite;
 }
 @keyframes shimmer{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
-
-/* Footer */
 .footer{
   border-top:1px solid var(--hairline);
   padding:var(--s-4) var(--s-5);
@@ -169,8 +142,6 @@
 .footer__status{display:inline-flex;align-items:center;gap:7px}
 .footer__status .dot{width:7px;height:7px;border-radius:50%;background:var(--success);
   box-shadow:0 0 0 3px rgba(65,209,160,.18)}
-
-/* Toasts (shared component) */
 .toast-region{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;gap:10px;z-index:90}
 .toast{
   display:flex;align-items:center;gap:12px;min-width:250px;max-width:360px;
@@ -185,10 +156,6 @@
 .toast--error .toast__icon{background:var(--danger)}
 .toast__title{font-weight:600;font-size:13.5px}
 .toast__msg{font-size:12.5px;color:var(--text-2)}
-
-/* ========================================================================
-   5 · RESPONSIVE
-   ===================================================================== */
 @media (max-width:1280px){
   .row-mid{grid-template-columns:1fr 1fr}
   .row-mid .card:nth-child(3){grid-column:1/-1}
@@ -221,5 +188,3 @@
   .toast{max-width:none}
   .hello__side{width:100%}
 }
-
-

@@ -16,26 +16,93 @@ SHELL_SELECTORS = ('.sidebar', 'body.nav-open', '.hamburger', '.topbar',
                    '.search', '.profile__meta', '.crumbs', '.btn-new',
                    '.toast-region', '.toast{', 'prefers-reduced-motion')
 
-def page_css(src: str) -> str:
-    """Everything in <style> from the '4 · CONTENT' marker onward."""
-    style = re.search(r'<style>(.*?)</style>', src, re.S).group(1)
-    m = re.search(r'\n\s*\d+ · CONTENT', style)
-    if not m:
-        # some pages label the section differently; fall back to after the shell block
-        m = re.search(r'\n\s*\d+ · (?:PAGE|MAIN|BODY)', style)
-    css = style[m.start():] if m else style
+def _rules(css: str):
+    """Split CSS into top-level chunks by brace matching. Regex cannot do this
+    because @media blocks nest.
 
-    # strip @media rules that only touch shell chrome (already in app.css)
-    out, i = [], 0
-    for blk in re.split(r'(@media[^{]*\{(?:[^{}]|\{[^{}]*\})*\})', css):
-        if blk.startswith('@media'):
-            inner = blk[blk.index('{') + 1:]
-            hits = sum(inner.count(s) for s in SHELL_SELECTORS)
-            rules = inner.count('{')
-            if rules and hits >= rules - 1:
-                continue           # purely shell -> drop
-        out.append(blk)
-    return ''.join(out)
+    Statement at-rules (@import, @charset) end in a semicolon and carry no
+    braces, so a naive brace matcher glues them onto the front of the next
+    rule. That made every page's @import + :root look unique and defeated
+    deduplication. Pull them out first."""
+    out, buf, depth = [], [], 0
+    AT_STMT = r'''@(?:import|charset)\s*(?:url\([^)]*\)|"[^"]*"|'[^']*'|[^;{()]*)[^;{]*;'''
+    for stmt in re.findall(AT_STMT, css):
+        out.append(stmt.strip())
+    css = re.sub(AT_STMT, '', css)
+    for ch in css:
+        buf.append(ch)
+        if ch == '{':
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+            if depth == 0:
+                out.append(''.join(buf).strip())
+                buf = []
+    tail = ''.join(buf).strip()
+    if tail:
+        out.append(tail)
+    return [r for r in out if r]
+
+def _strip_comments(css: str) -> str:
+    return re.sub(r'/\*.*?\*/', '', css, flags=re.S)
+
+def _norm(rule: str) -> str:
+    """Comments must go before comparing. The brace splitter attaches any
+    leading /* section header */ to the rule that follows it, so two identical
+    rules under different headers would otherwise never match."""
+    return re.sub(r'\s+', ' ', _strip_comments(rule)).strip()
+
+def _root_tokens(css: str) -> dict:
+    m = re.search(r':root\s*\{(.*?)\}', _strip_comments(css), re.S)
+    if not m:
+        return {}
+    return {k: v.strip() for k, v in re.findall(r'(--[\w-]+)\s*:\s*([^;]+)', m.group(1))}
+
+def page_css(src: str, shared: str) -> str:
+    """Page-specific CSS only.
+
+    Prototype pages are inconsistent: some have one <style> block with a
+    numbered "N . CONTENT" marker, others have two blocks and no markers.
+    Reading only the first block silently produced page files that duplicated
+    the shared design system and contained none of the page's own rules.
+
+    So: concatenate every block, then drop any top-level rule that already
+    exists in app.css."""
+    blocks = re.findall(r'<style[^>]*>(.*?)</style>', src, re.S)
+    if not blocks:
+        return ''
+    css = _strip_comments('\n'.join(blocks))
+
+    shared_set = {_norm(r) for r in _rules(_strip_comments(shared))}
+    kept = [r for r in _rules(css) if _norm(r) not in shared_set]
+
+    # a purely shell-level @media block is already covered by app.css
+    def shell_only(rule):
+        if not rule.startswith('@media'):
+            return False
+        inner = rule[rule.index('{') + 1:]
+        hits = sum(inner.count(sel) for sel in SHELL_SELECTORS)
+        n = inner.count('{')
+        return bool(n) and hits >= n - 1
+
+    kept = [r for r in kept if not shell_only(r)]
+
+    # :root differs per page by only a token or two. Emitting the whole block
+    # duplicates ~33 tokens AND overrides app.css, which would silently defeat
+    # editing a token in one place. Emit just the delta.
+    shared_tokens = _root_tokens(shared)
+    out = []
+    for r in kept:
+        if not re.match(r'^\s*:root\s*\{', r):
+            out.append(r)
+            continue
+        mine = _root_tokens(r)
+        delta = {k: v for k, v in mine.items()
+                 if k not in shared_tokens or shared_tokens[k] != v}
+        if delta:
+            body = ''.join(f'{k}:{v};' for k, v in delta.items())
+            out.append(f'/* page-specific tokens only; the rest live in app.css */\n:root{{{body}}}')
+    return '\n'.join(out) + '\n'
 
 def content(src: str) -> str:
     m = re.search(r'<main class="content"[^>]*>(.*?)</main>', src, re.S)
@@ -59,7 +126,8 @@ def after_main(src: str) -> str:
 
 def build(proto, slug, title, route, extra_head=''):
     src = (UP / proto).read_text()
-    (ROOT / f'src/styles/{slug}.css').write_text(page_css(src))
+    shared = (ROOT / 'src/styles/app.css').read_text()
+    (ROOT / f'src/styles/{slug}.css').write_text(page_css(src, shared))
 
     html = f'''<!DOCTYPE html>
 <html lang="en" data-theme="dark">

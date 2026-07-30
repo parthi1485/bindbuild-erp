@@ -45,7 +45,9 @@ automatically — no config change.
 | gantt | projects | Live — phases, bars, milestones, zoom, scroll-to-today |
 | progress | site-visits | Live — planned vs actual S-curve, phase completion, photo gallery |
 | dsr | site-visits | Live — labour, activities, materials, equipment, issues, submit |
-| 14–36 | — | Prototype ready, not yet converted |
+| procurement | procurement | Live — PO table, pipeline, approvals queue, vendor spend |
+| inventory | inventory | Live — stock balances, low/out alerts, movements, stock in/out |
+| 16–36 | — | Prototype ready, not yet converted |
 
 Nav items for unconverted pages are dimmed and show a toast instead of a 404.
 As each page lands, add its slug to `BUILT` in `src/lib/shell.js`.
@@ -182,3 +184,55 @@ where i.project_id is null and i.project_name = p.name;
 `projects.contract_value` is in **lakhs**, matching `leads.budget`.
 `invoices.*` are in **rupees**. `projects.js` and `project.js` use the lakh
 formatter; anything touching invoices uses rupees.
+
+
+## Stock is a ledger, not a number
+
+`materials` has no quantity column, deliberately. Quantities come from
+`stock_ledger` — one row per movement — and `stock_balances` sums them:
+
+```
+stock_ledger (movements)  ->  stock_movements (signed qty)  ->  stock_balances
+```
+
+A mutable `qty` column drifts the moment two people record a movement at once,
+and it destroys the audit trail: you can see the number is wrong but not why.
+With a ledger, corrections are adjustment rows and history stays intact. That
+is also why only admins can delete from `stock_ledger` — the fix for a bad
+entry is an `adjust` movement, not a deletion.
+
+`stock_balances` cross-joins materials against stores, so a material shows in
+every active store with a zero balance until it moves. That is intentional:
+"we hold none of this at Adyar" is real information.
+
+## Getting Procurement and Inventory usable
+
+Both pages read from empty tables until master data exists. Run
+`supabase/seed/optional-material-catalogue.sql` in the SQL editor for a Chennai
+construction catalogue (17 materials with HSN codes and reorder levels), a
+central store, and a site store per active project. Adjust rates to your own
+numbers — those are placeholders, not quotes.
+
+Opening stock is commented out in that file on purpose. Enter counted
+quantities rather than letting a script invent them.
+
+## The page builder had three CSS bugs worth knowing about
+
+`tools/build-page.py` extracts page CSS by removing anything already in
+`app.css`. Three separate failures made that silently wrong:
+
+1. **Only the first `<style>` block was read.** Pages 13–15 have two blocks and
+   no section markers, so their real styles were dropped and the shared design
+   system was copied in instead. Three different pages produced byte-identical
+   CSS, which is what exposed it.
+2. **Comments defeated deduplication.** The brace splitter attaches a leading
+   `/* section header */` to the rule after it, so identical rules under
+   different headers never matched.
+3. **`@import url(...)` was split mid-URL.** Google Fonts URLs contain
+   semicolons (`wght@400;500;600`), and the at-rule pattern stopped at the
+   first one — leaving a fragment of a URL as the first line of valid CSS and
+   gluing `:root` onto the tail.
+
+Also: `:root` now emits only the tokens a page adds or overrides. Emitting the
+whole block duplicated ~33 tokens per page and, worse, overrode `app.css` —
+which would have silently broken the point of having one stylesheet.

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Procurement · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/procurement.css" />
+
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <div class="ctx reveal">
+        <div class="ctx__main">
+          <div class="ctx__eyebrow">Supply · Procurement desk</div>
+          <h1 class="ctx__title">Procurement</h1>
+          <div class="ctx__sub">Purchase requests, orders and vendor spend across all live projects</div>
+        </div>
+        <div class="ctx__actions">
+          <button class="btn-ghost" data-toast="Vendors|Opening the vendor directory.">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 7h16v13H4z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 7V4h6v3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>Vendors</button>
+          <button class="btn-new" data-toast="New purchase order|PO form ready — pick project, vendor and items.">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>New PO</button>
+        </div>
+      </div>
+
+      <!-- KPI strip -->
+      <section class="kstrip">
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M6 3h9l4 4v14H6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span>Open requests</div><div class="kbox__val"><span class="cup" data-to="4">0</span></div><div class="kbox__note">Awaiting quote / approval</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-violet"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 6h16l-1.5 9H6L4 6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span>POs this month</div><div class="kbox__val"><span class="cup" data-to="9">0</span></div><div class="kbox__note">₹23.4L committed</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3l9 16H3L12 3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 10v4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>Pending approval</div><div class="kbox__val">₹<span class="cup" data-to="4.25" data-dec="2">0</span><small>L</small></div><div class="kbox__note" id="pendNote">2 orders need you</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-green"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 010 3h-3a1.5 1.5 0 000 3h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>Spend MTD</div><div class="kbox__val">₹<span class="cup" data-to="23.4" data-dec="1">0</span><small>L</small></div><div class="kbox__note">July 2026</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-sky"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>On-time delivery</div><div class="kbox__val"><span class="cup" data-to="94">0</span>%</div><div class="kbox__note">Last 30 days</div></div>
+      </section>
+
+      <div class="grid">
+        <div class="stack">
+          <!-- pipeline -->
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Procurement pipeline</div><span class="card__tag">9 active</span></div>
+            <div class="card__body">
+              <div class="pipe" id="pipe"></div>
+            </div>
+          </section>
+
+          <!-- PO table -->
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Purchase orders</div><span class="card__tag" id="poCount">9 shown</span></div>
+            <div class="filters">
+              <div class="seg" id="statusSeg">
+                <button class="on" data-st="all">All</button>
+                <button data-st="Requested">Requested</button>
+                <button data-st="Quoted">Quoted</button>
+                <button data-st="Approved">Approved</button>
+                <button data-st="Ordered">Ordered</button>
+                <button data-st="Delivered">Delivered</button>
+              </div>
+              <select class="selctl" id="projSel">
+                <option value="all">All projects</option>
+                <option>Adyar Courtyard Residence</option>
+                <option>Besant Nagar Beach House</option>
+                <option>Anna Nagar Duplex</option>
+              </select>
+              <div class="fsearch">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-3.2-3.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                <input type="text" id="poSearch" placeholder="Search item or vendor…" aria-label="Search orders" />
+              </div>
+            </div>
+            <div class="tbl-wrap">
+              <table class="tbl">
+                <thead><tr><th>PO / Item</th><th>Project</th><th>Vendor</th><th class="num">Value</th><th>Status</th><th>Expected</th></tr></thead>
+                <tbody id="poBody"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <!-- right rail -->
+        <aside class="rail">
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Pending your approval</div><span class="card__tag" id="apprTag">2</span></div>
+            <div class="card__body"><div class="appr" id="apprList"></div></div>
+          </section>
+
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Top vendors</div><span class="card__tag">by spend</span></div>
+            <div class="card__body"><div class="vbar" id="vbar"></div></div>
+          </section>
+
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Spend by category</div></div>
+            <div class="card__body"><div class="cat" id="cat"></div></div>
+          </section>
+        </aside>
+      </div>
+
+      <footer class="footer">
+        <span>© 2026 Studio Bind Architects · Chennai</span>
+        <span class="footer__v">Bind Build ERP v0.9.0 · build 2026.07</span>
+      </footer>
+    
+    </main>
+  </div>
+
+</div>
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/procurement.js"></script>
+</body>
+</html>

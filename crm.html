@@ -131,6 +131,112 @@
     
     </main>
   </div>
+<footer class="footer">
+      <span>© 2026 Studio Bind Architects · Chennai</span>
+      <span class="footer__status"><span class="dot"></span>All systems operational</span>
+      <span class="ver">Bind Build ERP v0.9.0 · build 2026.07</span>
+    </footer>
+  </div>
+</div>
+
+<!-- ============================ MODAL · ADD LEAD ============================ -->
+<div class="modal" id="addModal" role="dialog" aria-modal="true" aria-labelledby="addTitle">
+  <div class="modal__card">
+    <div class="modal__head">
+      <div>
+        <h2 class="modal__title" id="addTitle">Add a new lead</h2>
+        <p class="modal__sub">Captured leads land in the pipeline instantly.</p>
+      </div>
+      <button class="icon-btn" data-close aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal__body">
+      <div class="field">
+        <label for="nlName">Contact / company name</label>
+        <input class="input" id="nlName" placeholder="e.g. Sanjay &amp; Priya Nair" />
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label for="nlType">Project type</label>
+          <select class="select" id="nlType">
+            <option>New residence</option><option>Interiors</option><option>Renovation</option>
+            <option>Commercial</option><option>Turnkey construction</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="nlBudget">Budget (₹ lakhs)</label>
+          <input class="input" id="nlBudget" type="number" min="1" placeholder="e.g. 85" />
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label for="nlLoc">Location</label>
+          <input class="input" id="nlLoc" placeholder="e.g. Thiruvanmiyur" />
+        </div>
+        <div class="field">
+          <label for="nlSource">Source</label>
+          <select class="select" id="nlSource">
+            <option>Instagram</option><option>Google</option><option>Referral</option>
+            <option>Website</option><option>Direct</option><option>Walk-in</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Priority</label>
+        <div class="prio-seg" role="radiogroup" aria-label="Priority">
+          <button class="prio-btn" data-prio="hot" type="button">Hot</button>
+          <button class="prio-btn on--warm" data-prio="warm" type="button" aria-pressed="true">Warm</button>
+          <button class="prio-btn" data-prio="cold" type="button">Cold</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal__foot">
+      <button class="btn-ghost" data-close>Cancel</button>
+      <button class="btn-new" id="saveLead">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        Save lead
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================ MODAL · LOST REASON ============================ -->
+<div class="modal" id="lostModal" role="dialog" aria-modal="true" aria-labelledby="lostTitle">
+  <div class="modal__card">
+    <div class="modal__head">
+      <div>
+        <h2 class="modal__title" id="lostTitle">Mark as lost</h2>
+        <p class="modal__sub" id="lostSub">Record why this lead didn't convert — it sharpens the funnel.</p>
+      </div>
+      <button class="icon-btn" data-close aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal__body">
+      <div class="radio-list" id="lostReasons">
+        <label class="radio"><input type="radio" name="lr" value="Budget mismatch" checked /><span class="radio__dot"></span><span>Budget mismatch</span></label>
+        <label class="radio"><input type="radio" name="lr" value="Went with another firm" /><span class="radio__dot"></span><span>Went with another firm</span></label>
+        <label class="radio"><input type="radio" name="lr" value="Timeline didn't work" /><span class="radio__dot"></span><span>Timeline didn't work</span></label>
+        <label class="radio"><input type="radio" name="lr" value="Stopped responding" /><span class="radio__dot"></span><span>Stopped responding</span></label>
+        <label class="radio"><input type="radio" name="lr" value="Project dropped" /><span class="radio__dot"></span><span>Project dropped / postponed</span></label>
+      </div>
+      <div class="field" style="margin-top:var(--s-4)">
+        <label for="lostNote">Note (optional)</label>
+        <textarea class="textarea" id="lostNote" placeholder="Anything worth remembering for next time…"></textarea>
+      </div>
+    </div>
+    <div class="modal__foot">
+      <button class="btn-ghost" data-close>Keep lead</button>
+      <button class="btn-new" id="confirmLost" data-variant="danger">Mark lost</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toasts -->
+
+
+<!-- GSAP (progressive) -->
 </div>
 <div class="toast-region" aria-live="polite"></div>
 <script type="module" src="/src/pages/crm.js"></script>
