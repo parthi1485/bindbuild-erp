@@ -46,7 +46,28 @@ export function toast(msg, kind = 'ok') {
   setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3200);
 }
 
-export const fail = e => toast(e?.message || String(e), 'err');
+/* Database-enforced rules surface as raw Postgres errors. Translate the ones
+   users will actually hit into something actionable. */
+const FRIENDLY = [
+  [/has been issued and cannot be edited/i,
+   'This invoice has been issued. Raise a credit note to correct it.'],
+  [/its line items cannot be changed/i,
+   'This invoice has been issued, so its line items are locked. Raise a credit note.'],
+  [/exceeds the invoice value/i,
+   'That would credit more than the invoice is worth.'],
+  [/permission denied|violates row-level security/i,
+   'You do not have permission to do that.'],
+  [/duplicate key value/i,
+   'That already exists — check for a duplicate.'],
+  [/Only an owner or admin/i,
+   'Only an owner or admin can do that.']
+];
+
+export const fail = e => {
+  const raw = e?.message || String(e);
+  const hit = FRIENDLY.find(([re]) => re.test(raw));
+  toast(hit ? hit[1] : raw, 'err');
+};
 
 /* ---- modals -------------------------------------------------
    The prototype ships designed dialogs for every create/edit flow.

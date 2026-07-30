@@ -94,7 +94,13 @@ function paint() {
 
   const paid = Number(BAL?.amount_paid ?? 0);
   const setId = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  const credited = Number(BAL?.credited ?? 0);
   setId('dueAmt', inr(balance));
+  if (credited > 0) {
+    const el = document.getElementById('dueMeta');
+    if (el) el.insertAdjacentHTML('afterend',
+      `<p class="inv-credited">Less credit notes: ${inr(credited)}</p>`);
+  }
   setId('dueMeta', settled
     ? `Settled${BAL?.last_paid_on ? ' on ' + fmtDate(BAL.last_paid_on) : ''}`
     : `${inr(paid)} received of ${inr(INV.total)}`);
@@ -115,6 +121,7 @@ function paint() {
     </li>`).join('');
   }
 
+  mountCreditAction();
   document.title = `${INV.invoice_no} · Bind Build ERP`;
   const here = $('.crumbs .here');
   if (here) here.textContent = INV.invoice_no;
@@ -163,6 +170,77 @@ $('#pmConfirm')?.addEventListener('click', async () => {
 
   closePay();
   toast(`${inr(amount)} recorded`);
+  await load();
+});
+
+/* ---------------------------------------------------------------
+   credit note — the only sanctioned way to correct an issued invoice
+--------------------------------------------------------------- */
+const REASONS = {
+  sales_return:'Sales return', deficiency:'Deficiency in service',
+  price_revision:'Price revision', post_sale_discount:'Post-sale discount',
+  cancellation:'Cancellation', other:'Other'
+};
+
+function mountCreditAction() {
+  if (!INV || INV.status === 'draft') return;
+  if (document.getElementById('creditBtn')) return;
+
+  const host = $('#payBtn')?.parentElement || $('.inv-acts') || $('.actions');
+  if (!host) return;
+
+  host.insertAdjacentHTML('beforeend',
+    `<button class="btn" id="creditBtn" title="An issued invoice cannot be edited">Raise credit note</button>`);
+}
+
+document.addEventListener('click', async e => {
+  if (!e.target.closest('#creditBtn')) return;
+
+  const outstanding = Number(INV.total) - Number(BAL?.credited ?? 0);
+  const raw = prompt(
+    `Credit amount before GST?\n\nInvoice ${INV.invoice_no} is ${inr(INV.total)}.` +
+    `\nAlready credited: ${inr(BAL?.credited ?? 0)}`,
+    String(Math.max(Math.round(Number(INV.taxable_value) - Number(BAL?.credited ?? 0)), 0)));
+  if (raw === null) return;
+
+  const subtotal = Number(raw);
+  if (!Number.isFinite(subtotal) || subtotal <= 0) return toast('Enter a valid amount', 'err');
+
+  const reasonKey = (prompt(
+    'Reason?\n' + Object.entries(REASONS).map(([k,v]) => `${k} — ${v}`).join('\n'),
+    'price_revision') || 'other').trim();
+  const reason = REASONS[reasonKey] ? reasonKey : 'other';
+
+  /* credit notes carry their own number series, by financial year */
+  const now = new Date();
+  const fy = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  const prefix = `CN-${fy}-`;
+  const { data: last } = await supabase.from('credit_notes')
+    .select('credit_no').like('credit_no', prefix + '%')
+    .order('credit_no', { ascending: false }).limit(1);
+  const seq = last?.length
+    ? (parseInt(String(last[0].credit_no).slice(prefix.length), 10) || 0) + 1 : 1;
+
+  const { data, error } = await supabase.from('credit_notes').insert({
+    credit_no: prefix + String(seq).padStart(3, '0'),
+    invoice_id: INV.id,
+    client_id: INV.client_id,
+    reason,
+    narration: `Against invoice ${INV.invoice_no}`,
+    is_interstate: INV.is_interstate,
+    cgst_rate: INV.cgst_rate, sgst_rate: INV.sgst_rate, igst_rate: INV.igst_rate,
+    subtotal,
+    created_by: user.id
+  }).select('credit_no,total').single();
+
+  if (error) {
+    /* the database refuses to credit more than was invoiced */
+    return toast(error.message.includes('exceeds the invoice value')
+      ? 'That would credit more than the invoice is worth'
+      : error.message, 'err');
+  }
+
+  toast(`${data.credit_no} raised for ${inr(data.total)}`);
   await load();
 });
 

@@ -504,8 +504,8 @@ They are different things, and the gap is where data gets lost.
 | **Free plan: zero backup retention** | Total data loss, unrecoverable | Upgrade to Pro, and run `tools/backup/backup.sh` regardless |
 | **Free plan pauses after ~7 days idle** | ERP offline until manually restored | Pro removes pausing entirely |
 | **No automated tests** | Regressions ship silently | Start with the payroll engine and GST triggers |
-| **Invoices stay editable after issue** | GST non-compliance | Lock on status change; correct via credit note |
-| **Hard deletes everywhere** | GST records must be retained ~6 years | Add `deleted_at` and filter in policies |
+| ~~Invoices editable after issue~~ | **Fixed** — migration 020 | |
+| ~~Hard deletes everywhere~~ | **Fixed** — migrations 021/022 | |
 | **No error monitoring** | Failures only visible in the console | Sentry or Supabase log drains |
 | **Statutory rates unverified** | Wrong PF/ESI/PT deductions | CA review before live payroll |
 | **TDS not computed** | Deliberate — needs declarations | Accounts enters it per payslip |
@@ -549,3 +549,66 @@ export TARGET_DB_URL="postgresql://postgres.[newref]:[pw]@..."
 
 Schedule it weekly, and **test a restore once** before you need one. An
 untested backup is a hope, not a backup.
+
+
+## Issued invoices are immutable
+
+Under GST an issued invoice cannot be edited; a mistake is corrected with a
+credit note that references the original. Previously accounts could edit a sent
+invoice, which quietly breaks the audit trail — the paper the client holds stops
+matching the row.
+
+A trigger now refuses any change to the financial identity of an issued
+invoice: number, client, date, place of supply, subtotal, discount, taxable
+value, any tax rate, or total. Status, notes and payment state stay editable,
+because those legitimately change after issue. Drafts remain freely editable.
+Line items follow their parent.
+
+The trigger is named `invoices_zz_lock` so it fires *after* `invoices_recalc`,
+comparing fully normalised values rather than whatever the client happened to
+send.
+
+Corrections go through `credit_notes`:
+
+- own number series, by financial year (`CN-2026-001`)
+- inherits the invoice's tax treatment, so place of supply cannot drift
+- a trigger refuses to credit more than the invoice is worth
+- `invoice_balances.balance` nets payments *and* credit notes
+
+Verified with eight assertions in a rolled-back transaction: drafts editable,
+GST computed, issue succeeds, edit refused, status still changeable, line items
+locked, over-limit credit note refused, valid credit note accepted.
+
+## Retained records cannot be destroyed
+
+GST records need roughly six years of retention and payroll longer, so 19
+tables no longer permit `DELETE` at all — the privilege is revoked from
+`authenticated`, not merely policy-gated, so a missing policy cannot become a
+gap.
+
+Removal is `soft_delete(table, id, reason)`: admin only, sets `deleted_at`, and
+writes to `audit_trail`. `restore_record(table, id)` reverses it.
+
+Deleted rows are hidden by a **restrictive** RLS policy:
+
+```sql
+create policy "hide deleted invoices" on public.invoices
+  as restrictive for select
+  using (deleted_at is null or public.is_admin());
+```
+
+Restrictive policies AND with the permissive ones, so all 220 existing policies
+kept working untouched. Admins can still see deleted rows, because an auditor
+asking "what was removed and by whom" needs an answer.
+
+`proposal_items` is deliberately **not** retained. Migration 021 included it,
+which revoked DELETE and broke the proposal editor — it saves by replacing its
+line items wholesale. A proposal is a pre-contract quote, not a statutory
+record. Retention that breaks a normal editing flow is retention nobody keeps.
+
+## Database errors are translated
+
+Rules enforced in the database surface as raw Postgres messages. `fail()` in
+`lib/ui.js` maps the ones users will actually hit — issued-invoice lock, credit
+limit, RLS denial — into something actionable rather than showing them a
+constraint name.
