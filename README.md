@@ -344,3 +344,35 @@ Aadhaar numbers should not be in an application database.
 `leave_balances` is a view: annual quota from `leave_types`, minus approved days
 this calendar year. Same reasoning as stock and invoice balances — a stored
 balance column drifts the first time a request is edited or cancelled.
+
+
+## The stray-closing-tag bug
+
+Symptom: the shell rendered correctly but page content collapsed into
+unstyled stacked text, even though the page stylesheet loaded fine and
+contained every rule.
+
+Cause: the prototype closes its own wrappers after `</main>`:
+
+```
+</main>
+<footer>...</footer>      <- still inside .main
+</div>                    <- closes .main
+</div>                    <- closes .app
+<div class="modal">...    <- outside .app
+```
+
+`build-page.py` emits those two closers itself, so keeping the prototype's
+copies produced **two stray `</div>` tags**. The browser closed `.content` and
+`.main` early and hoisted the rest of the page out of the layout containers,
+so every grid and card rule stopped matching. CSS was never the problem, which
+is why the file looked complete.
+
+The first fix stripped leading `</div>` with a regex and did nothing at all,
+because the footer comes first. `after_main()` now walks the tail tracking tag
+depth, treats each unmatched closer as a wrapper boundary the template already
+owns, and returns two parts: content that belongs inside `.main` (the footer)
+and content that belongs outside `.app` (modals).
+
+`tools/check-pages.py` asserts every generated page is balanced. Run it after
+regenerating.

@@ -109,23 +109,63 @@ def content(src: str) -> str:
     body = m.group(1) if m else ''
     return re.sub(r'<script.*?</script>', '', body, flags=re.S)
 
-def after_main(src: str) -> str:
-    """Modals and dialogs live as siblings of <main>, not inside it. Without
-    this they get silently dropped and every 'add row' button does nothing.
-    Nested divs make regex matching of individual modals unreliable, so keep
-    the whole tail and drop only what the page template already provides."""
+VOID_TAGS = {'br','img','input','hr','meta','link','path','circle','rect','line',
+             'polyline','polygon','use','stop','source','col','area','base','ellipse'}
+
+def after_main(src: str):
+    """Split whatever follows </main> into (inside_main, outside_app).
+
+    The prototype closes its own wrappers:
+
+        </main>
+        <footer>...</footer>     <- still inside .main
+        </div>                   <- closes .main
+        </div>                   <- closes .app
+        <div class="modal">...   <- outside .app
+
+    The page template writes those two closers itself, so emitting the
+    prototype's copies too produced two stray </div> tags. The browser closed
+    .content and .main early and hoisted the rest of the page out of the
+    layout containers, which silently killed every grid and card rule.
+
+    Position-based stripping does not work because the footer comes first, so
+    this walks the tail tracking depth and treats each unmatched closer as the
+    boundary of a wrapper the template already owns.
+    """
     m = re.search(r'</main>(.*?)</body>', src, re.S)
     if not m:
-        return ''
+        return '', ''
     tail = re.sub(r'<script.*?</script>', '', m.group(1), flags=re.S)
-    # the template emits its own toast region and closes .main / .app itself
-    tail = re.sub(r'<div[^>]*class="toast-region"[^>]*>\s*</div>', '', tail)
-    tail = re.sub(r'<div[^>]*id="toasts"[^>]*>\s*</div>', '', tail)
-    tail = re.sub(r'^\s*(</div>\s*)+', '', tail)        # stray closers for .main/.app
-    return tail.strip()
+
+    depth, split_at = 0, None
+    for tok in re.finditer(r'<(/?)([a-zA-Z][\w-]*)([^>]*?)(/?)>', tail):
+        closing, tag, _attrs, selfclose = tok.groups()
+        if tag.lower() in VOID_TAGS or selfclose == '/':
+            continue
+        if not closing:
+            depth += 1
+        else:
+            depth -= 1
+            if depth < 0:                 # a wrapper the template already closes
+                depth = 0
+                split_at = tok.end()      # keep moving; last one wins
+
+    if split_at is None:
+        return tail.strip(), ''
+
+    inside  = tail[:split_at]
+    outside = tail[split_at:]
+    # drop the unmatched closers themselves from the part kept inside
+    inside = re.sub(r'(\s*</div>\s*)+$', '', inside)
+
+    # the template emits its own toast region
+    outside = re.sub(r'<div[^>]*class="toast-region"[^>]*>\s*</div>', '', outside)
+    outside = re.sub(r'<div[^>]*id="toasts"[^>]*>\s*</div>', '', outside)
+    return inside.strip(), outside.strip()
 
 def build(proto, slug, title, route, extra_head=''):
     src = (UP / proto).read_text()
+    inside_main, outside_app = after_main(src)
     shared = (ROOT / 'src/styles/app.css').read_text()
     (ROOT / f'src/styles/{slug}.css').write_text(page_css(src, shared))
 
@@ -158,9 +198,10 @@ def build(proto, slug, title, route, extra_head=''):
     <main class="content" id="content">
 {content(src)}
     </main>
+{inside_main}
   </div>
-{after_main(src)}
 </div>
+{outside_app}
 <div class="toast-region" aria-live="polite"></div>
 <script type="module" src="/src/pages/{slug}.js"></script>
 </body>
