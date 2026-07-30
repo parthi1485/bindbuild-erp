@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Daily site report · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/dsr.css" />
+
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <!-- context header -->
+      <div class="ctx reveal">
+        <div class="ctx__main">
+          <div class="ctx__eyebrow">PRJ-018 · Daily site report</div>
+          <h1 class="ctx__title">Adyar Courtyard Residence
+            <span class="badge badge--draft" id="statusBadge"><span class="badge__dot"></span>Draft</span>
+          </h1>
+          <div class="ctx__sub">
+            <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Monday, 20 July 2026</span>
+            <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 3h9l4 4v14H6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>Report DPR-142</span>
+          </div>
+        </div>
+        <div class="ctx__actions">
+          <button class="btn-ghost" data-toast="Print / PDF|Report exported as PDF for the day file.">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9V3h12v6M6 18H4v-5a2 2 0 012-2h12a2 2 0 012 2v5h-2M8 14h8v7H8z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>Export PDF</button>
+          <button class="btn-new" id="submitTop">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Submit report</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <!-- ============ REPORT SHEET ============ -->
+        <section class="sheet reveal">
+          <!-- masthead -->
+          <div class="sheet__masthead">
+            <div class="mast__l">
+              <h2>Daily Progress Report</h2>
+              <p>Adyar Courtyard Residence · Residential G+1 · 3,240 sqft</p>
+            </div>
+            <div class="mast__no">
+              <b>DPR-142</b>
+              <span>Day 187 of 320</span>
+            </div>
+            <div class="mast__meta">
+              <div class="mmi"><span class="mmi__k">Date</span><span class="mmi__v">20 Jul 2026</span></div>
+              <div class="mmi"><span class="mmi__k">Weather</span><span class="mmi__v">33°C · Partly cloudy</span></div>
+              <div class="mmi"><span class="mmi__k">Workable hrs</span><span class="mmi__v">8.5 hrs</span></div>
+              <div class="mmi"><span class="mmi__k">Supervisor</span><span class="mmi__v">Ramesh M</span></div>
+            </div>
+          </div>
+
+          <!-- site conditions -->
+          <div class="block">
+            <div class="block__head">
+              <span class="block__ic i-sky"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="8" r="3.5" stroke="currentColor" stroke-width="1.7"/><path d="M11 16a3.5 3.5 0 013.4-3.5A4 4 0 0122 14a3 3 0 01-.4 6H11a2.5 2.5 0 010-5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span>
+              <span class="block__title">Site conditions</span>
+            </div>
+            <div class="cond">
+              <div class="cbox"><div class="cbox__k">Morning</div><div class="cbox__v">Clear · 29°C</div></div>
+              <div class="cbox"><div class="cbox__k">Afternoon</div><div class="cbox__v">Partly cloudy · 33°C</div></div>
+              <div class="cbox"><div class="cbox__k">Ground</div><div class="cbox__v">Dry · workable</div></div>
+              <div class="cbox"><div class="cbox__k">Rain / stoppage</div><div class="cbox__v">None today</div></div>
+            </div>
+          </div>
+
+          <!-- manpower -->
+          <div class="block">
+            <div class="block__head">
+              <span class="block__ic i-blue"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 19a5.5 5.5 0 0111 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+              <span class="block__title">Manpower deployed</span>
+            </div>
+            <table class="tbl">
+              <thead><tr><th>Trade / agency</th><th class="num">Planned</th><th class="num">Present</th><th>Remarks</th></tr></thead>
+              <tbody id="mpBody"></tbody>
+              <tfoot><tr><td>Total workforce</td><td class="num" id="mpPlan">0</td><td class="num" id="mpPresent">0</td><td class="muted">on site today</td></tr></tfoot>
+            </table>
+          </div>
+
+          <!-- work executed -->
+          <div class="block">
+            <div class="block__head">
+              <span class="block__ic i-green"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              <span class="block__title">Work executed today</span>
+              <span class="block__act"><button class="mini-add" data-add="activity"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Add activity</button></span>
+            </div>
+            <div class="acts" id="actList"></div>
+          </div>
+
+          <!-- materials received -->
+          <div class="block">
+            <div class="block__head">
+              <span class="block__ic i-amber"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 6h16l-1.5 9H6L4 6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="9" cy="20" r="1.4" fill="currentColor"/><circle cx="17" cy="20" r="1.4" fill="currentColor"/></svg></span>
+              <span class="block__title">Materials received</span>
+              <span class="block__act"><button class="mini-add" data-add="material"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Add material</button></span>
+            </div>
+            <table class="tbl">
+              <thead><tr><th>Material</th><th class="num">Qty</th><th>Supplier</th><th>DC / Invoice</th></tr></thead>
+              <tbody id="matBody"></tbody>
+            </table>
+          </div>
+
+          <!-- equipment -->
+          <div class="block">
+            <div class="block__head">
+              <span class="block__ic i-violet"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 8a4 4 0 100 8 4 4 0 000-8z" stroke="currentColor" stroke-width="1.6"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+              <span class="block__title">Equipment on site</span>
+            </div>
+            <div class="eq" id="eqList"></div>
+          </div>
+
+          <!-- issues -->
+          <div class="block">
+            <div class="block__head">
+              <span class="block__ic i-amber"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3l9 16H3L12 3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 10v4M12 17h.01" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
+              <span class="block__title">Issues, delays & observations</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px" id="issueList">
+              <div class="issue">
+                <span class="issue__ic i-amber"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3l9 16H3L12 3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 10v4M12 17h.01" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
+                <div><div class="issue__t">Rain delay carried over</div><div class="issue__m">2 hrs lost on 18 Jul to afternoon shower — plastering on Block A resumed next morning. Schedule impact absorbed.</div><div class="issue__meta">OPEN · logged 18 Jul · owner: Arun Kumar</div></div>
+              </div>
+              <div class="issue issue--info">
+                <span class="issue__ic i-blue"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 11v5M12 8h.01" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
+                <div><div class="issue__t">Pre-pour inspection due 25 Jul</div><div class="issue__m">Confirm reinforcement cover, conduit routing and shuttering line before FF slab casting on 26 Jul.</div><div class="issue__meta">OBSERVATION · owner: Arun Kumar</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- remarks -->
+          <div class="block">
+            <div class="block__head">
+              <span class="block__ic i-blue"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 5h16M4 12h16M4 19h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+              <span class="block__title">Architect's instructions</span>
+            </div>
+            <div class="remark"><b>PB:</b> Maintain 25 mm clear cover for slab reinforcement. Ensure all electrical conduits & sleeves are laid and inspected before the pour. Use Sri Balaji RMC M25 mix as specified; collect cube samples on casting day.</div>
+          </div>
+
+          <!-- sign off -->
+          <div class="block">
+            <div class="block__head">
+              <span class="block__ic i-green"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 17s3-1 5-6c0 0 1 4 3 4s2-2 2-2 1 2 3 2 4-2 4-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              <span class="block__title">Report sign-off</span>
+            </div>
+            <div class="signoff">
+              <div class="sign">
+                <div class="sign__k">Prepared by</div>
+                <div class="sign__who"><span class="av c4">RM</span><div><div class="sign__nm">Ramesh M</div><div class="sign__rl">Site Supervisor</div></div></div>
+              </div>
+              <div class="sign">
+                <div class="sign__k">Reviewed by</div>
+                <div class="sign__who"><span class="av c1">AK</span><div><div class="sign__nm">Arun Kumar</div><div class="sign__rl">Site Engineer</div></div></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ RIGHT RAIL ============ -->
+        <aside class="rail">
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Report status</div><span class="card__tag" id="railStatus">Draft</span></div>
+            <div class="card__body">
+              <div class="field"><label class="field__l" for="repDate">Report date</label>
+                <input type="date" id="repDate" value="2026-07-20" /></div>
+              <div class="field"><label class="field__l" for="repProj">Project</label>
+                <select id="repProj"><option>Adyar Courtyard Residence</option><option>Besant Nagar Beach House</option><option>Anna Nagar Duplex</option></select></div>
+              <div class="stat3">
+                <div class="mini__b"><div class="mini__v" id="sWorkers">0</div><div class="mini__l">Workers</div></div>
+                <div class="mini__b"><div class="mini__v" id="sActs">0</div><div class="mini__l">Activities</div></div>
+                <div class="mini__b"><div class="mini__v" id="sMats">0</div><div class="mini__l">Materials</div></div>
+              </div>
+              <button class="btn-new btn-block" id="submitBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Submit report</button>
+              <button class="btn-ghost btn-block" data-toast="Draft saved|Report saved locally. You can finish it later.">Save draft</button>
+            </div>
+          </section>
+
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Recent reports</div></div>
+            <div class="card__body" style="padding-top:8px">
+              <div class="recent">
+                <div class="rrow"><span class="rrow__ic">141</span><div><div class="rrow__t">DPR-141</div><div class="rrow__d">Sat · 19 Jul</div></div><span class="rrow__b tag--done">Submitted</span></div>
+                <div class="rrow"><span class="rrow__ic">140</span><div><div class="rrow__t">DPR-140</div><div class="rrow__d">Fri · 18 Jul</div></div><span class="rrow__b tag--hold">Rain</span></div>
+                <div class="rrow"><span class="rrow__ic">139</span><div><div class="rrow__t">DPR-139</div><div class="rrow__d">Thu · 17 Jul</div></div><span class="rrow__b tag--done">Submitted</span></div>
+                <div class="rrow"><span class="rrow__ic">138</span><div><div class="rrow__t">DPR-138</div><div class="rrow__d">Wed · 16 Jul</div></div><span class="rrow__b tag--done">Submitted</span></div>
+              </div>
+            </div>
+          </section>
+        </aside>
+      </div>
+
+      <footer class="footer">
+        <span>© 2026 Studio Bind Architects · Chennai</span>
+        <span class="footer__v">Bind Build ERP v0.9.0 · build 2026.07</span>
+      </footer>
+    
+    </main>
+  </div>
+<!-- ============ MODAL ============ -->
+<div class="modal-root" id="modalRoot" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="modal-bg" data-close></div>
+  <div class="modal">
+    <div class="modal__head"><h3 id="mTitle">Add activity</h3>
+      <button class="icon-btn" data-close aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></div>
+    <div class="modal__body" id="modalBody"></div>
+    <div class="modal__foot">
+      <button class="btn-ghost" data-close>Cancel</button>
+      <button class="btn-new" id="modalSave">Add</button>
+    </div>
+  </div>
+</div>
+</div>
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/dsr.js"></script>
+</body>
+</html>

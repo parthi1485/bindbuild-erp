@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Projects · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/projects.css" />
+
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <!-- Page header -->
+      <section class="page-head" data-skel>
+        <div>
+          <h1 class="page-head__title">Projects</h1>
+          <p class="page-head__sub">Every live project across design, construction and interiors · Studio Bind, Chennai</p>
+        </div>
+        <div class="page-head__acts">
+          <button class="btn-ghost" id="exportBtn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/></svg>
+            Export
+          </button>
+          <button class="btn-new" id="newBtn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            New project
+          </button>
+        </div>
+      </section>
+
+      <!-- Summary stats -->
+      <section class="stats" aria-label="Portfolio summary">
+        <div class="stat" data-skel>
+          <span class="stat__ico a"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21V12h6v9"/></svg></span>
+          <div><div class="stat__val" id="stTotal">0</div><div class="stat__label">Live projects</div></div>
+        </div>
+        <div class="stat" data-skel>
+          <span class="stat__ico a"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h20M2 12h20M2 19h20"/></svg></span>
+          <div><div class="stat__val" id="stValue">₹0</div><div class="stat__label">Contract value</div></div>
+        </div>
+        <div class="stat" data-skel>
+          <span class="stat__ico g"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+          <div><div class="stat__val" id="stHealthy">0</div><div class="stat__label">On track</div></div>
+        </div>
+        <div class="stat" data-skel>
+          <span class="stat__ico w"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></span>
+          <div><div class="stat__val" id="stAttention">0</div><div class="stat__label">Need attention</div></div>
+        </div>
+      </section>
+
+      <!-- Toolbar -->
+      <section class="toolbar" data-skel>
+        <div class="seg" role="group" aria-label="Filter by health" id="healthSeg">
+          <button class="on" data-health="all">All</button>
+          <button data-health="ontrack"><span class="cdot g"></span>On track</button>
+          <button data-health="atrisk"><span class="cdot w"></span>At risk</button>
+          <button data-health="delayed"><span class="cdot d"></span>Delayed</button>
+        </div>
+        <div class="chips" id="typeChips" role="group" aria-label="Filter by type">
+          <button class="chip on" data-type="all">All types</button>
+          <button class="chip" data-type="Residential">Residential</button>
+          <button class="chip" data-type="Commercial">Commercial</button>
+          <button class="chip" data-type="Interior">Interior</button>
+        </div>
+        <span class="toolbar__sp"></span>
+        <select class="sel" id="sortSel" aria-label="Sort projects">
+          <option value="progress-desc">Progress · high → low</option>
+          <option value="progress-asc">Progress · low → high</option>
+          <option value="value-desc">Value · high → low</option>
+          <option value="value-asc">Value · low → high</option>
+          <option value="name-asc">Name · A → Z</option>
+        </select>
+        <div class="view-toggle" role="group" aria-label="View mode">
+          <button class="on" id="gridBtn" aria-label="Grid view">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          </button>
+          <button id="listBtn" aria-label="List view">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- Project grid (filled by JS) -->
+      <section class="pgrid" id="pgrid" aria-label="Project cards"></section>
+
+      <!-- Empty state -->
+      <div class="empty" id="empty">
+        <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <h3>No projects match</h3>
+        <p>Try clearing a filter or searching a different name. Your other projects are still here.</p>
+      </div>
+    
+    </main>
+  </div>
+<footer class="footer">
+      <span>© 2026 Studio Bind Architects · Chennai</span>
+      <span class="footer__status"><span class="dot"></span>All systems operational</span>
+      <span class="ver-tag">Bind Build ERP v0.9.0 · build 2026.07</span>
+    </footer>
+  </div>
+</div>
+</div>
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/projects.js"></script>
+</body>
+</html>

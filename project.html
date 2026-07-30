@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Project · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/project.css" />
+
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <!-- HERO -->
+      <section class="hero" data-skel>
+        <div class="hero__cover"></div>
+        <div class="hero__body">
+          <div class="hero__top">
+            <div class="hero__badge" aria-hidden="true">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21V12h6v9"/></svg>
+            </div>
+            <div class="hero__id">
+              <h1 class="hero__name">Adyar Courtyard Residence</h1>
+              <div class="hero__meta">
+                <span class="mi"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg>Dr. Meenakshi Raghavan</span>
+                <span class="dotsep"></span><span class="mi">PRJ-018</span>
+                <span class="dotsep"></span><span class="mi">Residential</span>
+                <span class="dotsep"></span><span class="mi"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>Adyar, Chennai</span>
+              </div>
+            </div>
+            <div class="hero__acts">
+              <span class="health ontrack"><span class="hd"></span>On track</span>
+              <button class="btn-ghost" data-toast="Share|A shareable client-portal link is generated here.">Share</button>
+              <button class="btn-new" data-toast="Edit project|The project edit form opens here.">Edit</button>
+            </div>
+          </div>
+
+          <div class="hero__kpis">
+            <div class="hkpi">
+              <div class="hkpi__lbl">Progress</div>
+              <div class="hkpi__val" data-count="68" data-suffix="%">0%</div>
+              <div class="hkpi__bar"><div class="hkpi__fill a" data-w="68"></div></div>
+            </div>
+            <div class="hkpi">
+              <div class="hkpi__lbl">Budget spent</div>
+              <div class="hkpi__val">₹1.20<small> / 1.85 Cr</small></div>
+              <div class="hkpi__bar"><div class="hkpi__fill g" data-w="65"></div></div>
+              <div class="hkpi__sub">65% of contract</div>
+            </div>
+            <div class="hkpi">
+              <div class="hkpi__lbl">Timeline</div>
+              <div class="hkpi__val">Nov 2026</div>
+              <div class="hkpi__sub">Started 14 Jan · ~4 mo to go</div>
+            </div>
+            <div class="hkpi">
+              <div class="hkpi__lbl">Next milestone</div>
+              <div class="hkpi__val" style="font-size:15px;line-height:1.25">FF slab casting</div>
+              <div class="hkpi__sub">Due 26 Jul 2026 · in 6 days</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LAYOUT: tabs + rail -->
+      <div class="layout">
+        <div>
+          <div class="tabs" role="tablist" data-skel>
+            <button class="tab on" data-tab="overview" role="tab" aria-selected="true">Overview</button>
+            <button class="tab" data-tab="tasks" role="tab" aria-selected="false">Tasks</button>
+            <button class="tab" data-tab="site" role="tab" aria-selected="false">Site Progress</button>
+            <button class="tab" data-tab="docs" role="tab" aria-selected="false">Documents</button>
+            <button class="tab" data-tab="team" role="tab" aria-selected="false">Team</button>
+            <button class="tab" data-tab="pay" role="tab" aria-selected="false">Payments</button>
+          </div>
+
+          <!-- OVERVIEW -->
+          <div class="panel on" id="panel-overview" role="tabpanel">
+            <div class="stack">
+              <div class="card card__pad" data-skel>
+                <div class="sec-title"><div><span class="card__title">Progress &amp; budget</span><div class="card__sub">Where the project stands right now</div></div></div>
+                <div class="pbrow">
+                  <div>
+                    <div class="metric__row"><span>Overall completion</span><b>68%</b></div>
+                    <div class="bar"><div class="bar__fill a" data-w="68"></div></div>
+                    <div class="stagelist">
+                      <div><div class="metric__row"><span>Structure</span><b>82%</b></div><div class="bar"><div class="bar__fill a" data-w="82"></div></div></div>
+                      <div><div class="metric__row"><span>Masonry &amp; plastering</span><b>40%</b></div><div class="bar"><div class="bar__fill a" data-w="40"></div></div></div>
+                      <div><div class="metric__row"><span>MEP</span><b>15%</b></div><div class="bar"><div class="bar__fill a" data-w="15"></div></div></div>
+                      <div><div class="metric__row"><span>Finishes &amp; interiors</span><b>5%</b></div><div class="bar"><div class="bar__fill a" data-w="5"></div></div></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="metric__row"><span>Budget utilised</span><b>₹1.20 Cr / 1.85 Cr</b></div>
+                    <div class="bar"><div class="bar__fill g" data-w="65"></div></div>
+                    <div class="stagelist">
+                      <div><div class="metric__row"><span>Materials</span><b>₹68.4 L</b></div><div class="bar"><div class="bar__fill g" data-w="57"></div></div></div>
+                      <div><div class="metric__row"><span>Labour</span><b>₹34.2 L</b></div><div class="bar"><div class="bar__fill g" data-w="28"></div></div></div>
+                      <div><div class="metric__row"><span>Design &amp; approvals</span><b>₹11.1 L</b></div><div class="bar"><div class="bar__fill g" data-w="9"></div></div></div>
+                      <div><div class="metric__row"><span>Contingency used</span><b>₹6.5 L</b></div><div class="bar"><div class="bar__fill g" data-w="5"></div></div></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card card__pad" data-skel>
+                <div class="sec-title"><div><span class="card__title">Milestone timeline</span><div class="card__sub">Design → approvals → build → handover</div></div></div>
+                <div class="tl">
+                  <div class="tl__item done"><div class="tl__dot"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div class="tl__title">Design &amp; drawings sign-off</div><div class="tl__meta">Completed · 08 Feb 2026</div></div>
+                  <div class="tl__item done"><div class="tl__dot"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div class="tl__title">CMDA approval received</div><div class="tl__meta">Completed · 21 Mar 2026</div></div>
+                  <div class="tl__item done"><div class="tl__dot"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div class="tl__title">Foundation &amp; plinth beam</div><div class="tl__meta">Completed · 30 Apr 2026</div></div>
+                  <div class="tl__item done"><div class="tl__dot"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div class="tl__title">Ground-floor superstructure</div><div class="tl__meta">Completed · 22 Jun 2026</div></div>
+                  <div class="tl__item current"><div class="tl__dot"></div><div class="tl__title">First-floor slab casting<span class="tl__tag">In progress</span></div><div class="tl__meta">Target · 26 Jul 2026</div></div>
+                  <div class="tl__item"><div class="tl__dot"></div><div class="tl__title">Block work &amp; plastering</div><div class="tl__meta">Planned · Aug–Sep 2026</div></div>
+                  <div class="tl__item"><div class="tl__dot"></div><div class="tl__title">MEP, flooring &amp; finishes</div><div class="tl__meta">Planned · Oct 2026</div></div>
+                  <div class="tl__item"><div class="tl__dot"></div><div class="tl__title">Snagging &amp; handover</div><div class="tl__meta">Planned · Nov 2026</div></div>
+                </div>
+              </div>
+
+              <div class="card card__pad" data-skel>
+                <div class="sec-title"><div><span class="card__title">Recent activity</span><div class="card__sub">Latest updates from site &amp; office</div></div></div>
+                <div class="feed">
+                  <div class="feed__item"><div class="feed__ic a"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.6-3.6a2 2 0 0 0-2.8 0L6 20"/></svg></div><div class="feed__tx"><b>Arun Kumar</b> uploaded 6 site photos — FF shuttering &amp; reinforcement.<div class="feed__time">2 hours ago</div></div></div>
+                  <div class="feed__item"><div class="feed__ic g"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div class="feed__tx">First-floor shuttering marked <b>complete</b> in the daily site report.<div class="feed__time">Yesterday · 5:40 PM</div></div></div>
+                  <div class="feed__item"><div class="feed__ic g"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div><div class="feed__tx">Payment received — <b>₹18.5 L</b> (block-work advance) from client.<div class="feed__time">2 days ago</div></div></div>
+                  <div class="feed__item"><div class="feed__ic v"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.5"/><circle cx="19" cy="21" r="1.5"/><path d="M2 3h3l2.6 12.6a2 2 0 0 0 2 1.4h8.8a2 2 0 0 0 2-1.6L22 7H6"/></svg></div><div class="feed__tx">RMC order placed with <b>Sri Balaji RMC</b> — 24 m³ M20 for slab.<div class="feed__time">3 days ago</div></div></div>
+                  <div class="feed__item"><div class="feed__ic a"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div><div class="feed__tx"><b>Dr. Meenakshi</b> approved the revised kitchen layout (rev 3).<div class="feed__time">5 days ago</div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TASKS -->
+          <div class="panel" id="panel-tasks" role="tabpanel">
+            <div class="card card__pad" data-skel>
+              <div class="sec-title">
+                <div><span class="card__title">Tasks</span><div class="card__sub">8 open · 2 in progress · quick view</div></div>
+                <button class="btn-ghost" data-toast="Task board|The full kanban board is Page 10 in this build sequence.">Open full board</button>
+              </div>
+              <div class="tgroup">
+                <div class="tgroup__h">In progress <span class="n">2</span></div>
+                <div class="trow"><span class="tcheck"></span><span class="tname">First-floor slab reinforcement &amp; shuttering check</span><span class="tmeta"><span class="tpill">Due 25 Jul</span><span class="tav c1">AK</span></span></div>
+                <div class="trow"><span class="tcheck"></span><span class="tname">Kitchen granite &amp; counter selection with client</span><span class="tmeta"><span class="tpill">Due 27 Jul</span><span class="tav c2">SV</span></span></div>
+              </div>
+              <div class="tgroup">
+                <div class="tgroup__h">To do <span class="n">3</span></div>
+                <div class="trow"><span class="tcheck"></span><span class="tname">Place order — UPVC sliding windows (all floors)</span><span class="tmeta"><span class="tpill">Aug 01</span><span class="tav c0">PB</span></span></div>
+                <div class="trow"><span class="tcheck"></span><span class="tname">Schedule plumbing rough-in for ground floor</span><span class="tmeta"><span class="tpill">Aug 04</span><span class="tav c1">AK</span></span></div>
+                <div class="trow"><span class="tcheck"></span><span class="tname">Finalise staircase railing SS-304 vendor quote</span><span class="tmeta"><span class="tpill">Aug 06</span><span class="tav c3">RM</span></span></div>
+              </div>
+              <div class="tgroup">
+                <div class="tgroup__h">Done <span class="n">3</span></div>
+                <div class="trow done"><span class="tcheck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span class="tname">Ground-floor plastering — internal walls</span><span class="tmeta"><span class="tav c1">AK</span></span></div>
+                <div class="trow done"><span class="tcheck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span class="tname">Staircase railing site measurement</span><span class="tmeta"><span class="tav c3">RM</span></span></div>
+                <div class="trow done"><span class="tcheck"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span class="tname">Kitchen layout revision 3 — client sign-off</span><span class="tmeta"><span class="tav c0">PB</span></span></div>
+              </div>
+            </div>
+          </div>
+          <!-- SITE PROGRESS -->
+          <div class="panel" id="panel-site" role="tabpanel">
+            <div class="stack">
+              <div class="card card__pad" data-skel>
+                <div class="sec-title"><div><span class="card__title">Latest daily site report</span><div class="card__sub">19 Jul 2026 · logged by Arun Kumar, Site Engineer</div></div><span class="health ontrack"><span class="hd"></span>Weather OK</span></div>
+                <div class="pbrow">
+                  <div>
+                    <div class="metric__row"><span>Workers on site</span><b>14</b></div>
+                    <div class="metric__row"><span>Work done today</span><b>FF shuttering + rebar</b></div>
+                    <div class="metric__row"><span>Materials received</span><b>Steel 2.4 T · Ply 30 sheets</b></div>
+                  </div>
+                  <div>
+                    <div class="metric__row"><span>Slab casting readiness</span><b>90%</b></div>
+                    <div class="bar"><div class="bar__fill a" data-w="90"></div></div>
+                    <div class="metric__row" style="margin-top:14px"><span>Open site issues</span><b>1 · minor</b></div>
+                    <div class="metric__row"><span>Next inspection</span><b>25 Jul · pre-pour</b></div>
+                  </div>
+                </div>
+                <div class="photos">
+                  <div class="photo p0"><span>FF shuttering</span></div>
+                  <div class="photo p1"><span>Reinforcement</span></div>
+                  <div class="photo p2"><span>GF plastering</span></div>
+                  <div class="photo p3"><span>Site elevation</span></div>
+                </div>
+              </div>
+              <div class="card card__pad" data-skel>
+                <div class="sec-title"><div><span class="card__title">Stage-wise progress</span><div class="card__sub">Physical progress by work package</div></div></div>
+                <div class="stagelist">
+                  <div><div class="metric__row"><span>Structure (RCC frame)</span><b>82%</b></div><div class="bar"><div class="bar__fill a" data-w="82"></div></div></div>
+                  <div><div class="metric__row"><span>Masonry &amp; plastering</span><b>40%</b></div><div class="bar"><div class="bar__fill a" data-w="40"></div></div></div>
+                  <div><div class="metric__row"><span>MEP rough-in</span><b>15%</b></div><div class="bar"><div class="bar__fill a" data-w="15"></div></div></div>
+                  <div><div class="metric__row"><span>Waterproofing</span><b>35%</b></div><div class="bar"><div class="bar__fill a" data-w="35"></div></div></div>
+                  <div><div class="metric__row"><span>Flooring &amp; finishes</span><b>5%</b></div><div class="bar"><div class="bar__fill a" data-w="5"></div></div></div>
+                  <div><div class="metric__row"><span>Interiors &amp; joinery</span><b>0%</b></div><div class="bar"><div class="bar__fill a" data-w="0"></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DOCUMENTS -->
+          <div class="panel" id="panel-docs" role="tabpanel">
+            <div class="card card__pad" data-skel>
+              <div class="sec-title"><div><span class="card__title">Documents</span><div class="card__sub">Drawings, approvals, BOQ &amp; contracts</div></div><button class="btn-ghost" data-toast="Upload|The file uploader opens here.">Upload</button></div>
+              <div class="frow"><span class="fic dwg">DWG</span><div class="fmeta"><div class="fname">Working Drawings — All Floors (rev 3).pdf</div><div class="fsub">12.4 MB · updated 2 days ago · Parthiban</div></div><button class="fdl" data-toast="Download|File download starts here." aria-label="Download"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/></svg></button></div>
+              <div class="frow"><span class="fic pdf">PDF</span><div class="fmeta"><div class="fname">CMDA Planning Approval.pdf</div><div class="fsub">2.1 MB · 21 Mar 2026 · approvals</div></div><button class="fdl" data-toast="Download|File download starts here." aria-label="Download"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/></svg></button></div>
+              <div class="frow"><span class="fic pdf">PDF</span><div class="fmeta"><div class="fname">Structural Design Report.pdf</div><div class="fsub">4.8 MB · 05 Feb 2026 · structural</div></div><button class="fdl" data-toast="Download|File download starts here." aria-label="Download"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/></svg></button></div>
+              <div class="frow"><span class="fic xls">XLS</span><div class="fmeta"><div class="fname">BOQ — Adyar Courtyard.xlsx</div><div class="fsub">860 KB · updated 6 days ago · commercials</div></div><button class="fdl" data-toast="Download|File download starts here." aria-label="Download"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/></svg></button></div>
+              <div class="frow"><span class="fic pdf">PDF</span><div class="fmeta"><div class="fname">Signed Construction Agreement.pdf</div><div class="fsub">1.3 MB · 12 Jan 2026 · contract</div></div><button class="fdl" data-toast="Download|File download starts here." aria-label="Download"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/></svg></button></div>
+              <div class="frow"><span class="fic pdf">PDF</span><div class="fmeta"><div class="fname">Soil Test Report.pdf</div><div class="fsub">3.2 MB · 20 Jan 2026 · site</div></div><button class="fdl" data-toast="Download|File download starts here." aria-label="Download"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/></svg></button></div>
+            </div>
+          </div>
+
+          <!-- TEAM -->
+          <div class="panel" id="panel-team" role="tabpanel">
+            <div class="card card__pad" data-skel>
+              <div class="sec-title"><div><span class="card__title">Project team</span><div class="card__sub">Studio Bind team &amp; key vendors</div></div><button class="btn-ghost" data-toast="Add member|Assign a team member here.">Add member</button></div>
+              <div class="tmgrid">
+                <div class="tmcard"><span class="tmav c0">PB</span><div><div class="tmname">Parthiban</div><div class="tmrole">Principal Architect · Lead</div></div></div>
+                <div class="tmcard"><span class="tmav c1">AK</span><div><div class="tmname">Arun Kumar</div><div class="tmrole">Site Engineer</div></div></div>
+                <div class="tmcard"><span class="tmav c2">SV</span><div><div class="tmname">Sowmya V</div><div class="tmrole">Interior Lead</div></div></div>
+                <div class="tmcard"><span class="tmav c3">RM</span><div><div class="tmname">Ramesh M</div><div class="tmrole">Site Supervisor</div></div></div>
+                <div class="tmcard"><span class="tmav c1">SB</span><div><div class="tmname">Sri Balaji RMC</div><div class="tmrole">Vendor · Concrete supply</div></div></div>
+                <div class="tmcard"><span class="tmav c2">JQ</span><div><div class="tmname">Jaquar Chennai</div><div class="tmrole">Vendor · CP &amp; sanitary</div></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PAYMENTS -->
+          <div class="panel" id="panel-pay" role="tabpanel">
+            <div class="card card__pad" data-skel>
+              <div class="sec-title"><div><span class="card__title">Payment schedule</span><div class="card__sub">8 milestones · linked to the signed agreement</div></div><button class="btn-ghost" data-toast="Record payment|The record-payment form opens here.">Record payment</button></div>
+              <div class="psum">
+                <div class="psum__c"><div class="psum__l">Contract</div><div class="psum__v">₹1.85 Cr</div></div>
+                <div class="psum__c"><div class="psum__l">Received</div><div class="psum__v" style="color:var(--success)">₹1.20 Cr</div></div>
+                <div class="psum__c"><div class="psum__l">Pending</div><div class="psum__v" style="color:var(--warning)">₹64.75 L</div></div>
+              </div>
+              <div style="overflow-x:auto">
+              <table class="ptable">
+                <thead><tr><th style="width:6%">#</th><th>Milestone</th><th class="r">%</th><th class="r">Amount</th><th class="r">Status</th></tr></thead>
+                <tbody>
+                  <tr><td class="mono">1</td><td>Design, soil test &amp; approval advance</td><td class="r mono">10%</td><td class="r mono">₹18.50 L</td><td class="r"><span class="pstat paid">Paid</span></td></tr>
+                  <tr><td class="mono">2</td><td>Foundation &amp; plinth beam concrete</td><td class="r mono">15%</td><td class="r mono">₹27.75 L</td><td class="r"><span class="pstat paid">Paid</span></td></tr>
+                  <tr><td class="mono">3</td><td>Ground-floor superstructure</td><td class="r mono">15%</td><td class="r mono">₹27.75 L</td><td class="r"><span class="pstat paid">Paid</span></td></tr>
+                  <tr><td class="mono">4</td><td>First-floor slab &amp; superstructure</td><td class="r mono">15%</td><td class="r mono">₹27.75 L</td><td class="r"><span class="pstat paid">Paid</span></td></tr>
+                  <tr><td class="mono">5</td><td>Block work &amp; plastering</td><td class="r mono">10%</td><td class="r mono">₹18.50 L</td><td class="r"><span class="pstat paid">Paid</span></td></tr>
+                  <tr><td class="mono">6</td><td>Flooring, doors &amp; windows</td><td class="r mono">15%</td><td class="r mono">₹27.75 L</td><td class="r"><span class="pstat due">Due next</span></td></tr>
+                  <tr><td class="mono">7</td><td>Electrical, plumbing &amp; painting</td><td class="r mono">15%</td><td class="r mono">₹27.75 L</td><td class="r"><span class="pstat up">Upcoming</span></td></tr>
+                  <tr><td class="mono">8</td><td>Final finishes &amp; handover</td><td class="r mono">5%</td><td class="r mono">₹9.25 L</td><td class="r"><span class="pstat up">Upcoming</span></td></tr>
+                </tbody>
+              </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT RAIL -->
+        <aside class="rail">
+          <div class="card card__pad next-ms" data-skel>
+            <div class="next-ms__l">Next milestone</div>
+            <div class="next-ms__v">First-floor slab casting</div>
+            <div class="next-ms__d">Due 26 Jul 2026 · in 6 days</div>
+          </div>
+          <div class="card card__pad" data-skel>
+            <div class="card__title" style="margin-bottom:var(--s-3)">Client</div>
+            <div class="rail__client">
+              <span class="rail__ca">MR</span>
+              <div><div class="rail__cname">Dr. Meenakshi Raghavan</div><div class="rail__crole">CL-042 · Adyar</div></div>
+            </div>
+            <div class="rail__row">
+              <button class="btn-ghost" data-toast="Call|Dialer opens here.">Call</button>
+              <button class="btn-ghost" data-toast="Message|WhatsApp thread opens here.">Message</button>
+              <a class="btn-ghost" href="05-client-profile.html">Profile</a>
+            </div>
+          </div>
+          <div class="card card__pad" data-skel>
+            <div class="card__title" style="margin-bottom:var(--s-2)">Quick facts</div>
+            <div class="kv"><span class="kv__k">Project code</span><span class="kv__v mono">PRJ-018</span></div>
+            <div class="kv"><span class="kv__k">Type</span><span class="kv__v">Residential · G+1</span></div>
+            <div class="kv"><span class="kv__k">Built-up area</span><span class="kv__v mono">3,240 sqft</span></div>
+            <div class="kv"><span class="kv__k">Contract</span><span class="kv__v mono">₹1.85 Cr</span></div>
+            <div class="kv"><span class="kv__k">Start date</span><span class="kv__v mono">14 Jan 2026</span></div>
+            <div class="kv"><span class="kv__k">Target</span><span class="kv__v mono">30 Nov 2026</span></div>
+            <div class="kv"><span class="kv__k">GSTIN</span><span class="kv__v mono">33AAKPM…1ZC</span></div>
+          </div>
+          <div class="card card__pad" data-skel>
+            <div class="card__title" style="margin-bottom:var(--s-2)">Team</div>
+            <div class="mini-team">
+              <span class="mt c0" title="Parthiban">PB</span>
+              <span class="mt c1" title="Arun Kumar">AK</span>
+              <span class="mt c2" title="Sowmya V">SV</span>
+              <span class="mt c3" title="Ramesh M">RM</span>
+              <span class="mt more">+2</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    
+    </main>
+  </div>
+<footer class="footer">
+      <span>© 2026 Studio Bind Architects · Chennai</span>
+      <span class="footer__status"><span class="dot"></span>All systems operational</span>
+      <span class="ver-tag">Bind Build ERP v0.9.0 · build 2026.07</span>
+    </footer>
+  </div>
+</div>
+</div>
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/project.js"></script>
+</body>
+</html>

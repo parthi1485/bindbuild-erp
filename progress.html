@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Site progress · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/progress.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <!-- context header -->
+      <div class="ctx reveal">
+        <div class="ctx__main">
+          <div class="ctx__eyebrow">PRJ-018 · Site monitoring</div>
+          <h1 class="ctx__title">Adyar Courtyard Residence
+            <span class="badge badge--ok"><span class="badge__dot"></span>On track</span>
+          </h1>
+          <div class="ctx__sub">
+            <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-5.6-7-11a7 7 0 0114 0c0 5.4-7 11-7 11z" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10" r="2.4" stroke="currentColor" stroke-width="1.7"/></svg>Adyar, Chennai</span>
+            <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Day 187 of 320</span>
+            <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Next: FF slab casting · 26 Jul</span>
+          </div>
+        </div>
+        <div class="ctx__actions">
+          <button class="btn-ghost" data-toast="Daily Site Report|Opening today's DPR draft.">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 3h9l4 4v14H6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12h6M9 16h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>View DPR</button>
+          <button class="btn-new" data-toast="Add photos|Camera upload ready — attach today's site photos.">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.2" stroke="#fff" stroke-width="1.7"/></svg>Add photos</button>
+        </div>
+      </div>
+
+      <!-- KPI strip -->
+      <section class="kstrip">
+        <div class="kbox reveal">
+          <div class="kbox__top"><span class="kbox__ic i-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 4-6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Overall progress</div>
+          <div class="kbox__val"><span class="cup" data-to="68">0</span>%</div>
+          <div class="kbox__note">Weighted across all packages</div>
+        </div>
+        <div class="kbox reveal">
+          <div class="kbox__top"><span class="kbox__ic i-violet"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3v18M3 12h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>Planned vs actual</div>
+          <div class="kbox__val">70<small>/</small><span class="cup" data-to="68">0</span><small>%</small></div>
+          <div class="kbox__note"><span class="delta delta--down">▾ 2%</span> slightly behind plan</div>
+        </div>
+        <div class="kbox reveal">
+          <div class="kbox__top"><span class="kbox__ic i-sky"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Days on site</div>
+          <div class="kbox__val"><span class="cup" data-to="187">0</span><small>/320</small></div>
+          <div class="kbox__note">133 days to handover</div>
+        </div>
+        <div class="kbox reveal">
+          <div class="kbox__top"><span class="kbox__ic i-green"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 19a5.5 5.5 0 0111 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Workers today</div>
+          <div class="kbox__val"><span class="cup" data-to="14">0</span></div>
+          <div class="kbox__note">4 trades on site</div>
+        </div>
+        <div class="kbox reveal">
+          <div class="kbox__top"><span class="kbox__ic i-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3l9 16H3L12 3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 10v4M12 17h.01" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>Open issues</div>
+          <div class="kbox__val"><span class="cup" data-to="1">0</span></div>
+          <div class="kbox__note">Rain delay logged 18 Jul</div>
+        </div>
+      </section>
+
+      <!-- main grid -->
+      <div class="grid">
+        <div class="stack">
+          <!-- progress curve -->
+          <section class="card reveal">
+            <div class="card__head">
+              <div>
+                <div class="card__title">Planned vs actual progress</div>
+                <div class="card__sub">Cumulative completion · Jan → Nov 2026</div>
+              </div>
+              <span class="card__tag">S-curve</span>
+            </div>
+            <div class="card__body">
+              <div class="chart-wrap"><canvas id="curveChart" data-skel></canvas></div>
+              <div class="legend">
+                <div class="legend__item"><span class="legend__sw" style="background:var(--text-3)"></span>Planned<span class="legend__val">70%</span></div>
+                <div class="legend__item"><span class="legend__sw" style="background:var(--accent)"></span>Actual<span class="legend__val">68%</span></div>
+                <div class="legend__item"><span class="legend__sw" style="background:var(--warning)"></span>Variance<span class="legend__val" style="color:var(--warning)">−2%</span></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- stage tracker -->
+          <section class="card reveal">
+            <div class="card__head">
+              <div class="card__title">Stage completion</div>
+              <span class="card__tag">6 packages</span>
+            </div>
+            <div class="card__body">
+              <div class="stage" id="stageList"></div>
+            </div>
+          </section>
+
+          <!-- photo gallery -->
+          <section class="card reveal">
+            <div class="card__head">
+              <div>
+                <div class="card__title">Site photos</div>
+                <div class="card__sub"><span id="shotCount">9</span> images from site</div>
+              </div>
+              <div class="chips" id="wkChips" style="margin-left:auto">
+                <button class="chip is-active" data-wk="all">All</button>
+                <button class="chip" data-wk="0">This week</button>
+                <button class="chip" data-wk="1">Last week</button>
+                <button class="chip" data-wk="2">Earlier</button>
+              </div>
+            </div>
+            <div class="card__body">
+              <div class="gallery" id="gallery"></div>
+            </div>
+          </section>
+        </div>
+
+        <!-- right rail -->
+        <aside class="rail">
+          <!-- today / weather -->
+          <section class="card today reveal">
+            <div class="card__head"><div class="card__title">Today on site</div><span class="card__tag">20 Jul</span></div>
+            <div class="card__body">
+              <div class="wx">
+                <svg width="46" height="46" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="9" r="4" stroke="var(--warning)" stroke-width="1.7"/><path d="M9 1v2M9 15v2M1 9h2M15 9h2M3.5 3.5l1.4 1.4M13.1 13.1l1.4 1.4M14.5 3.5l-1.4 1.4M4.9 13.1l-1.4 1.4" stroke="var(--warning)" stroke-width="1.5" stroke-linecap="round"/><path d="M11 17a4 4 0 014-4 4.5 4.5 0 018.5 1.2A3.4 3.4 0 0122 21H11a2 2 0 010-4z" fill="var(--sky-soft)" stroke="var(--sky)" stroke-width="1.5" stroke-linejoin="round"/></svg>
+                <div>
+                  <div class="wx__temp">33°C</div>
+                  <div class="wx__meta">Partly cloudy · humidity 68%</div>
+                  <div class="wx__note"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Suitable for concreting</div>
+                </div>
+              </div>
+              <div class="mini">
+                <div class="mini__b"><div class="mini__v">8:00</div><div class="mini__l">Start</div></div>
+                <div class="mini__b"><div class="mini__v">14</div><div class="mini__l">On site</div></div>
+                <div class="mini__b"><div class="mini__v">6:30</div><div class="mini__l">Close</div></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- manpower -->
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Manpower</div><span class="card__tag">deployed</span></div>
+            <div class="card__body">
+              <div class="trades" id="trades"></div>
+              <div class="trade__total"><span class="card__sub" style="margin:0">Total workforce</span><b><span class="cup" data-to="14">0</span></b></div>
+            </div>
+          </section>
+
+          <!-- this week plan -->
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">This week's plan</div><span class="card__tag">wk 30</span></div>
+            <div class="card__body">
+              <div class="plan" id="plan"></div>
+            </div>
+          </section>
+        </aside>
+      </div>
+
+      <footer class="footer">
+        <span>© 2026 Studio Bind Architects · Chennai</span>
+        <span class="footer__v">Bind Build ERP v0.9.0 · build 2026.07</span>
+      </footer>
+    
+    </main>
+  </div>
+
+</div>
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/progress.js"></script>
+</body>
+</html>

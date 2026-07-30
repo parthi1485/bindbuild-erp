@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Task board · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/tasks.css" />
+
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <section class="page-head" data-skel>
+        <div>
+          <h1 class="page-head__title">Task Board</h1>
+          <p class="page-head__sub">All project tasks in one place · drag cards between columns to update status</p>
+        </div>
+        <div class="page-head__acts">
+          <button class="btn-new" id="addBtn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Add task
+          </button>
+        </div>
+      </section>
+
+      <section class="toolbar" data-skel>
+        <select class="sel" id="projFilter" aria-label="Filter by project">
+          <option value="all">All projects</option>
+          <option value="Adyar Courtyard">Adyar Courtyard</option>
+          <option value="Apollo Clinic">Apollo Clinic Fit-out</option>
+          <option value="Kotturpuram Sky Villa">Kotturpuram Sky Villa</option>
+          <option value="Neelankarai Beach Villa">Neelankarai Beach Villa</option>
+          <option value="Nungambakkam Office">Nungambakkam Office Tower</option>
+          <option value="Poes Garden">Poes Garden Interior</option>
+          <option value="Injambakkam Weekend Home">Injambakkam Weekend Home</option>
+          <option value="Anna Nagar">Anna Nagar Refresh</option>
+        </select>
+        <div class="seg" role="group" aria-label="Filter by priority" id="prioSeg">
+          <button class="on" data-prio="all">All</button>
+          <button data-prio="hi"><span class="pd hi"></span>High</button>
+          <button data-prio="me"><span class="pd me"></span>Medium</button>
+          <button data-prio="lo"><span class="pd lo"></span>Low</button>
+        </div>
+        <div class="assignees" id="assigneeFilter" role="group" aria-label="Filter by assignee">
+          <button class="afilter c0 on" data-who="PB" title="Parthiban">PB</button>
+          <button class="afilter c1 on" data-who="AK" title="Arun Kumar">AK</button>
+          <button class="afilter c2 on" data-who="SV" title="Sowmya V">SV</button>
+          <button class="afilter c3 on" data-who="DN" title="Divya N">DN</button>
+          <button class="afilter c4 on" data-who="RM" title="Ramesh M">RM</button>
+        </div>
+        <span class="toolbar__sp"></span>
+        <button class="clear-btn" id="clearBtn">Clear filters</button>
+      </section>
+
+      <div class="board" id="board" aria-label="Task columns">
+        <div class="col c-backlog" data-col="backlog"><div class="col__head"><span class="col__dot"></span><span class="col__name">Backlog</span><span class="col__count" data-count>0</span><button class="col__add" data-add="backlog" aria-label="Add to Backlog"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div><div class="col__list" data-list="backlog"></div></div>
+        <div class="col c-todo" data-col="todo"><div class="col__head"><span class="col__dot"></span><span class="col__name">To do</span><span class="col__count" data-count>0</span><button class="col__add" data-add="todo" aria-label="Add to To do"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div><div class="col__list" data-list="todo"></div></div>
+        <div class="col c-progress" data-col="progress"><div class="col__head"><span class="col__dot"></span><span class="col__name">In progress</span><span class="col__count" data-count>0</span><button class="col__add" data-add="progress" aria-label="Add to In progress"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div><div class="col__list" data-list="progress"></div></div>
+        <div class="col c-review" data-col="review"><div class="col__head"><span class="col__dot"></span><span class="col__name">Review</span><span class="col__count" data-count>0</span><button class="col__add" data-add="review" aria-label="Add to Review"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div><div class="col__list" data-list="review"></div></div>
+        <div class="col c-done" data-col="done"><div class="col__head"><span class="col__dot"></span><span class="col__name">Done</span><span class="col__count" data-count>0</span><button class="col__add" data-add="done" aria-label="Add to Done"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div><div class="col__list" data-list="done"></div></div>
+      </div>
+    
+    </main>
+  </div>
+<footer class="footer">
+      <span>© 2026 Studio Bind Architects · Chennai</span>
+      <span class="footer__status"><span class="dot"></span>All systems operational</span>
+      <span class="ver-tag">Bind Build ERP v0.9.0 · build 2026.07</span>
+    </footer>
+  </div>
+</div>
+
+<!-- ADD TASK MODAL -->
+<div class="modal-root" id="modalRoot" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="scrim" data-close style="position:absolute;opacity:1;pointer-events:auto"></div>
+  <div class="modal">
+    <div class="modal__head">
+      <span class="modal__title" id="modalTitle">Add task</span>
+      <button class="modal__x" data-close aria-label="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="modal__body">
+      <div class="field"><label for="mTitle">Task title</label><input id="mTitle" type="text" placeholder="e.g. Order UPVC windows" /></div>
+      <div class="field"><label for="mProj">Project</label>
+        <select id="mProj"><option>Adyar Courtyard</option><option>Apollo Clinic</option><option>Kotturpuram Sky Villa</option><option>Neelankarai Beach Villa</option><option>Nungambakkam Office</option><option>Poes Garden</option><option>Injambakkam Weekend Home</option><option>Anna Nagar</option></select>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="mAssignee">Assignee</label>
+          <select id="mAssignee"><option value="PB|0">Parthiban</option><option value="AK|1">Arun Kumar</option><option value="SV|2">Sowmya V</option><option value="DN|3">Divya N</option><option value="RM|4">Ramesh M</option></select>
+        </div>
+        <div class="field"><label for="mPrio">Priority</label>
+          <select id="mPrio"><option value="hi">High</option><option value="me" selected>Medium</option><option value="lo">Low</option></select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="mLabel">Label</label>
+          <select id="mLabel"><option value="design">Design</option><option value="site">Site</option><option value="mep">MEP</option><option value="interiors">Interiors</option><option value="procurement">Procurement</option></select>
+        </div>
+        <div class="field"><label for="mDue">Due date</label><input id="mDue" type="date" /></div>
+      </div>
+      <div class="field"><label for="mCol">Column</label>
+        <select id="mCol"><option value="backlog">Backlog</option><option value="todo" selected>To do</option><option value="progress">In progress</option><option value="review">Review</option><option value="done">Done</option></select>
+      </div>
+      <div class="modal__foot">
+        <button class="btn-ghost" data-close>Cancel</button>
+        <button class="btn-new" id="saveTask"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Create task</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/tasks.js"></script>
+</body>
+</html>
