@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lead details · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/lead.css" />
+
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+
+      <a class="back" href="03-crm-pipeline.html">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to pipeline
+      </a>
+
+      <!-- Lead header -->
+      <section class="lead-head" data-skel>
+        <div class="lead-head__id">
+          <span class="lead-avatar" aria-hidden="true">SV</span>
+          <div>
+            <h1 class="lead-head__name">Suresh Venkat</h1>
+            <div class="lead-head__meta">
+              <span class="chip chip--hot"><span class="dot"></span>Hot lead</span>
+              <span class="chip chip--stage" id="stageChip"><span class="dot"></span>Proposal sent</span>
+              <span class="chip chip--src">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 12h7M12 12V5"/></svg>
+                Google
+              </span>
+            </div>
+            <p class="lead-head__sub">Beach house · G+1 · ECR, Uthandi &nbsp;·&nbsp; Lead <b>CRM-115</b> · created 02 Jul 2026 · 16 days in pipeline</p>
+          </div>
+        </div>
+        <div class="lead-head__acts">
+          <button class="act-btn" data-contact="call">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.7 2z"/></svg>
+            Call
+          </button>
+          <button class="act-btn act-btn--wa" data-contact="WhatsApp">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.4 7.6L3 21l1.9-5.6A8.5 8.5 0 1 1 21 11.5z"/><path d="M9 10a5 5 0 0 0 5 5"/></svg>
+            WhatsApp
+          </button>
+          <button class="act-btn" data-contact="email">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+            Email
+          </button>
+          <button class="btn-won" id="btnWon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            Mark won
+          </button>
+          <button class="btn-lost" id="btnLost">Mark lost</button>
+        </div>
+      </section>
+
+      <!-- Stage stepper -->
+      <section class="stepper-wrap" data-skel>
+        <div class="stepper" id="stepper" role="group" aria-label="Pipeline stage"><!-- injected --></div>
+      </section>
+
+      <!-- Body grid -->
+      <div class="body-grid">
+
+        <!-- ================= LEFT: TABS ================= -->
+        <article class="card" data-skel>
+          <div class="tabs" role="tablist" aria-label="Lead records">
+            <button class="tab is-on" data-tab="timeline" role="tab" aria-selected="true">Timeline <span class="tab__n" id="nTimeline">8</span></button>
+            <button class="tab" data-tab="notes" role="tab" aria-selected="false">Notes <span class="tab__n" id="nNotes">3</span></button>
+            <button class="tab" data-tab="meetings" role="tab" aria-selected="false">Meetings <span class="tab__n" id="nMeet">3</span></button>
+            <button class="tab" data-tab="emails" role="tab" aria-selected="false">Emails <span class="tab__n">4</span></button>
+            <button class="tab" data-tab="files" role="tab" aria-selected="false">Files <span class="tab__n" id="nFiles">4</span></button>
+          </div>
+
+          <!-- TAB · TIMELINE -->
+          <div class="panel is-on" data-panel="timeline" role="tabpanel">
+            <div class="composer">
+              <div class="composer__types" role="radiogroup" aria-label="Activity type">
+                <button class="ctype on" data-ctype="call">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.7 2z"/></svg>
+                  Call
+                </button>
+                <button class="ctype" data-ctype="wa">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.4 7.6L3 21l1.9-5.6A8.5 8.5 0 1 1 21 11.5z"/><path d="M9 10a5 5 0 0 0 5 5"/></svg>
+                  WhatsApp
+                </button>
+                <button class="ctype" data-ctype="email">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+                  Email
+                </button>
+                <button class="ctype" data-ctype="note">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                  Note
+                </button>
+              </div>
+              <textarea id="logText" rows="2" placeholder="Log a call, message or note… e.g. “Discussed terrace pergola budget”" aria-label="Activity description"></textarea>
+              <div class="composer__foot">
+                <span class="composer__hint">⌘⏎ to log</span>
+                <button class="btn-log" id="logBtn">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4z"/></svg>
+                  Log activity
+                </button>
+              </div>
+            </div>
+            <div class="tl" id="timeline"><!-- injected --></div>
+          </div>
+
+          <!-- TAB · NOTES -->
+          <div class="panel" data-panel="notes" role="tabpanel">
+            <div class="composer">
+              <textarea id="noteText" rows="2" placeholder="Write a note about this lead…" aria-label="New note"></textarea>
+              <div class="composer__foot">
+                <span class="composer__hint">Notes are internal only</span>
+                <button class="btn-log" id="noteBtn">Save note</button>
+              </div>
+            </div>
+            <div id="noteList"><!-- injected --></div>
+          </div>
+
+          <!-- TAB · MEETINGS -->
+          <div class="panel" data-panel="meetings" role="tabpanel">
+            <div style="display:flex;justify-content:flex-end;margin-bottom:var(--s-4)">
+              <button class="btn-log" id="schedBtn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                Schedule meeting
+              </button>
+            </div>
+            <div id="meetList"><!-- injected --></div>
+          </div>
+
+          <!-- TAB · EMAILS -->
+          <div class="panel" data-panel="emails" role="tabpanel">
+            <div style="display:flex;justify-content:flex-end;margin-bottom:var(--s-4)">
+              <button class="btn-log" data-contact="email">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                Compose
+              </button>
+            </div>
+            <div class="mail" data-mailopen>
+              <span class="mail__dir mail__dir--out"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
+              <div style="min-width:0;flex:1">
+                <p class="mail__subj">Revised proposal — Beach House v2</p>
+                <p class="mail__prev">Hi Suresh, sharing the revised fee proposal with the phased construction option we discussed…</p>
+              </div>
+              <span class="mail__time">16 Jul</span>
+            </div>
+            <div class="mail" data-mailopen>
+              <span class="mail__dir mail__dir--in"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7 7 17M15 17H7V9"/></svg></span>
+              <div style="min-width:0;flex:1">
+                <p class="mail__subj">Re: Proposal — few questions</p>
+                <p class="mail__prev">Thanks Parthiban. The design direction looks great. Could you clarify the structural scope and…</p>
+              </div>
+              <span class="mail__time">14 Jul</span>
+            </div>
+            <div class="mail" data-mailopen>
+              <span class="mail__dir mail__dir--out"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
+              <div style="min-width:0;flex:1">
+                <p class="mail__subj">Proposal — Beach House, ECR Uthandi</p>
+                <p class="mail__prev">Dear Suresh, thank you for the site walkthrough. Please find our design + build proposal attached…</p>
+              </div>
+              <span class="mail__time">12 Jul</span>
+            </div>
+            <div class="mail" data-mailopen>
+              <span class="mail__dir mail__dir--in"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7 7 17M15 17H7V9"/></svg></span>
+              <div style="min-width:0;flex:1">
+                <p class="mail__subj">Enquiry — beach house at Uthandi</p>
+                <p class="mail__prev">Hello, I found Studio Bind on Google. We own a 3,200 sq ft plot on ECR and are looking for…</p>
+              </div>
+              <span class="mail__time">02 Jul</span>
+            </div>
+          </div>
+
+          <!-- TAB · FILES -->
+          <div class="panel" data-panel="files" role="tabpanel">
+            <label class="dropzone" id="dropzone">
+              <input type="file" id="fileInput" multiple aria-label="Upload files" />
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5M12 3v12"/></svg>
+              <p><b>Click to upload</b> or drag files here</p>
+              <p style="font-size:11.5px;margin-top:3px">PDF, DWG, images · up to 25 MB</p>
+            </label>
+            <div id="fileList"><!-- injected --></div>
+          </div>
+        </article>
+
+        <!-- ================= RIGHT RAIL ================= -->
+        <aside class="rail">
+
+          <!-- Contact -->
+          <article class="card" data-skel>
+            <h2 class="rail__title">Contact</h2>
+            <div class="kv"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.7 2z"/></svg><span class="kv__k">Phone</span><span class="kv__v">+91 98401 77889</span></div>
+            <div class="kv"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg><span class="kv__k">Email</span><span class="kv__v"><a href="#" data-contact="email">suresh.venkat@gmail.com</a></span></div>
+            <div class="kv"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="kv__k">Site</span><span class="kv__v">Plot 14, Sea Breeze Ave, Uthandi, ECR</span></div>
+            <div class="kv"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg><span class="kv__k">Profession</span><span class="kv__v">IT Director, product MNC</span></div>
+            <div class="kv"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg><span class="kv__k">Owner</span><span class="kv__v">Parthiban</span></div>
+          </article>
+
+          <!-- Deal details -->
+          <article class="card" data-skel>
+            <h2 class="rail__title">Deal details</h2>
+            <div class="kv"><span class="kv__k">Budget</span><span class="kv__v" style="font-family:var(--font-mono)">₹2.1 Cr</span></div>
+            <div class="kv"><span class="kv__k">Scope</span><span class="kv__v">Design + turnkey construction</span></div>
+            <div class="kv"><span class="kv__k">Plot</span><span class="kv__v">3,200 sq ft · CMDA approved</span></div>
+            <div class="kv"><span class="kv__k">Built-up</span><span class="kv__v">~4,100 sq ft · G+1</span></div>
+            <div class="kv"><span class="kv__k">Start</span><span class="kv__v">Target Oct 2026</span></div>
+            <div class="deal-prob">
+              <div class="deal-prob__row"><span>Win probability</span><b>65%</b></div>
+              <div class="meter"><div class="meter__fill" id="probFill" data-width="65%"></div></div>
+            </div>
+          </article>
+
+          <!-- Proposal status -->
+          <article class="card prop" data-skel>
+            <h2 class="rail__title">Proposal status</h2>
+            <div class="prop__ver">
+              <span class="prop__badge">v2 · SB-P-2026-034</span>
+            </div>
+            <p class="prop__val">₹2.08 Cr</p>
+            <p class="prop__meta">Sent 16 Jul · <b>Viewed twice</b> · last opened yesterday, 9:40 PM</p>
+            <div class="prop__acts">
+              <button class="act-btn" data-nav="Proposal viewer">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                View
+              </button>
+              <button class="act-btn" id="remindBtn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+                Remind
+              </button>
+            </div>
+          </article>
+
+          <!-- Next action -->
+          <article class="card next" data-skel>
+            <h2 class="rail__title">Next action</h2>
+            <p class="next__due">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+              Mon, 20 Jul · 11:00 AM
+            </p>
+            <p class="next__txt">Follow-up call on proposal v2 — be ready with the phased-payment option and structural scope clarification.</p>
+          </article>
+
+          <!-- Tags -->
+          <article class="card" data-skel>
+            <h2 class="rail__title">Tags</h2>
+            <div class="tags" id="tags">
+              <span class="tag">Premium<button aria-label="Remove tag Premium"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></span>
+              <span class="tag">ECR<button aria-label="Remove tag ECR"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></span>
+              <span class="tag">New build<button aria-label="Remove tag New build"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></span>
+              <button class="tag tag--add" id="addTag">＋ Add tag</button>
+            </div>
+          </article>
+        </aside>
+      </div>
+    
+    </main>
+  </div>
+<footer class="footer">
+      <span>© 2026 Studio Bind Architects · Chennai</span>
+      <span class="footer__status"><span class="dot"></span>All systems operational</span>
+      <span class="ver">Bind Build ERP v0.9.0 · build 2026.07</span>
+    </footer>
+  </div>
+</div>
+
+<!-- ============================ MODAL · SCHEDULE MEETING ============================ -->
+<div class="modal" id="meetModal" role="dialog" aria-modal="true" aria-labelledby="meetTitle">
+  <div class="modal__card">
+    <div class="modal__head">
+      <div>
+        <h2 class="modal__title" id="meetTitle">Schedule a meeting</h2>
+        <p class="modal__sub">It lands on your calendar and this lead's record.</p>
+      </div>
+      <button class="icon-btn" data-close aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal__body">
+      <div class="field">
+        <label for="mTitle">Meeting title</label>
+        <input class="input" id="mTitle" placeholder="e.g. Proposal walkthrough — phased option" />
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label for="mDate">Date</label>
+          <input class="input" id="mDate" type="date" value="2026-07-20" />
+        </div>
+        <div class="field">
+          <label for="mTime">Time</label>
+          <input class="input" id="mTime" type="time" value="11:00" />
+        </div>
+      </div>
+      <div class="field">
+        <label for="mType">Type</label>
+        <select class="select" id="mType">
+          <option>Video call</option><option>Studio meeting</option><option>Site visit</option><option>Phone call</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal__foot">
+      <button class="btn-ghost" data-close>Cancel</button>
+      <button class="btn-new" id="saveMeet">Schedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================ MODAL · LOST REASON ============================ -->
+<div class="modal" id="lostModal" role="dialog" aria-modal="true" aria-labelledby="lostTitle">
+  <div class="modal__card">
+    <div class="modal__head">
+      <div>
+        <h2 class="modal__title" id="lostTitle">Mark as lost</h2>
+        <p class="modal__sub">Why didn't Suresh convert? It sharpens the funnel.</p>
+      </div>
+      <button class="icon-btn" data-close aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal__body">
+      <div class="radio-list">
+        <label class="radio"><input type="radio" name="lr" value="Budget mismatch" checked /><span class="radio__dot"></span><span>Budget mismatch</span></label>
+        <label class="radio"><input type="radio" name="lr" value="Went with another firm" /><span class="radio__dot"></span><span>Went with another firm</span></label>
+        <label class="radio"><input type="radio" name="lr" value="Timeline didn't work" /><span class="radio__dot"></span><span>Timeline didn't work</span></label>
+        <label class="radio"><input type="radio" name="lr" value="Stopped responding" /><span class="radio__dot"></span><span>Stopped responding</span></label>
+        <label class="radio"><input type="radio" name="lr" value="Project dropped" /><span class="radio__dot"></span><span>Project dropped / postponed</span></label>
+      </div>
+    </div>
+    <div class="modal__foot">
+      <button class="btn-ghost" data-close>Keep lead</button>
+      <button class="btn-new" id="confirmLost">Mark lost</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toasts -->
+</div>
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/lead.js"></script>
+</body>
+</html>

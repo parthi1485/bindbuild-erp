@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Proposal · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/proposal.css" />
+
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <a class="back" href="04-lead-details.html">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to lead · Suresh Venkat
+      </a>
+
+      <!-- Proposal header -->
+      <section class="prop-head" data-skel>
+        <div>
+          <h1 class="prop-head__title">Proposal · Beach House, ECR Uthandi</h1>
+          <div class="prop-head__meta">
+            <span class="chip chip--ver">SB-P-2026-034 · v2</span>
+            <span class="chip chip--viewed" id="statusChip"><span class="dot"></span>Viewed by client</span>
+            <span class="chip chip--client">Suresh Venkat</span>
+          </div>
+          <p class="autosave" id="autosave"><span class="dot"></span><span id="autosaveTxt">All changes saved</span></p>
+        </div>
+        <div class="prop-head__acts">
+          <button class="act-btn" id="previewBtn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            Preview
+          </button>
+          <button class="act-btn" id="pdfBtn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/></svg>
+            PDF
+          </button>
+          <button class="btn-new" id="sendBtn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4z"/></svg>
+            Send to client
+          </button>
+        </div>
+      </section>
+
+      <!-- Status track -->
+      <section class="track" data-skel aria-label="Proposal status">
+        <span class="track__step done"><span class="tdot"></span>Draft <small>· 11 Jul</small></span>
+        <svg class="track__arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        <span class="track__step done"><span class="tdot"></span>Sent <small>· 16 Jul</small></span>
+        <svg class="track__arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        <span class="track__step now" id="trackViewed"><span class="tdot"></span>Viewed ×2 <small>· yesterday 9:40 PM</small></span>
+        <svg class="track__arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        <span class="track__step" id="trackAccepted"><span class="tdot"></span>Accepted</span>
+      </section>
+
+      <div class="body-grid">
+        <!-- ============ LEFT · EDITOR ============ -->
+        <div>
+          <!-- 1 · Details -->
+          <article class="card ed" data-skel>
+            <div class="ed__head"><h2 class="ed__title"><span class="n">1</span>Proposal details</h2></div>
+            <div class="grid-2">
+              <div class="field"><label for="dClient">Client / lead</label>
+                <select class="select" id="dClient">
+                  <option selected>Suresh Venkat · CRM-115</option>
+                  <option>Lancor Holdings · CRM-109</option>
+                  <option>Casagrand · CRM-112</option>
+                  <option>Kavitha &amp; Rajesh · CRM-118</option>
+                </select>
+              </div>
+              <div class="field"><label for="dTitle">Project title</label>
+                <input class="input" id="dTitle" value="Beach House · G+1 · ECR Uthandi" />
+              </div>
+            </div>
+            <div class="grid-3">
+              <div class="field"><label for="dArea">Built-up area (sq ft)</label>
+                <input class="input" id="dArea" type="number" value="4100" />
+              </div>
+              <div class="field"><label for="dValid">Valid until</label>
+                <input class="input" id="dValid" type="date" value="2026-08-16" />
+              </div>
+              <div class="field"><label for="dBy">Prepared by</label>
+                <input class="input" id="dBy" value="Parthiban · Principal Architect" />
+              </div>
+            </div>
+          </article>
+
+          <!-- 2 · Scope -->
+          <article class="card ed" data-skel>
+            <div class="ed__head"><h2 class="ed__title"><span class="n">2</span>Scope of work</h2></div>
+            <div id="scopeList"></div>
+            <button class="add-line" id="addScope">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              Add scope item
+            </button>
+          </article>
+
+          <!-- 3 · Fee breakdown -->
+          <article class="card ed" data-skel>
+            <div class="ed__head">
+              <h2 class="ed__title"><span class="n">3</span>Fee breakdown</h2>
+              <span class="sum-badge ok" id="feeCount">6 items</span>
+            </div>
+            <div class="fee-scroll">
+              <table class="fee" aria-label="Fee line items">
+                <thead><tr>
+                  <th style="width:44%">Item</th>
+                  <th class="r" style="width:11%">Qty</th>
+                  <th style="width:10%">Unit</th>
+                  <th class="r" style="width:15%">Rate (₹)</th>
+                  <th class="r" style="width:15%">Amount</th>
+                  <th style="width:5%"></th>
+                </tr></thead>
+                <tbody id="feeBody"></tbody>
+              </table>
+            </div>
+            <button class="add-line" id="addItem">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              Add line item
+            </button>
+          </article>
+
+          <!-- 4 · Payment schedule -->
+          <article class="card ed" data-skel>
+            <div class="ed__head">
+              <h2 class="ed__title"><span class="n">4</span>Payment schedule</h2>
+              <span class="sum-badge ok" id="schBadge">100%</span>
+            </div>
+            <div id="schList"></div>
+          </article>
+
+          <!-- 5 · Terms -->
+          <article class="card ed" data-skel style="margin-bottom:0">
+            <div class="ed__head"><h2 class="ed__title"><span class="n">5</span>Terms &amp; notes</h2></div>
+            <textarea class="textarea" id="terms">Prices exclude statutory approval fees and EB/CMWSSB deposits. Structural warranty: 10 years. Finishes as per specification book Rev-B; deviations billed at actuals + 12%. GST 18% as applicable. Mobilisation begins within 14 days of advance. Single point of accountability — design, engineering and build under one roof.</textarea>
+          </article>
+        </div>
+
+        <!-- ============ RIGHT · RAIL ============ -->
+        <aside class="rail">
+          <article class="card tot" data-skel>
+            <h2 class="rail__title">Commercials</h2>
+            <div class="tot__row"><span>Subtotal</span><b id="tSub">—</b></div>
+            <div class="tot__row disc"><span class="disc-in">Discount <input id="tDiscIn" type="number" step="0.5" min="0" max="20" value="2.5" aria-label="Discount percent" />%</span><b id="tDisc">—</b></div>
+            <div class="tot__rule"></div>
+            <div class="tot__row"><span>Taxable value</span><b id="tTaxable">—</b></div>
+            <div class="tot__row"><span>GST @ 18%</span><b id="tGst">—</b></div>
+            <div class="tot__rule"></div>
+            <div class="tot__grand"><span>Grand total</span><b id="tGrand">—</b></div>
+            <p class="tot__note" id="tRate">—</p>
+            <button class="btn-new" id="sendBtn2">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4z"/></svg>
+              Send to client
+            </button>
+          </article>
+
+          <article class="card" data-skel>
+            <h2 class="rail__title">Versions</h2>
+            <div class="ver">
+              <span class="ver__badge now">v2</span>
+              <span class="ver__meta"><b>Phased construction option</b>16 Jul · current</span>
+            </div>
+            <div class="ver">
+              <span class="ver__badge">v1</span>
+              <span class="ver__meta"><b>Original single-phase</b>12 Jul · ₹2.13 Cr</span>
+              <button class="ver__act" data-ver="v1">View</button>
+            </div>
+          </article>
+
+          <article class="card" data-skel>
+            <h2 class="rail__title">Client</h2>
+            <div class="kv"><span class="kv__k">Name</span><span class="kv__v">Suresh Venkat</span></div>
+            <div class="kv"><span class="kv__k">Phone</span><span class="kv__v">+91 98401 77889</span></div>
+            <div class="kv"><span class="kv__k">Email</span><span class="kv__v">suresh.venkat@gmail.com</span></div>
+            <div class="kv"><span class="kv__k">Stage</span><span class="kv__v">Proposal · hot lead</span></div>
+          </article>
+
+          <article class="card" data-skel>
+            <h2 class="rail__title">Activity</h2>
+            <div class="mini-tl" id="miniTl">
+              <p><b>Viewed</b> by client — 2nd open<small>Yesterday · 9:40 PM</small></p>
+              <p><b>Sent</b> via email + WhatsApp<small>16 Jul · 11:10 AM</small></p>
+              <p><b>v2 created</b> — phased option added<small>16 Jul · 10:40 AM</small></p>
+              <p><b>v1 sent</b> to client<small>12 Jul · 6:05 PM</small></p>
+            </div>
+          </article>
+        </aside>
+      </div>
+    
+    </main>
+  </div>
+<footer class="footer">
+      <span>© 2026 Studio Bind Architects · Chennai</span>
+      <span class="footer__status"><span class="dot"></span>All systems operational</span>
+      <span class="ver-tag">Bind Build ERP v0.9.0 · build 2026.07</span>
+    </footer>
+  </div>
+</div>
+
+<!-- ============ MODAL · SEND ============ -->
+<div class="modal" id="sendModal" role="dialog" aria-modal="true" aria-labelledby="sendTitle">
+  <div class="modal__card">
+    <div class="modal__head">
+      <div>
+        <h2 class="modal__title" id="sendTitle">Send proposal v2</h2>
+        <p class="modal__sub">Suresh gets a tracked link — you'll see every open.</p>
+      </div>
+      <button class="icon-btn" data-close aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal__body">
+      <label class="check"><input type="checkbox" id="chEmail" checked />
+        <span class="check__box"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+        <span>Email · suresh.venkat@gmail.com</span>
+      </label>
+      <label class="check"><input type="checkbox" id="chWa" checked />
+        <span class="check__box"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+        <span>WhatsApp · +91 98401 77889</span>
+      </label>
+      <div class="field" style="margin-top:var(--s-4)">
+        <label for="sendMsg">Message</label>
+        <textarea class="textarea" id="sendMsg" style="min-height:84px">Hi Suresh — sharing the revised proposal with the phased-construction option we discussed. Valid until 16 Aug. Happy to walk you through it on Monday's call.</textarea>
+      </div>
+    </div>
+    <div class="modal__foot">
+      <button class="btn-ghost" data-close>Cancel</button>
+      <button class="btn-new" id="confirmSend">Send now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL · PAPER PREVIEW ============ -->
+<div class="modal" id="prevModal" role="dialog" aria-modal="true" aria-labelledby="prevTitle">
+  <div class="modal__card modal__card--wide">
+    <div class="modal__head">
+      <div>
+        <h2 class="modal__title" id="prevTitle">Document preview</h2>
+        <p class="modal__sub">Generated live from the editor — exactly what the client sees.</p>
+      </div>
+      <button class="icon-btn" data-close aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal__body">
+      <div class="paper" id="paper"></div>
+    </div>
+    <div class="modal__foot">
+      <button class="btn-ghost" data-close>Close</button>
+      <button class="btn-new" id="pdfBtn2">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/></svg>
+        Download PDF
+      </button>
+    </div>
+  </div>
+</div>
+</div>
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/proposal.js"></script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sales pipeline · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/sales.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <!-- Page header -->
+      <section class="page-head" data-skel>
+        <div>
+          <h1 class="page-head__title">Sales Pipeline &amp; Targets</h1>
+          <p class="page-head__sub">Q3 FY 2025–26 · Jul–Sep · updated a few minutes ago</p>
+        </div>
+        <div class="page-head__acts">
+          <div class="seg" role="group" aria-label="Quarter">
+            <button data-q="q2">Q2</button>
+            <button class="on" data-q="q3">Q3</button>
+            <button data-q="q4">Q4</button>
+          </div>
+          <button class="btn-ghost" id="exportBtn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5M12 15V3"/></svg>
+            Export
+          </button>
+          <a class="btn-new" href="03-crm-pipeline.html">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            New deal
+          </a>
+        </div>
+      </section>
+
+      <!-- KPI tiles -->
+      <section class="kpis" aria-label="Key metrics">
+        <article class="card kpi" data-skel>
+          <div class="kpi__top">
+            <span class="kpi__ico a"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg></span>
+            <span class="kpi__delta up">▲ 8.4%</span>
+          </div>
+          <div class="kpi__val" data-count="13.1" data-suffix=" Cr" data-prefix="₹" data-dec="1">₹0 Cr</div>
+          <div class="kpi__label">Open pipeline value</div>
+        </article>
+        <article class="card kpi" data-skel>
+          <div class="kpi__top">
+            <span class="kpi__ico g"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+            <span class="kpi__delta up">▲ 3 pts</span>
+          </div>
+          <div class="kpi__val" data-count="34" data-suffix="%">0%</div>
+          <div class="kpi__label">Win rate (last 12 mo)</div>
+        </article>
+        <article class="card kpi" data-skel>
+          <div class="kpi__top">
+            <span class="kpi__ico v"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>
+            <span class="kpi__delta down">▼ 4 days</span>
+          </div>
+          <div class="kpi__val" data-count="47" data-suffix=" days">0 days</div>
+          <div class="kpi__label">Avg. sales cycle</div>
+        </article>
+        <article class="card kpi" data-skel>
+          <div class="kpi__top">
+            <span class="kpi__ico w"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 7v6c0 5 3.8 8.5 9 9 5.2-.5 9-4 9-9V7z"/></svg></span>
+            <span class="kpi__delta up">▲ 12%</span>
+          </div>
+          <div class="kpi__val" data-count="4.35" data-suffix=" Cr" data-prefix="₹" data-dec="2">₹0 Cr</div>
+          <div class="kpi__label">Weighted forecast</div>
+        </article>
+      </section>
+
+      <!-- Target ring + revenue chart -->
+      <section class="grid g-tr">
+        <article class="card ring-card" data-skel>
+          <div style="width:100%"><span class="card__title">Quarter target</span>
+            <div class="card__sub">Q3 goal ₹5.00 Cr · booked revenue</div></div>
+          <div class="ring">
+            <svg width="200" height="200" viewBox="0 0 200 200" aria-hidden="true">
+              <defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#5a8dee"/><stop offset="1" stop-color="#41d1a0"/>
+              </linearGradient></defs>
+              <circle class="ring__track" cx="100" cy="100" r="84"/>
+              <circle class="ring__fill" id="ringFill" cx="100" cy="100" r="84"
+                stroke-dasharray="527.8" stroke-dashoffset="527.8"/>
+            </svg>
+            <div class="ring__center">
+              <span class="ring__pct" id="ringPct">0%</span>
+              <span class="ring__cap">of target</span>
+            </div>
+          </div>
+          <div class="ring-meta">
+            <div><div class="lbl">Achieved</div><div class="val ach" id="ringAch">₹3.20 Cr</div></div>
+            <div><div class="lbl">Target</div><div class="val">₹5.00 Cr</div></div>
+            <div><div class="lbl">Gap</div><div class="val" id="ringGap">₹1.80 Cr</div></div>
+          </div>
+        </article>
+
+        <article class="card chart-card" data-skel>
+          <div class="card__head" style="padding:0">
+            <div><span class="card__title">Revenue — actual vs target</span>
+              <div class="card__sub">Monthly booked value against plan (₹ lakhs)</div></div>
+          </div>
+          <div class="chart-box"><canvas id="revChart"></canvas></div>
+          <div class="legend">
+            <span><i style="background:#5a8dee"></i>Actual booked</span>
+            <span><i style="background:rgba(255,255,255,.22);border:1px dashed var(--text-3)"></i>Target</span>
+          </div>
+        </article>
+      </section>
+
+      <!-- Conversion funnel -->
+      <section class="card funnel" data-skel>
+        <div class="card__head" style="padding:0">
+          <div><span class="card__title">Conversion funnel</span>
+            <div class="card__sub">Where deals move — and where they leak · this quarter</div></div>
+          <span class="card__sub" style="font-family:var(--font-mono)">New → Won&nbsp; <b style="color:var(--text)">18%</b></span>
+        </div>
+        <div class="funnel__rows" id="funnelRows"></div>
+      </section>
+
+      <!-- Win/loss + pipeline by stage -->
+      <section class="grid g-2">
+        <article class="card chart-card" data-skel>
+          <div class="card__head" style="padding:0">
+            <div><span class="card__title">Win / loss</span>
+              <div class="card__sub">Closed deals · last 12 months</div></div>
+          </div>
+          <div class="chart-box sm"><canvas id="wlChart"></canvas></div>
+          <div class="legend">
+            <span><i style="background:#41d1a0"></i>Won · 16</span>
+            <span><i style="background:#f2708a"></i>Lost · 21</span>
+            <span><i style="background:#f0b45a"></i>Stalled · 7</span>
+          </div>
+        </article>
+        <article class="card chart-card" data-skel>
+          <div class="card__head" style="padding:0">
+            <div><span class="card__title">Pipeline by stage</span>
+              <div class="card__sub">Open value per stage (₹ lakhs)</div></div>
+          </div>
+          <div class="chart-box sm"><canvas id="stageChart"></canvas></div>
+        </article>
+      </section>
+
+      <!-- Forecast table -->
+      <section class="card tbl-card" data-skel>
+        <div class="card__head" style="padding:0">
+          <div><span class="card__title">Weighted forecast</span>
+            <div class="card__sub">Probability-adjusted close value by month</div></div>
+          <span class="card__sub">Confidence = stage probability</span>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl">
+            <thead><tr>
+              <th>Month</th><th>Key deals</th><th class="r">Pipeline</th>
+              <th class="r">Weighted</th><th>Coverage</th><th class="r">Confidence</th>
+            </tr></thead>
+            <tbody id="forecastBody"></tbody>
+            <tfoot><tr>
+              <td>Total</td><td class="mono" id="fcDeals">—</td>
+              <td class="r mono" id="fcPipe">—</td><td class="r mono" id="fcWeighted">—</td>
+              <td></td><td></td>
+            </tr></tfoot>
+          </table>
+        </div>
+      </section>
+    
+    </main>
+  </div>
+<footer class="footer">
+      <span>© 2026 Studio Bind Architects · Chennai</span>
+      <span class="footer__status"><span class="dot"></span>All systems operational</span>
+      <span class="ver-tag">Bind Build ERP v0.9.0 · build 2026.07</span>
+    </footer>
+  </div>
+</div>
+</div>
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/sales.js"></script>
+</body>
+</html>

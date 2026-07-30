@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CRM · Leads · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/crm.css" />
+
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+
+      <!-- Page head -->
+      <section class="page-head">
+        <div>
+          <h1 class="page-head__title">Lead Pipeline</h1>
+          <p class="page-head__sub">Every enquiry, from first hello to signed contract.</p>
+        </div>
+        <div class="page-head__actions">
+          <div class="seg" role="tablist" aria-label="Board view">
+            <button class="seg__btn is-on" id="viewKanban" role="tab" aria-selected="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="5" height="18" rx="1.5"/><rect x="10" y="3" width="5" height="12" rx="1.5"/><rect x="17" y="3" width="4" height="8" rx="1.5"/></svg>
+              Kanban
+            </button>
+            <button class="seg__btn" id="viewList" role="tab" aria-selected="false">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+              List
+            </button>
+          </div>
+          <button class="btn-new" id="addLeadBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Add lead
+          </button>
+        </div>
+      </section>
+
+      <!-- KPI strip (values computed from data) -->
+      <section class="kpis" aria-label="Pipeline statistics">
+        <article class="card kpi" data-skel>
+          <div class="kpi__top"><span class="kpi__label">Pipeline value</span>
+            <span class="kpi__ico kpi__ico--blue"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12M6 8h12M6 8a6 6 0 0 0 6 6m0 0a6 6 0 0 1-6-6m6 6 6 7"/></svg></span></div>
+          <div class="kpi__value" id="kpiValue">—</div>
+          <p class="kpi__note"><b>+₹2.1Cr</b> added this month</p>
+        </article>
+        <article class="card kpi" data-skel>
+          <div class="kpi__top"><span class="kpi__label">Active leads</span>
+            <span class="kpi__ico kpi__ico--violet"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span></div>
+          <div class="kpi__value" id="kpiActive">—</div>
+          <p class="kpi__note"><b>5 new</b> this week · 2 idle &gt; 7 days</p>
+        </article>
+        <article class="card kpi" data-skel>
+          <div class="kpi__top"><span class="kpi__label">Conversion · Q2</span>
+            <span class="kpi__ico kpi__ico--green"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg></span></div>
+          <div class="kpi__value">21%</div>
+          <p class="kpi__note"><b>+3 pts</b> vs Q1 · Instagram converts best</p>
+        </article>
+        <article class="card kpi" data-skel>
+          <div class="kpi__top"><span class="kpi__label">Avg. first response</span>
+            <span class="kpi__ico kpi__ico--amber"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span></div>
+          <div class="kpi__value">2.4h</div>
+          <p class="kpi__note"><b class="down">Target 1h</b> — WhatsApp replies fastest</p>
+        </article>
+      </section>
+
+      <!-- Filter bar -->
+      <section class="filters" aria-label="Lead filters" data-skel>
+        <div class="f-search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
+          <input class="f-input" id="fQ" type="search" placeholder="Search name, project, location…" aria-label="Search leads" />
+        </div>
+        <select class="f-select" id="fSource" aria-label="Filter by source">
+          <option value="">All sources</option>
+          <option>Instagram</option><option>Google</option><option>Referral</option>
+          <option>Website</option><option>Direct</option><option>Walk-in</option>
+        </select>
+        <select class="f-select" id="fBudget" aria-label="Filter by budget">
+          <option value="">Any budget</option>
+          <option value="s">Under ₹50L</option>
+          <option value="m">₹50L – ₹1Cr</option>
+          <option value="l">Above ₹1Cr</option>
+        </select>
+        <select class="f-select" id="fPrio" aria-label="Filter by priority">
+          <option value="">Any priority</option>
+          <option value="hot">Hot</option><option value="warm">Warm</option><option value="cold">Cold</option>
+        </select>
+        <button class="f-clear" id="fClear">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          Clear
+        </button>
+        <span class="f-count" id="fCount"></span>
+      </section>
+
+      <!-- KANBAN -->
+      <section class="boardview" id="boardView" data-skel>
+        <div class="board-wrap">
+          <div class="board" id="board" aria-label="Lead pipeline board"><!-- columns injected --></div>
+        </div>
+      </section>
+
+      <!-- LIST -->
+      <section class="listview" id="listView">
+        <article class="card table-card">
+          <div class="table-scroll">
+            <table aria-label="Leads table">
+              <thead><tr>
+                <th>Lead</th><th>Project</th><th>Budget</th><th>Source</th>
+                <th>Stage</th><th>In stage</th><th>Contact</th>
+              </tr></thead>
+              <tbody id="tbody"><!-- rows injected --></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+    
+    </main>
+  </div>
+</div>
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/crm.js"></script>
+</body>
+</html>
