@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<title>Bind Build ERP</title>
+<style>
+  html,body{height:100%;margin:0;background:#0b0d10;color:#9aa4ad;
+    font:400 14px/1.5 system-ui,sans-serif;display:grid;place-items:center}
+</style>
+</head>
+<body>
+<p>Loading…</p>
+<script type="module">
+  import { supabase } from '/src/lib/supabase.js';
+  const { data: { session } } = await supabase.auth.getSession();
+  location.replace(session ? '/dashboard.html' : '/login.html');
+</script>
+</body>
+</html>
