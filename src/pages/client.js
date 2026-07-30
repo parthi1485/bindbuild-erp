@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase.js';
 import { mountShell } from '../lib/shell.js';
-import { toast, fail, esc, fmtDate, initials } from '../lib/ui.js';
+import { toast, fail, esc, fmtDate, initials, openModal, closeAllModals,
+         wireModalDismiss, val, setVal, fillSelect } from '../lib/ui.js';
 
 const $  = (s, c = document) => c.querySelector(s);
 const $$ = (s, c = document) => [...c.querySelectorAll(s)];
@@ -108,6 +109,7 @@ async function paintInvoices() {
   if (error) return fail(error);
 
   const rows = data ?? [];
+  OPEN_INVOICES = rows.filter(r => Number(r.balance) > 0);
   const today = new Date().toISOString().slice(0, 10);
 
   const body = $('#invBody');
@@ -207,31 +209,71 @@ document.addEventListener('click', async e => {
   }
 
   const pay = e.target.closest('[data-pay]');
-  if (pay) {
-    const bal = Number(pay.dataset.bal);
-    const amt = prompt(`Amount received? (balance ${money(bal)})`, String(bal));
-    if (amt === null) return;
-    const value = Number(amt);
-    if (!Number.isFinite(value) || value <= 0) return toast('Enter a valid amount', 'err');
+  if (pay) openPay(pay.dataset.pay, Number(pay.dataset.bal));
+});
 
-    const method = (prompt('Method? neft / upi / cheque / cash / card', 'neft') || 'neft').toLowerCase();
+/* ---------------------------------------------------------------
+   record payment — the designed dialog, not a chain of prompts
+--------------------------------------------------------------- */
+wireModalDismiss();
+let OPEN_INVOICES = [];
 
-    const { error } = await supabase.from('invoice_payments').insert({
-      invoice_id: pay.dataset.pay, amount: value,
-      method: ['neft','rtgs','imps','upi','cheque','cash','card'].includes(method) ? method : 'other',
-      recorded_by: user.id
-    });
-    if (error) return fail(error);
+function openPay(invoiceId, balance) {
+  fillSelect('pInv', OPEN_INVOICES.map(i => ({
+    id: i.id, name: `${i.invoice_no} · ${money(i.balance)} due`
+  })));
+  setVal('pInv', invoiceId || OPEN_INVOICES[0]?.id || '');
+  setVal('pAmt', balance ?? OPEN_INVOICES[0]?.balance ?? '');
+  setVal('pDate', new Date().toISOString().slice(0, 10));
+  setVal('pRef', '');
+  if (!openModal('payModal')) toast('Payment dialog is missing from this page', 'err');
+}
 
-    /* flip status when the invoice is fully settled */
-    const newBal = bal - value;
-    await supabase.from('invoices')
-      .update({ status: newBal <= 0 ? 'paid' : 'partly_paid' })
-      .eq('id', pay.dataset.pay);
+/* keep the amount in step with the chosen invoice */
+document.getElementById('pInv')?.addEventListener('change', e => {
+  const inv = OPEN_INVOICES.find(i => i.id === e.target.value);
+  if (inv) setVal('pAmt', inv.balance);
+});
 
-    toast(`${money(value)} recorded`);
-    await Promise.all([paintInvoices(), paintActivity()]);
-  }
+document.getElementById('savePay')?.addEventListener('click', async () => {
+  const invoiceId = val('pInv');
+  const amount = Number(val('pAmt'));
+  if (!invoiceId) return toast('Pick an invoice', 'err');
+  if (!Number.isFinite(amount) || amount <= 0) return toast('Enter a valid amount', 'err');
+
+  const inv = OPEN_INVOICES.find(i => i.id === invoiceId);
+  const balance = Number(inv?.balance ?? 0);
+  if (amount > balance && !confirm(`That is more than the ${money(balance)} outstanding. Record anyway?`)) return;
+
+  const mode = (val('pMode') || 'neft').toLowerCase();
+  const { error } = await supabase.from('invoice_payments').insert({
+    invoice_id: invoiceId,
+    amount,
+    paid_on: val('pDate') || new Date().toISOString().slice(0, 10),
+    method: ['neft','rtgs','imps','upi','cheque','cash','card'].includes(mode) ? mode : 'other',
+    reference: val('pRef'),
+    recorded_by: user.id
+  });
+  if (error) return fail(error);
+
+  await supabase.from('invoices')
+    .update({ status: amount >= balance ? 'paid' : 'partly_paid' })
+    .eq('id', invoiceId);
+
+  closeAllModals();
+  toast(`${money(amount)} recorded`);
+  await Promise.all([paintInvoices(), paintActivity()]);
+});
+
+document.getElementById('addTag')?.addEventListener('click', async () => {
+  const tag = val('tagIn') || prompt('Add a tag');
+  if (!tag || !CLIENT) return;
+  const notes = `${CLIENT.notes || ''}\n#${tag}`.trim();
+  const { error } = await supabase.from('clients').update({ notes }).eq('id', CLIENT.id);
+  if (error) return fail(error);
+  CLIENT.notes = notes;
+  setVal('tagIn', '');
+  toast('Tag added');
 });
 
 $('#copyGst')?.addEventListener('click', async () => {
@@ -302,8 +344,10 @@ $('#newInvBtn')?.addEventListener('click', async () => {
   location.href = `/invoice.html?id=${data.id}`;
 });
 
-$('#recPayBtn')?.addEventListener('click', () =>
-  toast('Use "Record payment" on the invoice row', 'err'));
+$('#recPayBtn')?.addEventListener('click', () => {
+  if (!OPEN_INVOICES.length) return toast('Nothing outstanding to record', 'err');
+  openPay(OPEN_INVOICES[0].id, OPEN_INVOICES[0].balance);
+});
 
 $('#resetPortal')?.addEventListener('click', () =>
   toast('Client portal access is set up in the Portals module', 'err'));

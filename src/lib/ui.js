@@ -47,3 +47,50 @@ export function toast(msg, kind = 'ok') {
 }
 
 export const fail = e => toast(e?.message || String(e), 'err');
+
+/* ---- modals -------------------------------------------------
+   The prototype ships designed dialogs for every create/edit flow.
+   Using window.prompt instead works, but throws away the design and
+   every field it defines (type, options, validation). These helpers
+   drive the real markup. */
+export function openModal(id) {
+  const m = document.getElementById(id);
+  if (!m) return null;
+  m.classList.add('is-open', 'open');
+  m.removeAttribute('hidden');
+  m.querySelector('input,select,textarea')?.focus();
+  return m;
+}
+
+export function closeModal(id) {
+  const m = typeof id === 'string' ? document.getElementById(id) : id;
+  m?.classList.remove('is-open', 'open');
+}
+
+export function closeAllModals() {
+  document.querySelectorAll('.modal,.modal-root').forEach(m =>
+    m.classList.remove('is-open', 'open'));
+}
+
+/** Wire every [data-close] and Escape once per page. */
+export function wireModalDismiss() {
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-close]')) closeAllModals();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeAllModals();
+  });
+}
+
+export const val = id => document.getElementById(id)?.value?.trim() ?? '';
+export const setVal = (id, v) => { const e = document.getElementById(id); if (e) e.value = v ?? ''; };
+
+/** Fill a <select> from rows, preserving any placeholder first option. */
+export function fillSelect(id, rows, valueKey = 'id', labelKey = 'name') {
+  const s = document.getElementById(id);
+  if (!s) return;
+  const keep = s.querySelector('option[value=""]')?.outerHTML ?? '';
+  s.innerHTML = keep + rows.map(r =>
+    `<option value="${r[valueKey]}">${String(r[labelKey] ?? '').replace(/[<>&"]/g, c =>
+      ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]))}</option>`).join('');
+}

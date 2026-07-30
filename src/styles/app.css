@@ -364,3 +364,16 @@ html[data-theme="light"] #themeToggle .ico-moon { display:none }
 /* nav items whose page is still a prototype */
 .nav-item.is-pending{opacity:.45}
 .nav-item.is-pending:hover{opacity:.7}
+
+/* =====================================================================
+   ICON TINT UTILITIES
+   Defined in 11 of the 36 prototypes but missing from a few that use them
+   (people & culture uses .i-danger without declaring it). Shared utilities
+   belong here once rather than in whichever page happened to declare them.
+   ===================================================================== */
+.i-green {background:var(--success-soft);color:var(--success)}
+.i-blue  {background:var(--accent-soft); color:var(--accent)}
+.i-amber {background:rgba(245,158,11,.15);color:var(--amber,#f59e0b)}
+.i-violet{background:var(--violet-soft); color:var(--violet)}
+.i-sky   {background:var(--sky-soft);    color:var(--sky,#38bdf8)}
+.i-danger{background:var(--danger-soft); color:var(--danger)}

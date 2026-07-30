@@ -1,0 +1,20 @@
+{
+ "02-dashboard__1_.html":"dashboard","03-crm-pipeline__1_.html":"crm",
+ "04-lead-details.html":"lead","05-client-profile__1_.html":"client",
+ "06-proposal.html":"proposal","07-sales-pipeline.html":"sales",
+ "08-projects.html":"projects","09-project-details__2_.html":"project",
+ "10-task-board__1_.html":"tasks","11-gantt-schedule__1_.html":"gantt",
+ "12-site-progress.html":"progress","13-daily-site-report.html":"dsr",
+ "14-procurement.html":"procurement","15-inventory.html":"inventory",
+ "16-finance-dashboard.html":"finance","17-invoice.html":"invoice",
+ "18-expenses.html":"expenses","19-hr-dashboard.html":"hr",
+ "20-employee-profile.html":"employee","21-attendance.html":"attendance",
+ "22-payroll.html":"payroll","23-people-culture.html":"people",
+ "24-recruitment.html":"recruitment","25-learning.html":"learning",
+ "26-documents.html":"documents","27-calendar.html":"calendar",
+ "28-meetings.html":"meetings","29-client-portal.html":"client-portal",
+ "30-vendor-portal.html":"vendor-portal","31-analytics.html":"analytics",
+ "32-settings__1_.html":"settings","33-user-profile__1_.html":"profile",
+ "34-notifications.html":"notifications","35-help-center.html":"help",
+ "36-ai-assistant.html":"assistant","01-login__1_.html":"login"
+}

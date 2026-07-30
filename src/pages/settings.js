@@ -107,14 +107,24 @@ async function paintAudit() {
 $('#sConf')?.closest('form')?.addEventListener('submit', e => e.preventDefault());
 document.addEventListener('click', async e => {
   if (!e.target.closest('#savePwd')) return;
-  const a = $('#sNew')?.value, b = $('#sConf')?.value;
+  const cur = $('#sCur')?.value, a = $('#sNew')?.value, b = $('#sConf')?.value;
   if (!a || a.length < 8) return toast('Use at least 8 characters', 'err');
   if (a !== b) return toast('The two passwords do not match', 'err');
+
+  /* Supabase updateUser does not verify the old password, so confirm it by
+     re-authenticating first. Otherwise anyone on an unlocked machine could
+     change the password without knowing the current one. */
+  if (cur && cur !== '********') {
+    const { error: reauth } = await supabase.auth.signInWithPassword({
+      email: user.email, password: cur
+    });
+    if (reauth) return toast('Current password is incorrect', 'err');
+  }
+
   const { error } = await supabase.auth.updateUser({ password: a });
   if (error) return fail(error);
   toast('Password updated');
-  if ($('#sNew')) $('#sNew').value = '';
-  if ($('#sConf')) $('#sConf').value = '';
+  ['#sCur','#sNew','#sConf'].forEach(id => { const e = $(id); if (e) e.value = ''; });
 });
 
 await load();

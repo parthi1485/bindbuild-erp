@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase.js';
 import { mountShell } from '../lib/shell.js';
-import { toast, fail, esc } from '../lib/ui.js';
+import { toast, fail, esc, openModal, closeModal, closeAllModals,
+         wireModalDismiss, val, setVal } from '../lib/ui.js';
 
 const $  = (s, c = document) => c.querySelector(s);
 const $$ = (s, c = document) => [...c.querySelectorAll(s)];
@@ -273,6 +274,7 @@ document.addEventListener('drop', e => {
   if (!col || !dragId) return;
   e.preventDefault();
   col.classList.remove('is-over');
+  if (col.dataset.stage === 'lost') { openLost(dragId); dragId = null; return; }
   moveLead(dragId, col.dataset.stage);
 });
 
@@ -292,8 +294,10 @@ document.addEventListener('click', e => {
   const move = e.target.closest('[data-move]');
   if (move) {
     e.stopPropagation();
-    moveLead(move.closest('.lead').dataset.id, move.dataset.move);
+    const leadId = move.closest('.lead').dataset.id;
     $$('.menu.open').forEach(m => m.classList.remove('open'));
+    if (move.dataset.move === 'lost') { openLost(leadId); return; }
+    moveLead(leadId, move.dataset.move);
     return;
   }
 
@@ -312,6 +316,70 @@ document.addEventListener('click', e => {
     else if (act.dataset.act === 'WhatsApp' && l.phone) window.open(`https://wa.me/91${l.phone.replace(/\D/g,'').slice(-10)}`, '_blank');
     else toast(`No contact number saved for ${l.name}`, 'err');
   }
+});
+
+/* ---------------------------------------------------------------
+   add lead — uses the designed dialog, not window.prompt
+--------------------------------------------------------------- */
+wireModalDismiss();
+
+function openAdd(stage = 'new') {
+  const m = openModal('addModal');
+  if (!m) return toast('Add-lead dialog is missing from this page', 'err');
+  m.dataset.stage = stage;
+  ['nlName','nlBudget','nlLoc'].forEach(id => setVal(id, ''));
+}
+
+$('#addLeadBtn')?.addEventListener('click', () => openAdd());
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-addto]');
+  if (a) openAdd(a.dataset.addto);
+});
+
+$('#saveLead')?.addEventListener('click', async () => {
+  const name = val('nlName');
+  if (!name) return toast('Give the lead a name', 'err');
+
+  const stage = $('#addModal')?.dataset.stage || 'new';
+  const { error } = await supabase.from('leads').insert({
+    name,
+    phone:   val('nlPhone') || '',
+    service: val('nlType') || 'Turnkey construction',
+    budget:  Number(val('nlBudget')) || 0,
+    area:    val('nlLoc') || 'Chennai',
+    source:  val('nlSource') || 'Direct',
+    stage_key: stage,
+    owner_id: user.id,
+    assigned_to: user.id,
+    last_contact_at: new Date().toISOString()
+  });
+
+  if (error) return fail(error);
+  closeAllModals();
+  toast(`${name} added`);
+  await load();
+});
+
+/* ---------------------------------------------------------------
+   mark lost — capture the reason in the dialog
+--------------------------------------------------------------- */
+let lostId = null;
+
+function openLost(id) {
+  lostId = id;
+  setVal('lostNote', '');
+  if (!openModal('lostModal')) moveLead(id, 'lost');   // fall back if absent
+}
+
+$('#confirmLost')?.addEventListener('click', async () => {
+  if (!lostId) return;
+  const reason = val('lostNote');
+  const { error } = await supabase.from('leads')
+    .update({ lost_reason: reason }).eq('id', lostId);
+  if (error) return fail(error);
+  closeAllModals();
+  await moveLead(lostId, 'lost');
+  lostId = null;
 });
 
 /* card click / keyboard -> details */

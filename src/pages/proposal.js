@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase.js';
 import { mountShell } from '../lib/shell.js';
-import { toast, fail, esc, fmtDate } from '../lib/ui.js';
+import { toast, fail, esc, fmtDate, openModal, closeAllModals,
+         wireModalDismiss, val, setVal } from '../lib/ui.js';
 
 const $  = (s, c = document) => c.querySelector(s);
 const $$ = (s, c = document) => [...c.querySelectorAll(s)];
@@ -349,10 +350,48 @@ async function send() {
   catch { toast('Marked as sent'); }
 }
 
-$('#sendBtn') ?.addEventListener('click', send);
-$('#sendBtn2')?.addEventListener('click', send);
+wireModalDismiss();
+
+function openSend() {
+  setVal('sendMsg',
+    `Hello ${LEAD?.name || 'there'},\n\nPlease find our proposal ${PROPOSAL?.no || ''} attached. ` +
+    `Happy to walk you through it whenever suits.\n\n${user.name}\nStudio Bind Architects`);
+  if (!openModal('sendModal')) send();
+}
+
+$('#sendBtn') ?.addEventListener('click', openSend);
+$('#sendBtn2')?.addEventListener('click', openSend);
+
+$('#confirmSend')?.addEventListener('click', async () => {
+  const byEmail = document.getElementById('chEmail')?.checked;
+  const byWa    = document.getElementById('chWa')?.checked;
+  if (!byEmail && !byWa) return toast('Pick at least one channel', 'err');
+
+  await send();
+  closeAllModals();
+
+  const link = `${location.origin}/proposal.html?id=${PROPOSAL.id}`;
+  const msg  = val('sendMsg');
+
+  /* no mail server is configured, so hand off to the client's own apps
+     rather than silently pretending something was sent */
+  if (byWa && LEAD?.phone) {
+    window.open(`https://wa.me/91${String(LEAD.phone).replace(/\D/g,'').slice(-10)}`
+      + `?text=${encodeURIComponent(msg + '\n\n' + link)}`, '_blank');
+  }
+  if (byEmail && LEAD?.email) {
+    window.location.href = `mailto:${LEAD.email}`
+      + `?subject=${encodeURIComponent('Proposal ' + (PROPOSAL.no || ''))}`
+      + `&body=${encodeURIComponent(msg + '\n\n' + link)}`;
+  }
+  if (byEmail && !LEAD?.email) toast('No email address on this lead', 'err');
+});
+
 $('#pdfBtn')  ?.addEventListener('click', () => window.print());
-$('#previewBtn')?.addEventListener('click', () => window.open(`/proposal.html?id=${PROPOSAL.id}`, '_blank'));
+$('#pdfBtn2') ?.addEventListener('click', () => window.print());
+$('#previewBtn')?.addEventListener('click', () => {
+  if (!openModal('prevModal')) window.open(`/proposal.html?id=${PROPOSAL.id}`, '_blank');
+});
 
 window.addEventListener('beforeunload', e => {
   if (dirty) { e.preventDefault(); e.returnValue = ''; }

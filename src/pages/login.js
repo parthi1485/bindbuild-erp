@@ -32,6 +32,17 @@ document.querySelectorAll('[data-go]').forEach(btn => {
   btn.addEventListener('click', () => showView(btn.dataset.go));
 });
 
+$('#forgotBtn')?.addEventListener('click', e => { e.preventDefault(); showView('forgot'); });
+
+/* remember the address only — never the password */
+const remembered = localStorage.getItem('bindbuild.email');
+if (remembered) {
+  const f = $('#email');
+  if (f) f.value = remembered;
+  const r = $('#remember');
+  if (r) r.checked = true;
+}
+
 /* ---------- sign in ---------- */
 $('#loginForm')?.addEventListener('submit', async e => {
   e.preventDefault();
@@ -44,6 +55,9 @@ $('#loginForm')?.addEventListener('submit', async e => {
   const label = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = 'Signing in…';
+
+  if ($('#remember')?.checked) localStorage.setItem('bindbuild.email', email);
+  else localStorage.removeItem('bindbuild.email');
 
   const { error } = await supabase.auth.signInWithPassword({ email, password: pass });
 

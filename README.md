@@ -436,3 +436,47 @@ The prototype hardcoded badges (Projects 12, Procurement 3). Those are now
 real counts — open leads, active projects, POs awaiting approval — and a badge
 with nothing to show is hidden rather than displaying a stale number. A number
 that lies is worse than no number.
+
+
+## Fidelity audit
+
+`tools/audit.py` compares every generated page against the prototype it came
+from and answers three questions:
+
+| Check | What it catches |
+|-------|-----------------|
+| lostUI | ids in the prototype's `<main>` that never made it into our page |
+| deadCtrl | buttons, inputs and selects the page renders that no module references |
+| noCSS | classes used with no matching selector in `app.css` + the page stylesheet |
+
+Run it after regenerating pages:
+
+```bash
+python3 tools/audit.py
+python3 tools/check-pages.py
+```
+
+Current state: **0 lost UI, 0 dead controls, 8 CSS gaps** — and all 8 are
+`.cup`, `.di` and `.hfact`, which the prototypes never styled either. They are
+reproduced faithfully rather than invented.
+
+The first run found **40 dead controls**. Every one was a designed dialog that
+had been bypassed with `window.prompt`: add-lead, mark-lost, task edit, schedule
+meeting, record payment, send proposal. Prompts work, but they discard the
+design and every field it defines — type, options, validation, placeholder. All
+six flows now drive the prototype's own markup.
+
+Two things worth knowing about those dialogs:
+
+- The task dialog offers a column called `progress`; the database enum uses
+  `doing`. The page maps between them rather than widening the enum, because
+  the enum name is the one the rest of the schema references.
+- Sending a proposal opens WhatsApp or the mail client with the message and
+  link prefilled. No mail server is configured, and silently doing nothing
+  while showing "Sent" would be worse than handing off.
+
+## Changing a password verifies the old one
+
+`supabase.auth.updateUser({ password })` does **not** check the current
+password — an unlocked laptop would be enough to take over an account. Settings
+re-authenticates with the current password first, then updates.

@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase.js';
 import { mountShell } from '../lib/shell.js';
-import { fail, esc, daysAgo } from '../lib/ui.js';
+import { fail, esc, daysAgo, toast } from '../lib/ui.js';
 
 const $ = s => document.querySelector(s);
 
@@ -127,3 +127,43 @@ async function upcoming() {
 }
 
 await Promise.all([pipeline(), upcoming()]);
+
+
+/* ---------------------------------------------------------------
+   notification panel
+--------------------------------------------------------------- */
+async function paintNotifications() {
+  const wrap = document.getElementById('notifList') || document.getElementById('notifWrap');
+  const { data } = await supabase.from('notifications')
+    .select('*').order('created_at', { ascending: false }).limit(10);
+
+  const unread = (data ?? []).filter(n => !n.read_at).length;
+  const dot = document.getElementById('bellDot') || document.querySelector('.bell__dot');
+  if (dot) dot.hidden = !unread;
+
+  if (!wrap) return;
+  wrap.innerHTML = (data ?? []).length
+    ? data.map(n => `<li class="nt${n.read_at ? '' : ' is-unread'}">
+        <span class="nt__t">${esc(n.title)}</span>
+        <span class="nt__w">${daysAgo(n.created_at)} ago</span></li>`).join('')
+    : '<li class="nt"><span class="nt__t">Nothing new</span></li>';
+}
+
+document.getElementById('markRead')?.addEventListener('click', async () => {
+  const { data } = await supabase.from('notifications')
+    .select('id').is('read_at', null);
+  if (!data?.length) return toast('Nothing unread');
+  const { error } = await supabase.from('notifications')
+    .update({ read_at: new Date().toISOString() })
+    .in('id', data.map(n => n.id));
+  if (error) return fail(error);
+  toast('All marked read');
+  await paintNotifications();
+});
+
+document.getElementById('notifClose')?.addEventListener('click', () => {
+  document.getElementById('notifPanel')?.classList.remove('is-open', 'open');
+  document.querySelector('.notif-panel')?.classList.remove('is-open', 'open');
+});
+
+await paintNotifications();

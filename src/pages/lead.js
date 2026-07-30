@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase.js';
 import { mountShell } from '../lib/shell.js';
-import { toast, fail, esc, initials, fmtDate } from '../lib/ui.js';
+import { toast, fail, esc, initials, fmtDate, openModal, closeAllModals,
+         wireModalDismiss, val, setVal } from '../lib/ui.js';
 
 const $  = (s, c = document) => c.querySelector(s);
 const $$ = (s, c = document) => [...c.querySelectorAll(s)];
@@ -310,10 +311,18 @@ $('#btnWon')?.addEventListener('click', async () => {
   toast('Client created');
   if (confirm('Open the client profile?')) location.href = `/client.html?id=${data.id}`;
 });
-$('#btnLost')?.addEventListener('click', async () => {
-  const why = prompt('Why was this lead lost?');
-  if (why === null) return;
-  await supabase.from('leads').update({ lost_reason: why }).eq('id', leadId);
+wireModalDismiss();
+
+$('#btnLost')?.addEventListener('click', () => {
+  setVal('lostNote', '');
+  if (!openModal('lostModal')) setStage('lost');
+});
+
+$('#confirmLost')?.addEventListener('click', async () => {
+  const { error } = await supabase.from('leads')
+    .update({ lost_reason: val('lostNote') }).eq('id', leadId);
+  if (error) return fail(error);
+  closeAllModals();
   await setStage('lost');
 });
 
@@ -348,20 +357,42 @@ document.addEventListener('click', async e => {
   await paintNotes();
 });
 
-$('#schedBtn')?.addEventListener('click', async () => {
-  const title = prompt('Meeting title');
-  if (!title) return;
-  const when = prompt('When? (YYYY-MM-DD HH:MM)', new Date().toISOString().slice(0, 16).replace('T', ' '));
-  if (!when) return;
-  const at = new Date(when.replace(' ', 'T'));
-  if (isNaN(at)) return toast('Could not read that date', 'err');
+$('#schedBtn')?.addEventListener('click', () => {
+  setVal('mTitle', '');
+  setVal('mDate', new Date().toISOString().slice(0, 10));
+  setVal('mTime', '10:00');
+  openModal('meetModal');
+});
+
+$('#saveMeet')?.addEventListener('click', async () => {
+  const title = val('mTitle');
+  if (!title) return toast('Give the meeting a title', 'err');
+  const date = val('mDate'), time = val('mTime') || '10:00';
+  if (!date) return toast('Pick a date', 'err');
+
+  const at = new Date(`${date}T${time}`);
+  if (isNaN(at)) return toast('That date did not parse', 'err');
 
   const { error } = await supabase.from('meetings').insert({
-    lead_id: leadId, title, scheduled_at: at.toISOString(), created_by: user.id
+    lead_id: leadId, title, meeting_type: val('mType') || 'call',
+    scheduled_at: at.toISOString(), created_by: user.id
   });
   if (error) return fail(error);
+  closeAllModals();
   toast('Meeting scheduled');
   await paintMeetings();
+});
+
+/* tags live on the lead's note field until a tags table exists */
+$('#addTag')?.addEventListener('click', async () => {
+  const tag = val('tagIn') || prompt('Add a tag');
+  if (!tag) return;
+  const note = `${LEAD.note || ''}\n#${tag}`.trim();
+  const { error } = await supabase.from('leads').update({ note }).eq('id', leadId);
+  if (error) return fail(error);
+  LEAD.note = note;
+  setVal('tagIn', '');
+  toast('Tag added');
 });
 
 $('#remindBtn')?.addEventListener('click', async () => {

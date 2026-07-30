@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase.js';
 import { mountShell } from '../lib/shell.js';
-import { toast, fail, esc, initials, fmtDate } from '../lib/ui.js';
+import { toast, fail, esc, initials, fmtDate, openModal, closeAllModals,
+         wireModalDismiss, val, setVal, fillSelect } from '../lib/ui.js';
 
 const $  = (s, c = document) => c.querySelector(s);
 const $$ = (s, c = document) => [...c.querySelectorAll(s)];
@@ -145,32 +146,81 @@ document.addEventListener('drop', e => {
 });
 
 /* ---------------------------------------------------------------
-   create
+   create / edit — through the designed dialog
 --------------------------------------------------------------- */
-async function createTask(column = 'backlog') {
-  const title = prompt('Task title');
-  if (!title) return;
+wireModalDismiss();
+let editingId = null;
 
-  const projectId = fProject || PROJECTS[0]?.id || null;
-  if (!projectId) return toast('Create a project first', 'err');
-
-  const { data: last } = await supabase.from('tasks')
-    .select('code').not('code', 'is', null).order('code', { ascending: false }).limit(1);
-  const n = last?.length ? (parseInt(String(last[0].code).replace(/\D/g, ''), 10) || 200) + 1 : 201;
-
-  const { error } = await supabase.from('tasks').insert({
-    code: 'TSK-' + n, project_id: projectId, title,
-    board_column: column, assignee_id: user.id, created_by: user.id
-  });
-  if (error) return fail(error);
-  toast('Task created');
-  await load();
+function fillDialogOptions() {
+  fillSelect('mProj', PROJECTS.map(p => ({ id: p.id, name: `${p.code} · ${p.name}` })));
+  fillSelect('mAssignee', PEOPLE.map(p => ({ id: p.id, name: p.full_name || 'Unnamed' })));
 }
 
-$('#addBtn')?.addEventListener('click', () => createTask('backlog'));
+function openTaskDialog(task = null, column = 'backlog') {
+  if (!PROJECTS.length) return toast('Create a project first', 'err');
+  fillDialogOptions();
+  editingId = task?.id ?? null;
+
+  setVal('mTitle', task?.title ?? '');
+  setVal('mProj', task?.project_id ?? (fProject || PROJECTS[0].id));
+  setVal('mAssignee', task?.assignee_id ?? user.id);
+  setVal('mPrio', task?.priority ?? 'me');
+  setVal('mLabel', task?.label ?? 'design');
+  setVal('mDue', task?.due_date ?? '');
+  setVal('mCol', task?.board_column ?? column);
+
+  const t = document.getElementById('modalTitle');
+  if (t) t.textContent = task ? 'Edit task' : 'New task';
+
+  if (!openModal('modalRoot')) toast('Task dialog is missing from this page', 'err');
+}
+
+$('#addBtn')?.addEventListener('click', () => openTaskDialog(null, 'backlog'));
 document.addEventListener('click', e => {
   const add = e.target.closest('[data-addto]');
-  if (add) createTask(add.dataset.addto);
+  if (add) openTaskDialog(null, add.dataset.addto);
+
+  const card = e.target.closest('.tcard[data-id]');
+  if (card && !e.target.closest('[data-addto]')) {
+    const t = TASKS.find(x => x.id === card.dataset.id);
+    if (t) openTaskDialog(t);
+  }
+});
+
+$('#saveTask')?.addEventListener('click', async () => {
+  const title = val('mTitle');
+  if (!title) return toast('Give the task a title', 'err');
+
+  /* the dialog offers "progress"; the column enum uses "doing" */
+  const colRaw = val('mCol') || 'backlog';
+  const board_column = colRaw === 'progress' ? 'doing' : colRaw;
+
+  const patch = {
+    title,
+    project_id: val('mProj') || null,
+    assignee_id: val('mAssignee') || null,
+    priority: val('mPrio') || 'me',
+    label: val('mLabel') || 'general',
+    due_date: val('mDue') || null,
+    board_column
+  };
+
+  let error;
+  if (editingId) {
+    ({ error } = await supabase.from('tasks').update(patch).eq('id', editingId));
+  } else {
+    const { data: last } = await supabase.from('tasks')
+      .select('code').not('code', 'is', null).order('code', { ascending: false }).limit(1);
+    const n = last?.length ? (parseInt(String(last[0].code).replace(/\D/g, ''), 10) || 200) + 1 : 201;
+    ({ error } = await supabase.from('tasks')
+      .insert({ ...patch, code: 'TSK-' + n, created_by: user.id }));
+  }
+
+  if (error) return fail(error);
+  closeAllModals();
+  toast(editingId ? 'Task updated' : 'Task created');
+  editingId = null;
+  await load();
 });
 
 /* ---------------------------------------------------------------
