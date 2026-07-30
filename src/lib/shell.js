@@ -6,11 +6,11 @@ import { supabase } from './supabase.js';
 /* Routes that have a real page. Everything else in the nav is still a
    prototype — add the slug here as each page gets converted. */
 const BUILT = new Set([
-  'dashboard', 'crm', 'clients', 'sales',
-  'projects', 'site-visits',
-  'procurement', 'inventory',
-  'finance',
-  'hr', 'people'
+  'dashboard', 'analytics', 'crm', 'clients', 'sales',
+  'projects', 'design', 'construction', 'site-visits',
+  'procurement', 'inventory', 'finance',
+  'hr', 'people', 'documents', 'calendar', 'meetings',
+  'client-portal', 'vendor-portal', 'settings'
 ]);
 
 /* ---------- theme (runs before paint to avoid a flash) ---------- */
@@ -122,12 +122,31 @@ export async function mountShell({ route, title }) {
   return user;
 }
 
+/* The prototype hardcoded nav counts (Projects 12, Procurement 3). A number
+   that lies is worse than no number, so each badge is either real or hidden. */
 async function paintCounts() {
-  const { count } = await supabase
-    .from('leads')
-    .select('id', { count: 'exact', head: true })
-    .not('stage_key', 'in', '("won","lost")');
+  const head = { count: 'exact', head: true };
 
-  const badge = document.querySelector('.nav-item[data-route="crm"] .nav-item__count');
-  if (badge) badge.textContent = count ?? 0;
+  const [leads, projects, pos] = await Promise.all([
+    supabase.from('leads').select('id', head).not('stage_key', 'in', '("won","lost")'),
+    supabase.from('projects').select('id', head).eq('status', 'active'),
+    supabase.from('purchase_orders').select('id', head).eq('status', 'quoted')
+  ]);
+
+  const set = (route, res) => {
+    const badge = document.querySelector(`.nav-item[data-route="${route}"] .nav-item__count`);
+    if (!badge) return;
+    const n = res?.error ? null : res?.count;
+    if (n) { badge.textContent = String(n); badge.hidden = false; }
+    else   { badge.textContent = ''; badge.hidden = true; }
+  };
+
+  set('crm', leads);
+  set('projects', projects);
+  set('procurement', pos);
+
+  /* any remaining hardcoded badge is prototype fiction — clear it */
+  document.querySelectorAll('.nav-item .nav-item__count').forEach(b => {
+    if (!b.textContent.trim()) b.hidden = true;
+  });
 }

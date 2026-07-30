@@ -54,15 +54,15 @@ export const SIDEBAR_HTML = `
           Projects
           <span class="nav-item__count">12</span>
         </a>
-        <a class="nav-item" href="/design.html" data-route="design" data-nav="Design">
+        <a class="nav-item" href="/projects.html" data-route="design" data-nav="Design">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19 5 12l7-7 7 7z"/><path d="M5 12h14"/></svg>
           Design Studio
         </a>
-        <a class="nav-item" href="/construction.html" data-route="construction" data-nav="Construction">
+        <a class="nav-item" href="/progress.html" data-route="construction" data-nav="Construction">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20M4 20V9l8-6 8 6v11"/><path d="M9 20v-6h6v6"/></svg>
           Construction
         </a>
-        <a class="nav-item" href="/site-visits.html" data-route="site-visits" data-nav="Site Visits">
+        <a class="nav-item" href="/dsr.html" data-route="site-visits" data-nav="Site Visits">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>
           Site Visits
         </a>

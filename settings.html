@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Settings · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/settings.css" />
+
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <div class="phead"><div class="phead__t">Settings</div><div class="phead__s">Manage your organisation, preferences, team and integrations</div></div>
+      <div class="layout">
+        <nav class="trail" id="trail" aria-label="Settings sections">
+          <button class="tab on" data-tab="org"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01"/></svg>Organisation</button>
+          <button class="tab" data-tab="pref"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>Preferences</button>
+          <button class="tab" data-tab="notif"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 1112 0c0 5 2 6 2 6H4s2-1 2-6z"/><path d="M10 20a2 2 0 004 0"/></svg>Notifications</button>
+          <button class="tab" data-tab="appear"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/></svg>Appearance</button>
+          <button class="tab" data-tab="team"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/></svg>Team &amp; roles</button>
+          <button class="tab" data-tab="intg"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>Integrations</button>
+          <button class="tab" data-tab="sec"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>Security</button>
+        </nav>
+        <div>
+          <!-- ORGANISATION -->
+          <section class="panel on" id="p-org">
+            <div class="card"><div class="card__head"><div><div class="card__title">Organisation details</div><div class="card__sub">Appears on invoices, proposals and the client portal</div></div></div>
+              <div class="card__body">
+                <div class="frow"><div class="f"><label for="oName">Studio name</label><input id="oName" value="Studio Bind Architects" /></div><div class="f"><label for="oLegal">Legal / billing name</label><input id="oLegal" value="Bind Build Studio" /></div></div>
+                <div class="frow"><div class="f"><label for="oGst">GSTIN</label><input id="oGst" value="33AAKPM4821Q1ZC" /></div><div class="f"><label for="oPhone">Phone</label><input id="oPhone" value="+91 98847 12345" /></div></div>
+                <div class="frow"><div class="f"><label for="oEmail">Email</label><input id="oEmail" value="studio@bindarchitects.com" /></div><div class="f"><label for="oWeb">Website</label><input id="oWeb" value="bindconstructions.com" /></div></div>
+                <div class="frow"><div class="f full"><label for="oAddr">Registered address</label><textarea id="oAddr">2nd Floor, No. 14, 1st Main Road, Kasturba Nagar, Adyar, Chennai 600020</textarea></div></div>
+              </div>
+              <div class="card__foot"><button class="btn btn-ghost" data-toast="Reverted|Changes discarded.">Cancel</button><button class="btn btn-primary" data-save>Save changes</button></div>
+            </div>
+          </section>
+          <!-- PREFERENCES -->
+          <section class="panel" id="p-pref">
+            <div class="card"><div class="card__head"><div><div class="card__title">Regional &amp; format</div></div></div>
+              <div class="card__body">
+                <div class="frow"><div class="f"><label for="pCur">Currency</label><select id="pCur"><option>₹ Indian Rupee (INR)</option><option>$ US Dollar (USD)</option><option>د.إ UAE Dirham (AED)</option></select></div><div class="f"><label for="pDate">Date format</label><select id="pDate"><option>DD/MM/YYYY</option><option>MM/DD/YYYY</option><option>YYYY-MM-DD</option></select></div></div>
+                <div class="frow"><div class="f"><label for="pTz">Timezone</label><select id="pTz"><option>Asia/Kolkata (IST · GMT+5:30)</option><option>Asia/Dubai (GST · GMT+4)</option></select></div><div class="f"><label for="pFy">Financial year</label><select id="pFy"><option>April – March</option><option>January – December</option></select></div></div>
+                <div class="frow"><div class="f"><label for="pUnit">Measurement units</label><select id="pUnit"><option>Metric (sqft, cu.m, kg)</option><option>Imperial (sqft, cu.yd, lb)</option></select></div><div class="f"><label for="pWeek">Week starts on</label><select id="pWeek"><option>Monday</option><option>Sunday</option></select></div></div>
+              </div>
+              <div class="card__foot"><button class="btn btn-primary" data-save>Save preferences</button></div>
+            </div>
+          </section>
+          <!-- NOTIFICATIONS -->
+          <section class="panel" id="p-notif">
+            <div class="card"><div class="card__head"><div class="card__title">Notification preferences</div></div>
+              <div class="card__body" id="notifList"></div>
+            </div>
+          </section>
+          <!-- APPEARANCE -->
+          <section class="panel" id="p-appear">
+            <div class="card"><div class="card__head"><div class="card__title">Appearance</div></div>
+              <div class="card__body">
+                <div class="tog"><div><div class="tog__t">Theme</div><div class="tog__m">Choose light, dark or match your system</div></div><div class="tog__sp"><div class="seg" id="themeSeg"><button data-theme-set="light">Light</button><button data-theme-set="dark">Dark</button><button data-theme-set="system">System</button></div></div></div>
+                <div class="tog"><div><div class="tog__t">Accent colour</div><div class="tog__m">Used across buttons, charts and highlights</div></div><div class="tog__sp"><div class="swatches" id="swatches"><span class="swatch on" style="background:#5a8dee" data-accent="#5a8dee" data-strong="#3f74e0"></span><span class="swatch" style="background:#41d1a0" data-accent="#41d1a0" data-strong="#2fb488"></span><span class="swatch" style="background:#a78bfa" data-accent="#a78bfa" data-strong="#8b6ef0"></span><span class="swatch" style="background:#f0b45a" data-accent="#f0b45a" data-strong="#d6892e"></span><span class="swatch" style="background:#f472b6" data-accent="#f472b6" data-strong="#e0559f"></span></div></div></div>
+                <div class="tog"><div><div class="tog__t">Reduced motion</div><div class="tog__m">Minimise animations across the ERP</div></div><div class="tog__sp"><button class="sw" data-sw aria-label="Toggle reduced motion"></button></div></div>
+              </div>
+            </div>
+          </section>
+          <!-- TEAM -->
+          <section class="panel" id="p-team">
+            <div class="card"><div class="card__head"><div><div class="card__title">Team &amp; roles</div><div class="card__sub">10 studio members · 14 site crew</div></div><button class="btn btn-primary" style="margin-left:auto" data-toast="Invite sent|An invite email is on its way."><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Invite</button></div>
+              <div class="card__body" id="teamList"></div>
+            </div>
+          </section>
+          <!-- INTEGRATIONS -->
+          <section class="panel" id="p-intg">
+            <div class="card"><div class="card__head"><div><div class="card__title">Integrations</div><div class="card__sub">Connect the tools you already use</div></div></div>
+              <div class="card__body" id="intgList"></div>
+            </div>
+          </section>
+          <!-- SECURITY -->
+          <section class="panel" id="p-sec">
+            <div class="card"><div class="card__head"><div class="card__title">Password</div></div>
+              <div class="card__body">
+                <div class="frow"><div class="f"><label for="sCur">Current password</label><input id="sCur" type="password" value="********" /></div><div class="f"></div></div>
+                <div class="frow"><div class="f"><label for="sNew">New password</label><input id="sNew" type="password" placeholder="••••••••" /></div><div class="f"><label for="sConf">Confirm new password</label><input id="sConf" type="password" placeholder="••••••••" /></div></div>
+              </div>
+              <div class="card__foot"><button class="btn btn-primary" data-save>Update password</button></div>
+            </div>
+            <div class="card"><div class="card__head"><div class="card__title">Two-factor authentication</div></div>
+              <div class="card__body"><div class="tog" style="padding-top:0"><div><div class="tog__t">Authenticator app (TOTP)</div><div class="tog__m">Require a 6-digit code at sign-in</div></div><div class="tog__sp"><button class="sw on" data-sw aria-label="Toggle 2FA"></button></div></div></div>
+            </div>
+            <div class="card"><div class="card__head"><div class="card__title">Active sessions</div></div>
+              <div class="card__body" id="sessList"></div>
+              <div class="card__foot"><button class="btn btn-ghost" data-toast="Signed out|All other sessions have been ended.">Sign out other sessions</button></div>
+            </div>
+            <div class="card danger-zone"><div class="card__head"><div><div class="card__title" style="color:var(--danger)">Danger zone</div><div class="card__sub">Irreversible actions</div></div></div>
+              <div class="card__body"><div class="tog" style="padding-top:0;border:none"><div><div class="tog__t">Delete workspace</div><div class="tog__m">Permanently remove all projects, files and data</div></div><div class="tog__sp"><button class="btn btn-danger" data-toast="Confirm needed|This is a demo — deletion is disabled.">Delete</button></div></div></div>
+            </div>
+          </section>
+        </div>
+      </div>
+      <footer class="footer"><span>© 2026 Studio Bind Architects · Chennai</span><span class="footer__v">Bind Build ERP v0.9.0 · build 2026.07</span></footer>
+    
+    </main>
+
+  </div>
+</div>
+
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/settings.js"></script>
+</body>
+</html>

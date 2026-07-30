@@ -57,7 +57,19 @@ automatically — no config change.
 | people | people | Live — kudos wall, celebrations |
 | recruitment | hr | Live — candidate kanban, funnel, interviews, source mix |
 | learning | hr | Live — catalogue, enrolment, progress, certifications, leaderboard |
-| 26–36 | — | Prototype ready, not yet converted |
+| documents | documents | Live — folders, upload, signature queue, signed URLs |
+| calendar | calendar | Live — month grid, agenda, unified feed |
+| meetings | meetings | Live — list, detail, minutes, action items |
+| client-portal | client-portal | Live — scoped projects, invoices, approvals, messaging |
+| vendor-portal | vendor-portal | Live — scoped purchase orders, deliveries, messaging |
+| analytics | analytics | Live — revenue, cost split, pipeline, sources, project table, insights |
+| settings | settings | Live — org details, preferences, team roles, password, audit |
+| profile | settings | Live — identity, activity, assigned tasks |
+| notifications | settings | Live — feed, filters, mark read |
+| help | settings | Live — searchable FAQ |
+| assistant | settings | Live — answers from your data (see below) |
+
+**All 36 pages are wired.**
 
 Nav items for unconverted pages are dimmed and show a toast instead of a 404.
 As each page lands, add its slug to `BUILT` in `src/lib/shell.js`.
@@ -376,3 +388,51 @@ and content that belongs outside `.app` (modals).
 
 `tools/check-pages.py` asserts every generated page is balanced. Run it after
 regenerating.
+
+
+## Portal scoping
+
+The portals are the first place someone outside the studio gets a login, so
+scoping is the entire job. It is enforced with row level security on the
+**existing** tables, never by filtering in page code:
+
+```sql
+create policy "client reads own projects" on projects for select
+  using (client_id = public.my_client_id());
+```
+
+`my_client_id()` reads `client_users` for the current session. For anyone who
+is not a portal user it returns NULL, and `client_id = NULL` evaluates to NULL,
+which RLS treats as false. **It fails closed** — a missing link shows nothing
+rather than everything. That was verified rather than assumed.
+
+Documents are the one thing that is not scoped automatically: a client sees a
+document only when `shared_with_client` is explicitly true. Sharing a project
+folder wholesale would eventually leak an internal cost sheet.
+
+To give a client access:
+
+```sql
+-- after creating their auth user
+insert into public.client_users (user_id, client_id) values ('<uuid>', '<client uuid>');
+insert into public.user_roles  (user_id, role)      values ('<uuid>', 'client');
+```
+
+## The assistant is not a language model
+
+It runs real queries against your data — pipeline value, receivables ageing,
+thin-margin projects, what is due this week, low stock, who is in today — and
+reports what it finds.
+
+An LLM needs an API key, and **a key in a browser bundle is a key you have
+published**: anyone can read it in devtools and spend your credits. Doing it
+properly means a Supabase Edge Function holding the secret and proxying the
+call, so the browser never sees it. Until that exists, honest queries beat a
+chat box that invents numbers.
+
+## Nav counts
+
+The prototype hardcoded badges (Projects 12, Procurement 3). Those are now
+real counts — open leads, active projects, POs awaiting approval — and a badge
+with nothing to show is hidden rather than displaying a stale number. A number
+that lies is worse than no number.

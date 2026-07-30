@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Notifications · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/notifications.css" />
+
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <div class="phead">
+        <div><div class="phead__t">Notifications <span class="pcount" id="pcount">5</span></div><div class="phead__s">Alerts, approvals and updates across your studio</div></div>
+        <div class="phead__sp"><button class="btn btn-ghost" id="markAll"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>Mark all read</button></div>
+      </div>
+      <div class="layout">
+        <div>
+          <div class="seg" id="filterSeg">
+            <button class="on" data-filter="all">All</button>
+            <button data-filter="unread">Unread <span class="cnt" id="fUnread">5</span></button>
+            <button data-filter="approval">Approvals <span class="cnt" id="fAppr">2</span></button>
+          </div>
+          <div id="nWrap"></div>
+        </div>
+        <aside>
+          <div class="card"><div class="card__head"><div class="card__title">This week</div></div><div class="card__body">
+            <div class="brk"><span class="brk__ic i-green"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 010 3h-3a1.5 1.5 0 000 3h4"/></svg></span><span class="brk__l">Payments</span><span class="brk__v">2</span></div>
+            <div class="brk"><span class="brk__ic i-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 9v4M12 17h.01M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg></span><span class="brk__l">Alerts</span><span class="brk__v">3</span></div>
+            <div class="brk"><span class="brk__ic i-violet"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span><span class="brk__l">Approvals</span><span class="brk__v">2</span></div>
+            <div class="brk"><span class="brk__ic i-sky"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg></span><span class="brk__l">Reports</span><span class="brk__v">4</span></div>
+          </div></div>
+          <div class="card"><div class="card__head"><div class="card__title">Preferences</div></div><div class="card__body" style="padding:var(--s-2) var(--s-3)">
+            <a class="setlink" href="32-settings.html"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 9a6 6 0 1112 0c0 5 2 6 2 6H4s2-1 2-6z"/></svg>Notification settings<svg class="arr" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 18l6-6-6-6"/></svg></a>
+            <a class="setlink" href="32-settings.html"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>Email digest<svg class="arr" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 18l6-6-6-6"/></svg></a>
+          </div></div>
+        </aside>
+      </div>
+      <footer class="footer"><span>© 2026 Studio Bind Architects · Chennai</span><span class="footer__v">Bind Build ERP v0.9.0 · build 2026.07</span></footer>
+    
+    </main>
+
+  </div>
+</div>
+
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/notifications.js"></script>
+</body>
+</html>

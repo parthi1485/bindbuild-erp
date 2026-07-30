@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My profile · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/profile.css" />
+
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <div class="cover"><button class="cover__edit" data-toast="Cover|Upload a cover image (demo)."><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>Edit cover</button></div>
+      <div class="idbar">
+        <div class="idbar__av">PB</div>
+        <div class="idbar__meta">
+          <div class="idbar__n">Parthiban</div>
+          <div class="idbar__r">Principal Architect · Founder · Studio Bind Architects</div>
+          <div class="idbar__badges"><span class="tagp accent">Owner</span><span class="tagp">Design</span><span class="tagp">Chennai</span><span class="tagp">Joined Jan 2018</span></div>
+        </div>
+        <div class="idbar__act"><button class="btn btn-ghost" data-toast="Message|Opening chat (demo).">Message</button><a class="btn btn-primary" href="32-settings.html"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>Edit profile</a></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="stat__v" data-count="24">0</div><div class="stat__l">Projects led</div></div>
+        <div class="stat"><div class="stat__v" data-count="187">0</div><div class="stat__l">Days on Adyar</div></div>
+        <div class="stat"><div class="stat__v"><span data-count="9">0</span></div><div class="stat__l">Certifications</div></div>
+        <div class="stat"><div class="stat__v">8<span style="font-size:14px;color:var(--text-3)">yrs</span></div><div class="stat__l">At the studio</div></div>
+      </div>
+      <div class="grid">
+        <div>
+          <div class="card"><div class="card__head"><div class="card__title">About</div><button class="card__act" data-toast="Edit|Editing bio (demo).">Edit</button></div>
+            <div class="card__body"><p class="about">Founder and principal architect of Studio Bind Architects, an architecture &amp; interiors practice in Chennai, and of Bind Builds — the studio's architect-led construction arm. Single point of accountability across design, delivery and client experience. Believer in one line: <em>“Drawings don't build houses. Decisions do.”</em></p></div>
+          </div>
+          <div class="card"><div class="card__head"><div class="card__title">Contact &amp; details</div></div>
+            <div class="card__body">
+              <div class="drow"><div class="drow__ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg></div><div><div class="drow__l">Email</div><div class="drow__v">demo@studiobind.in</div></div></div>
+              <div class="drow"><div class="drow__ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3-8.6A2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .4 1.9.7 2.8a2 2 0 01-.5 2.1L8.1 9.9a16 16 0 006 6l1.3-1.3a2 2 0 012.1-.5c.9.3 1.8.6 2.8.7a2 2 0 011.7 2z"/></svg></div><div><div class="drow__l">Phone</div><div class="drow__v">+91 98847 12345</div></div></div>
+              <div class="drow"><div class="drow__ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 21s-7-4.4-7-10a7 7 0 0114 0c0 5.6-7 10-7 10z"/><circle cx="12" cy="11" r="2.4"/></svg></div><div><div class="drow__l">Location</div><div class="drow__v">Adyar, Chennai · Tamil Nadu</div></div></div>
+              <div class="drow"><div class="drow__ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M2 12h20M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/></svg></div><div><div class="drow__l">Website</div><div class="drow__v">bindconstructions.com</div></div></div>
+              <div class="drow"><div class="drow__ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 8a4 4 0 100 8 4 4 0 000-8z"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/></svg></div><div><div class="drow__l">Languages</div><div class="drow__v">Tamil · English</div></div></div>
+            </div>
+          </div>
+          <div class="card"><div class="card__head"><div class="card__title">Skills &amp; focus</div></div>
+            <div class="card__body"><div class="skills">
+              <span class="skill">Residential design</span><span class="skill">Interiors</span><span class="skill">Turnkey construction</span><span class="skill">BOQ &amp; costing</span><span class="skill">Client relations</span><span class="skill">Revit</span><span class="skill">Site supervision</span><span class="skill">Business &amp; marketing</span>
+            </div></div>
+          </div>
+        </div>
+        <div>
+          <div class="card"><div class="card__head"><div class="card__title">Recent activity</div></div>
+            <div class="card__body"><div class="feed" id="feed"></div></div>
+          </div>
+          <div class="card"><div class="card__head"><div class="card__title">Active projects</div><a class="card__act" href="08-projects.html">All</a></div>
+            <div class="card__body" id="pmini"></div>
+          </div>
+        </div>
+      </div>
+      <footer class="footer"><span>© 2026 Studio Bind Architects · Chennai</span><span class="footer__v">Bind Build ERP v0.9.0 · build 2026.07</span></footer>
+    
+    </main>
+
+  </div>
+</div>
+
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/profile.js"></script>
+</body>
+</html>

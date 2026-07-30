@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Help centre · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/help.css" />
+
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <section class="hero"><div class="hero__in">
+        <div class="hero__t">How can we help?</div>
+        <div class="hero__s">Search guides and answers, or reach the Bind Build team directly.</div>
+        <div class="hsearch"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.9"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg><input id="faqSearch" type="search" placeholder="Search for answers… e.g. how to raise an invoice" aria-label="Search help" /></div>
+      </div></section>
+      <div class="wrap">
+        <div class="cats">
+          <div class="cat" data-toast="Getting started|Opening the guide (demo)."><div class="cat__ic i-blue"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M6 10v6c0 1 2.7 3 6 3s6-2 6-3v-6"/></svg></div><div class="cat__t">Getting started</div><div class="cat__m">Set up your studio, team and first project</div><div class="cat__n">8 articles →</div></div>
+          <div class="cat" data-toast="Projects & sites|Opening the guide (demo)."><div class="cat__ic i-green"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/></svg></div><div class="cat__t">Projects &amp; sites</div><div class="cat__m">Tasks, schedules, site reports &amp; progress</div><div class="cat__n">12 articles →</div></div>
+          <div class="cat" data-toast="Money & billing|Opening the guide (demo)."><div class="cat__ic i-amber"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 010 3h-3a1.5 1.5 0 000 3h4"/></svg></div><div class="cat__t">Money &amp; billing</div><div class="cat__m">Invoices, expenses, payroll &amp; GST</div><div class="cat__n">10 articles →</div></div>
+        </div>
+        <div class="grid">
+          <div>
+            <div class="sec-t">Frequently asked</div>
+            <div id="faqList"></div>
+            <div class="noresult hidden" id="noResult">No answers matched your search. Try different words, or contact support.</div>
+          </div>
+          <aside>
+            <div class="card status-card"><div class="card__body"><div class="status-row"><span class="dot-ok"></span>All systems operational</div><div style="font-size:11.5px;color:var(--text-3);margin-top:6px">ERP v0.9.0 · last checked just now</div></div></div>
+            <div class="card"><div class="card__head"><div class="card__title">Contact support</div></div><div class="card__body">
+              <div class="contact"><div class="contact__ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div><div><div class="contact__t">Live chat</div><div class="contact__m">Mon–Sat · 9 AM–7 PM IST</div></div></div>
+              <div class="contact"><div class="contact__ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg></div><div><div class="contact__t">support@bindbuild.app</div><div class="contact__m">Replies within a day</div></div></div>
+              <div class="contact"><div class="contact__ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3-8.6A2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .4 1.9.7 2.8a2 2 0 01-.5 2.1L8.1 9.9a16 16 0 006 6l1.3-1.3a2 2 0 012.1-.5c.9.3 1.8.6 2.8.7a2 2 0 011.7 2z"/></svg></div><div><div class="contact__t">+91 98847 12345</div><div class="contact__m">Priority line</div></div></div>
+              <button class="btn btn-primary" style="margin-top:var(--s-3)" data-toast="Chat|Connecting you to support (demo)."><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Start live chat</button>
+            </div></div>
+            <div class="card"><div class="card__head"><div class="card__title">Popular articles</div></div><div class="card__body">
+              <a class="article" data-toast="Article|Opening (demo)."><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>Raising your first invoice</a>
+              <a class="article" data-toast="Article|Opening (demo)."><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>Adding a site progress update</a>
+              <a class="article" data-toast="Article|Opening (demo)."><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>Inviting your team</a>
+              <a class="article" data-toast="Article|Opening (demo)."><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>Setting up the client portal</a>
+            </div></div>
+          </aside>
+        </div>
+      </div>
+      <footer class="footer"><span>© 2026 Studio Bind Architects · Chennai</span><span class="footer__v">Bind Build ERP v0.9.0 · build 2026.07</span></footer>
+    
+    </main>
+
+  </div>
+</div>
+
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/help.js"></script>
+</body>
+</html>

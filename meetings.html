@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Meetings · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/meetings.css" />
+
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <div class="ctx reveal">
+        <div class="ctx__main"><div class="ctx__eyebrow">Workspace · Meetings</div><h1 class="ctx__title">Meetings</h1><div class="ctx__sub">Agenda, attendees, notes and action items · week of 20 Jul</div></div>
+        <div class="ctx__actions"><button class="btn-ghost" data-toast="Notes|Open shared meeting notes."><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 3h9l4 4v14H6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Notes</button><button class="btn-new" id="scheduleBtn" data-toast="Schedule|Create a new meeting and invite the team."><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>Schedule</button></div>
+      </div>
+      <section class="kstrip">
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M15 10l6-3v10l-6-3M3 6h12v12H3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span>This week</div><div class="kbox__val" data-count="6">0</div><div class="kbox__note">meetings scheduled</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-sky"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Hours</div><div class="kbox__val" data-count="8">0</div><div class="kbox__note">in meetings · week</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Action items</div><div class="kbox__val" id="kOpen">0</div><div class="kbox__note">open · assigned</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-violet"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 19a5.5 5.5 0 0111 0M16 6a3 3 0 010 5.6M19 19a5.5 5.5 0 00-3-4.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Attendees</div><div class="kbox__val" data-count="12">0</div><div class="kbox__note">avg per week</div></div>
+      </section>
+      <div class="grid">
+        <div class="stack">
+          <section class="card reveal"><div class="card__head"><div class="card__title">Upcoming meetings</div><span class="card__tag" id="mCount">4</span></div><div class="mlist" id="mlist"></div></section>
+          <section class="card reveal"><div class="card__head"><div class="card__title">Meeting detail</div><span class="card__tag">Selected</span></div><div class="card__body" id="detail"></div></section>
+        </div>
+        <aside class="rail">
+          <section class="card reveal"><div class="card__head"><div class="card__title">This week</div></div><div class="card__body"><div class="wk" id="wk"></div></div></section>
+          <section class="card reveal"><div class="card__head"><div class="card__title">Open action items</div><span class="card__tag" id="oaCount">0</span></div><div class="card__body"><div class="oa" id="oa"></div></div></section>
+          <section class="card reveal"><div class="card__head"><div class="card__title">Meeting links</div></div><div class="card__body"><div class="lk">
+            <div class="lkr"><div class="lkr__ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 10l6-3v10l-6-3M3 6h12v12H3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div><div><div class="lkr__t">Google Meet</div><div class="lkr__m">meet.google.com/bind-studio</div></div></div>
+            <div class="lkr"><div class="lkr__ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 7a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H6a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.6"/><path d="M8 10h8M8 14h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div><div><div class="lkr__t">Studio Conference Room</div><div class="lkr__m">Ground floor · seats 8</div></div></div>
+          </div></div></section>
+        </aside>
+      </div>
+      <footer class="footer"><span>© 2026 Studio Bind Architects · Chennai</span><span class="footer__v">Bind Build ERP v0.9.0 · build 2026.07</span></footer>
+    
+    </main>
+
+  </div>
+</div>
+
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/meetings.js"></script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Analytics · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/analytics.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <div class="phead">
+        <div><div class="phead__t">Analytics</div><div class="phead__s">Business intelligence across sales, delivery &amp; money · FY 2026-27</div></div>
+        <div class="phead__sp">
+          <div class="seg" id="rangeSeg"><button class="on" data-range="6m">Last 6 months</button><button data-range="ytd">YTD</button><button data-range="q">This quarter</button></div>
+          <button class="btn-ghost" id="exportBtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M8 11l4 4 4-4M5 20h14"/></svg>Export</button>
+        </div>
+      </div>
+      <div class="kstrip">
+        <div class="kbox"><div class="kbox__top"><span class="kbox__ic i-green"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 010 3h-3a1.5 1.5 0 000 3h4"/></svg></span>Revenue YTD</div><div class="kbox__val">₹<span data-count="2.34" data-dec="2">0</span> Cr</div><div class="kbox__d up">▲ 12% vs last year</div></div>
+        <div class="kbox"><div class="kbox__top"><span class="kbox__ic i-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span>New leads</div><div class="kbox__val" data-count="48">0</div><div class="kbox__d up">▲ 8 this quarter</div></div>
+        <div class="kbox"><div class="kbox__top"><span class="kbox__ic i-violet"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Win rate</div><div class="kbox__val"><span data-count="31">0</span>%</div><div class="kbox__d up">▲ 3 pts</div></div>
+        <div class="kbox"><div class="kbox__top"><span class="kbox__ic i-sky"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2" stroke-linecap="round"/></svg></span>On-time delivery</div><div class="kbox__val"><span data-count="88">0</span>%</div><div class="kbox__d dn">▼ 2 pts (rain)</div></div>
+        <div class="kbox"><div class="kbox__top"><span class="kbox__ic i-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></span>Avg margin</div><div class="kbox__val"><span data-count="22">0</span>%</div><div class="kbox__d up">▲ 1 pt</div></div>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="card__head"><div><div class="card__title">Revenue vs target</div><div class="card__sub">Monthly billing · ₹ lakh</div></div><span class="card__tag" id="revTag">Feb–Jul 2026</span></div><div class="card__body"><div class="chart-wrap"><canvas id="revChart"></canvas></div></div></div>
+        <div class="card"><div class="card__head"><div><div class="card__title">Pipeline by stage</div><div class="card__sub">Open opportunities</div></div></div><div class="card__body"><div class="chart-wrap sm"><canvas id="pipeChart"></canvas></div><div class="legend" id="pipeLegend"></div></div></div>
+      </div>
+      <div class="grid-3">
+        <div class="card"><div class="card__head"><div><div class="card__title">Lead sources</div><div class="card__sub">Where enquiries come from</div></div></div><div class="card__body"><div class="chart-wrap sm"><canvas id="srcChart"></canvas></div></div></div>
+        <div class="card"><div class="card__head"><div><div class="card__title">Cost breakdown</div><div class="card__sub">Spend by category</div></div></div><div class="card__body"><div class="chart-wrap sm"><canvas id="costChart"></canvas></div><div class="legend" id="costLegend"></div></div></div>
+      </div>
+      <div class="grid">
+        <div class="card"><div class="card__head"><div class="card__title">Top projects by value</div><span class="card__tag">Active</span></div>
+          <div style="padding:var(--s-4) var(--s-2) var(--s-2);overflow-x:auto"><table class="tbl"><thead><tr><th>Project</th><th>Contract</th><th>Progress</th><th>Health</th></tr></thead><tbody id="projBody"></tbody></table></div>
+        </div>
+        <div class="card"><div class="card__head"><div class="card__title">Insights</div></div><div class="card__body"><div class="ins" id="insList"></div></div></div>
+      </div>
+      <footer class="footer"><span>© 2026 Studio Bind Architects · Chennai</span><span class="footer__v">Bind Build ERP v0.9.0 · build 2026.07</span></footer>
+    
+    </main>
+
+  </div>
+</div>
+
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/analytics.js"></script>
+</body>
+</html>

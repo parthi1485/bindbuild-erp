@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Calendar · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/calendar.css" />
+
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <div class="ctx reveal">
+        <div class="ctx__main"><div class="ctx__eyebrow">Workspace · Calendar</div><h1 class="ctx__title">Calendar</h1><div class="ctx__sub">Site visits, meetings, deadlines and milestones · all projects</div></div>
+        <div class="ctx__actions"><button class="btn-ghost" data-toast="Sync|Connect Google Calendar to two-way sync."><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 0113-6M20 12a8 8 0 01-13 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M17 3v3h-3M7 21v-3h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Sync</button><button class="btn-new" id="newEventBtn" data-toast="New event|Add an event to the team calendar."><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>New event</button></div>
+      </div>
+      <section class="kstrip">
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 9h18" stroke="currentColor" stroke-width="1.7"/></svg></span>Events · month</div><div class="kbox__val" data-count="18">0</div><div class="kbox__note">across July</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-sky"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.4-7-10a7 7 0 0114 0c0 5.6-7 10-7 10z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="11" r="2.4" stroke="currentColor" stroke-width="1.7"/></svg></span>Site visits</div><div class="kbox__val" data-count="5">0</div><div class="kbox__note">this month</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-violet"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 19a5.5 5.5 0 0111 0M16 6a3 3 0 010 5.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Meetings</div><div class="kbox__val" data-count="6">0</div><div class="kbox__note">scheduled</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Deadlines</div><div class="kbox__val" data-count="4">0</div><div class="kbox__note">due this month</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-green"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5-4.9-2.6L7.6 21l.9-5.5-4-3.9 5.5-.8z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>Milestones</div><div class="kbox__val" data-count="2">0</div><div class="kbox__note">FF slab · payday</div></div>
+      </section>
+      <div class="grid">
+        <section class="card reveal">
+          <div class="calbar">
+            <div class="mnav"><button class="mnav__btn" id="prevM" aria-label="Previous month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="mnav__label" id="mLabel">July 2026</div><button class="mnav__btn" id="nextM" aria-label="Next month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+            <button class="today-btn" id="todayBtn">Today</button>
+            <div class="seg" id="viewSeg"><button class="on" data-v="month">Month</button><button data-v="week">Week</button><button data-v="agenda">Agenda</button></div>
+          </div>
+          <div class="cal">
+            <div class="dow"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+            <div class="month" id="month"></div>
+          </div>
+        </section>
+        <aside class="rail">
+          <section class="card reveal"><div class="card__head"><div class="card__title" id="agTitle">Mon, 20 Jul</div><span class="card__tag">Today</span></div><div class="card__body"><div class="agenda" id="agenda"></div></div></section>
+          <section class="card reveal"><div class="card__head"><div class="card__title">Upcoming deadlines</div></div><div class="card__body"><div class="dl" id="dl"></div></div></section>
+          <section class="card reveal"><div class="card__head"><div class="card__title">Categories</div></div><div class="card__body"><div class="legend" id="legend"></div></div></section>
+        </aside>
+      </div>
+      <footer class="footer"><span>© 2026 Studio Bind Architects · Chennai</span><span class="footer__v">Bind Build ERP v0.9.0 · build 2026.07</span></footer>
+    
+    </main>
+
+  </div>
+</div>
+
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/calendar.js"></script>
+</body>
+</html>
