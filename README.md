@@ -480,3 +480,72 @@ Two things worth knowing about those dialogs:
 `supabase.auth.updateUser({ password })` does **not** check the current
 password — an unlocked laptop would be enough to take over an account. Settings
 re-authenticates with the current password first, then updates.
+
+
+## Is this production-ready?
+
+The **schema and code are production-grade**. The **operational setup is not**.
+They are different things, and the gap is where data gets lost.
+
+### What is genuinely solid
+
+- 80 tables, every one with RLS enabled and at least one policy
+- Role-based access through SECURITY DEFINER helpers, verified to fail closed
+- Ledger patterns where they matter: stock movements, invoice payments, leave,
+  salary structures. Balances are derived, never stored twice
+- GST and payroll computed in the database, so the UI cannot disagree with it
+- Statutory identity isolated in its own table
+- 0 lost UI, 0 dead controls, verified by `tools/audit.py`
+
+### What is not ready, honestly
+
+| Gap | Risk | Fix |
+|-----|------|-----|
+| **Free plan: zero backup retention** | Total data loss, unrecoverable | Upgrade to Pro, and run `tools/backup/backup.sh` regardless |
+| **Free plan pauses after ~7 days idle** | ERP offline until manually restored | Pro removes pausing entirely |
+| **No automated tests** | Regressions ship silently | Start with the payroll engine and GST triggers |
+| **Invoices stay editable after issue** | GST non-compliance | Lock on status change; correct via credit note |
+| **Hard deletes everywhere** | GST records must be retained ~6 years | Add `deleted_at` and filter in policies |
+| **No error monitoring** | Failures only visible in the console | Sentry or Supabase log drains |
+| **Statutory rates unverified** | Wrong PF/ESI/PT deductions | CA review before live payroll |
+| **TDS not computed** | Deliberate — needs declarations | Accounts enters it per payslip |
+
+### Verdict
+
+Safe to run **your own studio's live data on**, provided you upgrade to Pro and
+take backups. Not yet safe to sell to other firms, or to rely on for a
+statutory audit, until invoice immutability, soft deletes and tests exist.
+
+## Backups
+
+The Free plan keeps **zero days of backup retention**. Supabase's own
+documentation tells free-tier projects to export their own data and keep
+off-site copies. Nothing is being snapshotted for you.
+
+A complete backup needs three separate things, because they live in three
+different places:
+
+| Store | Contains | Captured by |
+|-------|----------|-------------|
+| Postgres `public` | all 80 tables of business data | `pg_dump` |
+| Postgres `auth` | logins — **not** in a public-schema dump | `pg_dump --table=auth.users` |
+| Storage buckets | lead files, site photos, receipts, documents | Supabase CLI |
+
+A dump of `public` alone restores your data with **nobody able to log in**, and
+every file link broken. That is the mistake worth avoiding.
+
+```bash
+export SUPABASE_DB_URL="postgresql://postgres.[ref]:[pw]@aws-0-ap-south-1.pooler.supabase.com:5432/postgres"
+export SUPABASE_PROJECT_REF="eyfccifvzhdgjrhnxsrm"
+./tools/backup/backup.sh
+```
+
+Restore into a **new** project, never over the damaged one:
+
+```bash
+export TARGET_DB_URL="postgresql://postgres.[newref]:[pw]@..."
+./tools/backup/restore.sh backups/2026-07-30_1400.tar.gz
+```
+
+Schedule it weekly, and **test a restore once** before you need one. An
+untested backup is a hope, not a backup.
