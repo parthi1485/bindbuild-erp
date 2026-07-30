@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Invoice · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/invoice.css" />
+
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <div class="ctx reveal">
+        <div class="ctx__main">
+          <div class="ctx__eyebrow">Money · Tax invoice</div>
+          <h1 class="ctx__title">Invoice SBA/25-26/042 <span class="statc s-sent" id="statPill"><span class="statc__dot"></span>Sent</span></h1>
+          <div class="ctx__sub">Adyar Courtyard Residence · Milestone 6 — Flooring, doors &amp; windows</div>
+        </div>
+        <div class="ctx__actions">
+          <button class="btn-ghost" id="printBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9V3h12v6M6 18H4v-6h16v6h-2M8 14h8v7H8z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>Download PDF</button>
+          <button class="btn-ghost" data-toast="Reminder sent|Payment reminder emailed to Dr. Meenakshi.">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 6l8 6 8-6M4 6h16v12H4z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>Send reminder</button>
+          <button class="btn-new" id="payBtn2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Record payment</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <!-- ============ INVOICE PAPER ============ -->
+        <section class="paper reveal">
+          <div class="paper__accent"></div>
+          <div class="paper__in">
+            <div class="inv-top">
+              <div class="seller">
+                <div class="seller__logo"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 20V7l8-4 8 4v13" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 20v-6h6v6" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"/></svg></div>
+                <div>
+                  <div class="seller__name">Bind Builds</div>
+                  <div class="seller__tag">An architect-led construction studio · Studio Bind Architects</div>
+                  <div class="seller__meta">No. 12, 3rd Main Road, Kasturba Nagar,<br>Adyar, Chennai 600020, Tamil Nadu<br><b>GSTIN</b> 33AABCB1234F1Z5 · <b>PAN</b> AABCB1234F</div>
+                </div>
+              </div>
+              <div class="inv-title">
+                <h2>Tax Invoice</h2>
+                <div class="invno">SBA/25-26/042</div>
+                <div class="inv-dates">
+                  Invoice date <b>14 Jul 2026</b><br>
+                  Due date <b>29 Jul 2026</b><br>
+                  Place of supply <b>Tamil Nadu (33)</b>
+                </div>
+              </div>
+            </div>
+
+            <div class="inv-parties">
+              <div>
+                <div class="party__lbl">Bill to</div>
+                <div class="party__nm">Dr. Meenakshi Raghavan</div>
+                <div class="party__meta">Plot 8, 4th Cross Street, Kottivakkam,<br>Adyar, Chennai 600041<br><b>GSTIN</b> 33AAKPM4821Q1ZC<br>meenakshi.r@gmail.com</div>
+              </div>
+              <div>
+                <div class="party__lbl">Project / reference</div>
+                <div class="party__nm">Adyar Courtyard Residence</div>
+                <div class="party__meta"><b>PRJ-018</b> · Residential G+1 · 3,240 sqft<br>Contract value ₹1.85 Cr<br>Milestone 6 of 8 · 15% of contract</div>
+              </div>
+            </div>
+
+            <div class="li-wrap">
+              <table class="li">
+                <thead><tr><th style="width:44px">#</th><th>Description</th><th>SAC</th><th class="r">Amount (₹)</th></tr></thead>
+                <tbody>
+                  <tr><td class="num">1</td><td class="desc"><b>Flooring works</b><span>Vitrified tiling + natural stone · ground &amp; first floor</span></td><td class="sac">9954</td><td class="num r">14,00,000</td></tr>
+                  <tr><td class="num">2</td><td class="desc"><b>Doors &amp; windows</b><span>Teak frames + shutters, UPVC windows — supply &amp; fix</span></td><td class="sac">9954</td><td class="num r">9,75,000</td></tr>
+                  <tr><td class="num">3</td><td class="desc"><b>Waterproofing</b><span>Balcony, terrace &amp; wet areas · membrane system</span></td><td class="sac">9954</td><td class="num r">4,00,000</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="tot-wrap">
+              <div class="tot">
+                <div class="tot__row"><span>Taxable value</span><span>₹27,75,000</span></div>
+                <div class="tot__row"><span>CGST @ 9%</span><span>₹2,49,750</span></div>
+                <div class="tot__row"><span>SGST @ 9%</span><span>₹2,49,750</span></div>
+                <div class="tot__row grand"><span>Total due</span><span>₹32,74,500</span></div>
+              </div>
+            </div>
+
+            <div class="words"><b>Amount in words: </b><span>Rupees Thirty Two Lakh Seventy Four Thousand Five Hundred Only.</span></div>
+
+            <div class="inv-foot">
+              <div>
+                <div class="foot__lbl">Bank details</div>
+                <div class="foot__txt"><b>Bind Builds</b><br>HDFC Bank · Adyar branch<br>A/c <b>50200 4471 2280</b> · Current<br>IFSC <b>HDFC0000123</b><br>UPI <b>bindbuilds@hdfcbank</b></div>
+              </div>
+              <div>
+                <div class="foot__lbl">Terms</div>
+                <div class="foot__txt">Payment due within 15 days of invoice date. 1.5% / month on overdue amounts. This is a milestone-linked invoice; work continues on receipt.</div>
+                <div class="sign"><div class="sign__line">Parthiban</div><div class="sign__nm">For Bind Builds · Authorised signatory</div></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ RIGHT RAIL ============ -->
+        <aside class="rail">
+          <section class="card due reveal">
+            <div class="card__body">
+              <div class="due__lbl">Total due</div>
+              <div class="due__amt" id="dueAmt">₹32,74,500</div>
+              <div class="due__meta" id="dueMeta"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>Due in <b>9 days</b> · 29 Jul</span></div>
+              <div class="due__acts">
+                <button class="rbtn rbtn--pay" id="payBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>Record payment</button>
+                <button class="rbtn rbtn--ghost" data-toast="Reminder sent|Payment reminder emailed to Dr. Meenakshi.">Send reminder</button>
+              </div>
+            </div>
+          </section>
+
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Payment timeline</div></div>
+            <div class="card__body"><div class="tl" id="tl">
+              <div class="tl__i done"><span class="tl__dot"></span><div><div class="tl__t">Invoice created</div><div class="tl__d">14 Jul 2026 · 10:24</div></div></div>
+              <div class="tl__i done"><span class="tl__dot"></span><div><div class="tl__t">Sent to client</div><div class="tl__d">14 Jul 2026 · 10:31 · email</div></div></div>
+              <div class="tl__i done"><span class="tl__dot"></span><div><div class="tl__t">Viewed by client</div><div class="tl__d">16 Jul 2026 · 19:02</div></div></div>
+              <div class="tl__i now"><span class="tl__dot"></span><div><div class="tl__t">Payment due</div><div class="tl__d">29 Jul 2026 · awaiting</div></div></div>
+            </div></div>
+          </section>
+
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Related</div></div>
+            <div class="card__body" style="padding:8px">
+              <div class="rel">
+                <a href="09-project-details.html"><span class="rel__ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 7l9-4 9 4-9 4-9-4z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M3 7v10l9 4 9-4V7" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span><div><div class="rel__t">Adyar Courtyard</div><div class="rel__m">PRJ-018 · project</div></div><span class="rel__go"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+                <a href="05-client-profile.html"><span class="rel__ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="1.7"/><path d="M5 20a7 7 0 0114 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span><div><div class="rel__t">Dr. Meenakshi</div><div class="rel__m">client profile</div></div><span class="rel__go"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+                <a href="29-client-portal.html"><span class="rel__ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v14H4z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M4 9h16" stroke="currentColor" stroke-width="1.7"/></svg></span><div><div class="rel__t">Milestone schedule</div><div class="rel__m">8 milestones · client portal</div></div><span class="rel__go"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+              </div>
+            </div>
+          </section>
+
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">GST summary</div><span class="card__tag">SAC 9954</span></div>
+            <div class="card__body"><div class="gstsum">
+              <div class="gstsum__row"><span>Taxable value</span><b>₹27,75,000</b></div>
+              <div class="gstsum__row"><span>CGST 9%</span><b>₹2,49,750</b></div>
+              <div class="gstsum__row"><span>SGST 9%</span><b>₹2,49,750</b></div>
+              <div class="gstsum__row"><span>Total tax</span><b>₹4,99,500</b></div>
+            </div></div>
+          </section>
+        </aside>
+      </div>
+
+      <footer class="footer">
+        <span>© 2026 Studio Bind Architects · Chennai</span>
+        <span class="footer__v">Bind Build ERP v0.9.0 · build 2026.07</span>
+      </footer>
+    
+    </main>
+  </div>
+<!-- record payment modal -->
+<div class="modal" id="payModal" role="dialog" aria-modal="true" aria-labelledby="pmTitle">
+  <div class="modal__scrim" data-close></div>
+  <div class="modal__box">
+    <div class="modal__title" id="pmTitle">Record payment</div>
+    <div class="modal__sub">Invoice SBA/25-26/042 · Adyar Courtyard Milestone 6</div>
+    <div class="fld"><label for="pmAmt">Amount received (₹)</label><input type="text" id="pmAmt" value="32,74,500" /></div>
+    <div class="fld"><label for="pmDate">Payment date</label><input type="date" id="pmDate" value="2026-07-20" /></div>
+    <div class="fld"><label for="pmMethod">Method</label><select id="pmMethod"><option>Bank transfer (NEFT/RTGS)</option><option>UPI</option><option>Cheque</option></select></div>
+    <div class="fld"><label for="pmRef">Reference no.</label><input type="text" id="pmRef" placeholder="UTR / cheque no." /></div>
+    <div class="modal__acts">
+      <button class="btn-ghost" data-close>Cancel</button>
+      <button class="btn-new" id="pmConfirm"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Mark as paid</button>
+    </div>
+  </div>
+</div>
+</div>
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/invoice.js"></script>
+</body>
+</html>

@@ -47,7 +47,10 @@ automatically — no config change.
 | dsr | site-visits | Live — labour, activities, materials, equipment, issues, submit |
 | procurement | procurement | Live — PO table, pipeline, approvals queue, vendor spend |
 | inventory | inventory | Live — stock balances, low/out alerts, movements, stock in/out |
-| 16–36 | — | Prototype ready, not yet converted |
+| finance | finance | Live — KPIs, expense split, collected vs cost, ageing, project P&L |
+| invoice | finance | Live — GST-split tax invoice, record payment, timeline, print |
+| expenses | finance | Live — claims, approval workflow, category/mode breakdown |
+| 19–36 | — | Prototype ready, not yet converted |
 
 Nav items for unconverted pages are dimmed and show a toast instead of a 404.
 As each page lands, add its slug to `BUILT` in `src/lib/shell.js`.
@@ -236,3 +239,42 @@ quantities rather than letting a script invent them.
 Also: `:root` now emits only the tokens a page adds or overrides. Emitting the
 whole block duplicated ~33 tokens per page and, worse, overrode `app.css` —
 which would have silently broken the point of having one stylesheet.
+
+
+## The record chain
+
+Nothing downstream can attach to a lead, so the chain has to be walked in
+order. Each step is now wired:
+
+```
+lead  --won-->  client  --invoice-->  payment
+                  |
+                  +--> project --> tasks / DSR / PO --> expense
+```
+
+- **Mark a lead won** and it offers to create the client record.
+- **Client profile -> New invoice** numbers it by financial year (April start,
+  Indian convention) and sets the GST split from the client's state code.
+- **Invoice -> Record payment** appends to `invoice_payments`; the balance is
+  derived, never stored.
+- **Expense** starts as a claim from any staff member and needs accounts to
+  approve, then mark paid.
+
+Before this, a won lead was a dead end and no page could create an invoice.
+
+## GST split is computed once, in the database
+
+`invoices` and `purchase_orders` both carry an `is_interstate` flag and a
+before-insert trigger that fills in CGST+SGST or IGST and the total. Pages send
+only `subtotal`, `is_interstate` and the rates — they never compute tax. Two
+implementations of a tax rule eventually disagree, and the one in the UI is the
+one nobody tests.
+
+Studio Bind is registered in Tamil Nadu, state code `33`. Same code on the
+client means CGST+SGST; anything else means IGST.
+
+## "Cash" on the finance dashboard is not a bank balance
+
+There is no bank account table, so `kCash` shows **net cash movement** over the
+selected window: payments received minus expenses marked paid. The label under
+the chart says so. Do not reconcile it against a bank statement.

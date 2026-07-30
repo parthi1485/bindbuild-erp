@@ -278,7 +278,38 @@ async function setStage(stage) {
   await logActivity('stage_change', `Stage changed to ${label}`);
 }
 
-$('#btnWon') ?.addEventListener('click', () => setStage('won'));
+$('#btnWon')?.addEventListener('click', async () => {
+  await setStage('won');
+
+  /* a won lead with no client record is a dead end: nothing downstream —
+     invoices, projects, the client portal — can attach to a lead. */
+  if (LEAD.client_id) return;
+  if (!confirm(`Create a client record for ${LEAD.name}?`)) return;
+
+  const { data, error } = await supabase.from('clients').insert({
+    name: LEAD.name,
+    phone: LEAD.phone,
+    email: LEAD.email || null,
+    address_line: LEAD.area,
+    city: 'Chennai',
+    converted_from_lead_id: LEAD.id,
+    owner_id: user.id,
+    notes: LEAD.note || ''
+  }).select('id').single();
+
+  if (error) return fail(error);
+
+  await supabase.from('leads').update({ client_id: data.id }).eq('id', leadId);
+  LEAD.client_id = data.id;
+
+  await supabase.from('activities').insert({
+    lead_id: leadId, client_id: data.id, user_id: user.id,
+    kind: 'note', detail: 'Converted to client'
+  });
+
+  toast('Client created');
+  if (confirm('Open the client profile?')) location.href = `/client.html?id=${data.id}`;
+});
 $('#btnLost')?.addEventListener('click', async () => {
   const why = prompt('Why was this lead lost?');
   if (why === null) return;

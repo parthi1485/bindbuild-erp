@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Expenses · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/expenses.css" />
+
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <div class="ctx reveal">
+        <div class="ctx__main">
+          <div class="ctx__eyebrow">Money · Outflow ledger</div>
+          <h1 class="ctx__title">Expenses</h1>
+          <div class="ctx__sub">Vendor payments, labour, petty cash and reimbursements · July 2026</div>
+        </div>
+        <div class="ctx__actions">
+          <button class="btn-ghost" data-toast="Export|Expense register exported as XLSX.">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Export</button>
+          <button class="btn-new" id="addBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>Add expense</button>
+        </div>
+      </div>
+
+      <section class="kstrip">
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 6h18v12H3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M3 10h18" stroke="currentColor" stroke-width="1.7"/></svg></span>Spend MTD</div><div class="kbox__val">₹<span class="cup" data-to="19.8" data-dec="1">0</span><small>L</small></div><div class="kbox__note">July · all projects</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Pending approval</div><div class="kbox__val" id="kPend">₹<span class="cup" data-to="1.17" data-dec="2">0</span><small>L</small></div><div class="kbox__note" id="kPendN">2 claims waiting</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-green"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Paid this month</div><div class="kbox__val">₹<span class="cup" data-to="18.6" data-dec="1">0</span><small>L</small></div><div class="kbox__note">11 payments</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-violet"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 6h16l-1.5 9H6L4 6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span>Largest head</div><div class="kbox__val">Materials</div><div class="kbox__note">₹10.2L · 52% of spend</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-sky"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.7"/><circle cx="16" cy="12" r="1.6" fill="currentColor"/></svg></span>Petty cash</div><div class="kbox__val">₹<span class="cup" data-to="0.42" data-dec="2">0</span><small>L</small></div><div class="kbox__note">Adyar site float</div></div>
+      </section>
+
+      <div class="grid">
+        <div class="stack">
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Expense register</div><span class="card__tag" id="exCount">— entries</span></div>
+            <div class="filters">
+              <div class="seg" id="catSeg">
+                <button class="on" data-c="all">All</button>
+                <button data-c="Materials">Materials</button>
+                <button data-c="Labour">Labour</button>
+                <button data-c="Subcontractor">Subcon</button>
+                <button data-c="Site expense">Site</button>
+                <button data-c="Overheads">Overheads</button>
+              </div>
+              <select class="selctl" id="projSel">
+                <option value="all">All projects</option>
+                <option>Adyar Courtyard</option>
+                <option>Besant Nagar Beach House</option>
+                <option>Anna Nagar Duplex</option>
+                <option>Studio (overhead)</option>
+              </select>
+              <select class="selctl" id="statSel">
+                <option value="all">Any status</option>
+                <option value="paid">Paid</option>
+                <option value="pend">Pending</option>
+              </select>
+              <div class="fsearch">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-3.2-3.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                <input type="text" id="exSearch" placeholder="Search…" aria-label="Search expenses" />
+              </div>
+            </div>
+            <div class="tbl-wrap">
+              <table class="tbl">
+                <thead><tr><th>Expense</th><th>Category</th><th>Project</th><th>Mode</th><th>Date</th><th>Status</th><th class="num">Amount</th></tr></thead>
+                <tbody id="exBody"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <aside class="rail">
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Pending approvals</div><span class="card__tag" id="apprTag">2</span></div>
+            <div class="card__body"><div class="apprs" id="apprs"></div></div>
+          </section>
+
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Spend by category</div><span class="card__tag">MTD</span></div>
+            <div class="card__body"><div class="cat" id="cat"></div></div>
+          </section>
+
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Payment modes</div></div>
+            <div class="card__body"><div class="cat" id="modes"></div></div>
+          </section>
+        </aside>
+      </div>
+
+      <footer class="footer">
+        <span>© 2026 Studio Bind Architects · Chennai</span>
+        <span class="footer__v">Bind Build ERP v0.9.0 · build 2026.07</span>
+      </footer>
+    
+    </main>
+  </div>
+<!-- add expense modal -->
+<div class="modal" id="exModal" role="dialog" aria-modal="true" aria-labelledby="emTitle">
+  <div class="modal__scrim" data-close></div>
+  <div class="modal__box">
+    <div class="modal__title" id="emTitle">Add expense</div>
+    <div class="modal__sub">New entry in the expense register</div>
+    <div class="fld"><label for="emT">Description</label><input type="text" id="emT" placeholder="e.g. Diesel for generator" /></div>
+    <div class="fld2">
+      <div class="fld"><label for="emAmt">Amount (₹)</label><input type="text" id="emAmt" placeholder="12,500" /></div>
+      <div class="fld"><label for="emDate">Date</label><input type="date" id="emDate" value="2026-07-20" /></div>
+    </div>
+    <div class="fld2">
+      <div class="fld"><label for="emCat">Category</label><select id="emCat"><option>Materials</option><option>Labour</option><option>Subcontractor</option><option selected>Site expense</option><option>Overheads</option></select></div>
+      <div class="fld"><label for="emMode">Mode</label><select id="emMode"><option>UPI</option><option>Cash</option><option selected>Bank</option><option>Card</option></select></div>
+    </div>
+    <div class="fld"><label for="emProj">Project</label><select id="emProj"><option selected>Adyar Courtyard</option><option>Besant Nagar Beach House</option><option>Anna Nagar Duplex</option><option>Studio (overhead)</option></select></div>
+    <div class="modal__acts">
+      <button class="btn-ghost" data-close>Cancel</button>
+      <button class="btn-new" id="emSave"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Save expense</button>
+    </div>
+  </div>
+</div>
+</div>
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/expenses.js"></script>
+</body>
+</html>

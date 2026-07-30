@@ -8,7 +8,8 @@ import { supabase } from './supabase.js';
 const BUILT = new Set([
   'dashboard', 'crm', 'clients', 'sales',
   'projects', 'site-visits',
-  'procurement', 'inventory'
+  'procurement', 'inventory',
+  'finance'
 ]);
 
 /* ---------- theme (runs before paint to avoid a flash) ---------- */

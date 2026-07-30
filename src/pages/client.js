@@ -242,8 +242,65 @@ $('#copyGst')?.addEventListener('click', async () => {
   } catch { toast('Could not access the clipboard', 'err'); }
 });
 
-$('#newInvBtn')?.addEventListener('click', () =>
-  toast('Invoice builder arrives with the Finance module', 'err'));
+$('#newInvBtn')?.addEventListener('click', async () => {
+  if (!CLIENT) return toast('No client selected', 'err');
+
+  const desc = prompt('What is this invoice for?', 'Stage payment');
+  if (!desc) return;
+  const raw = prompt('Amount before GST (₹)');
+  if (raw === null) return;
+  const subtotal = Number(raw);
+  if (!Number.isFinite(subtotal) || subtotal <= 0) return toast('Enter a valid amount', 'err');
+
+  /* next number in the financial year, which in India starts in April */
+  const now = new Date();
+  const fyStart = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  const prefix = `INV-${fyStart}-`;
+
+  const { data: last } = await supabase.from('invoices')
+    .select('invoice_no').like('invoice_no', prefix + '%')
+    .order('invoice_no', { ascending: false }).limit(1);
+
+  const seq = last?.length
+    ? (parseInt(String(last[0].invoice_no).slice(prefix.length), 10) || 0) + 1
+    : 1;
+  const invoiceNo = prefix + String(seq).padStart(3, '0');
+
+  /* place of supply decides the tax split: same state means CGST+SGST,
+     different state means IGST. Studio Bind is registered in Tamil Nadu (33). */
+  const HOME_STATE = '33';
+  const interstate = (CLIENT.state_code || HOME_STATE) !== HOME_STATE;
+
+  const due = new Date();
+  due.setDate(due.getDate() + 15);
+
+  const { data, error } = await supabase.from('invoices').insert({
+    invoice_no: invoiceNo,
+    client_id: CLIENT.id,
+    description: desc,
+    issue_date: new Date().toISOString().slice(0, 10),
+    due_date: due.toISOString().slice(0, 10),
+    place_of_supply: CLIENT.state_code || HOME_STATE,
+    is_interstate: interstate,
+    subtotal,
+    cgst_rate: interstate ? 0 : 9,
+    sgst_rate: interstate ? 0 : 9,
+    igst_rate: interstate ? 18 : 0,
+    status: 'draft',
+    created_by: user.id
+  }).select('id').single();
+
+  if (error) return fail(error);
+
+  /* totals and the GST split are computed by the invoices_recalc trigger,
+     so nothing is calculated twice */
+  await supabase.from('invoice_items').insert({
+    invoice_id: data.id, description: desc, qty: 1, unit: 'LS', rate: subtotal
+  });
+
+  toast(`${invoiceNo} created`);
+  location.href = `/invoice.html?id=${data.id}`;
+});
 
 $('#recPayBtn')?.addEventListener('click', () =>
   toast('Use "Record payment" on the invoice row', 'err'));
