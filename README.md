@@ -612,3 +612,49 @@ Rules enforced in the database surface as raw Postgres messages. `fail()` in
 `lib/ui.js` maps the ones users will actually hit — issued-invoice lock, credit
 limit, RLS denial — into something actionable rather than showing them a
 constraint name.
+
+
+## Two kinds of backup, and you need both
+
+| | Restores a system? | Readable by a human? |
+|---|---|---|
+| `tools/backup/backup.sh` (pg_dump) | **yes** | no |
+| `tools/backup/export.py` (csv/xlsx/pdf) | no | **yes** |
+
+A CSV of your invoices cannot rebuild the database. A pg_dump is useless to
+your CA. Run both.
+
+### Google Drive backup
+
+`export.py` writes CSV per table, one multi-sheet Excel workbook, and a
+one-page PDF summary. Point it at a folder that Google Drive for Desktop syncs
+and the upload takes care of itself — no OAuth, no API keys, nothing to break.
+
+```bash
+export SUPABASE_DB_URL="postgresql://postgres.[ref]:[pw]@aws-0-ap-south-1.pooler.supabase.com:5432/postgres"
+python3 tools/backup/export.py --out "$HOME/Google Drive/My Drive/BindBuild Backups"
+```
+
+Output, timestamped per run:
+
+```
+BindBuild Backups/2026-07-30_1900/
+  csv/              one file per table, UTF-8 BOM so Excel opens them cleanly
+  bindbuild-data.xlsx   every table as a sheet, Contents sheet first
+  summary.pdf       invoiced, received, credited, outstanding, cost, counts
+```
+
+Schedule it weekly. On Windows use Task Scheduler; on macOS a `launchd` plist
+or `cron`. Then run `backup.sh` to the same Drive folder, and you have both
+kinds of copy off-site.
+
+Two details worth knowing: Excel cannot store timezone-aware datetimes or JSON
+objects, so the exporter strips the timezone and stringifies `jsonb`. The CSVs
+keep the original values.
+
+## Extending
+
+See **[EXTENDING.md](EXTENDING.md)** — how to add a vertical, a proposal type
+or a whole module, and the five things in this codebase that will bite you.
+Business units and proposal templates (migration 023) are worked examples of
+the pattern.
