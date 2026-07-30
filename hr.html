@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HR · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/hr.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <div class="ctx reveal">
+        <div class="ctx__main">
+          <div class="ctx__eyebrow">People · Human resources</div>
+          <h1 class="ctx__title">HR Dashboard</h1>
+          <div class="ctx__sub">Headcount, attendance and payroll across studio &amp; site — Monday, 20 Jul 2026</div>
+        </div>
+        <div class="ctx__actions">
+          <button class="btn-ghost" href="21-attendance.html" data-toast="Attendance|Opening today's attendance register.">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 9h18" stroke="currentColor" stroke-width="1.7"/></svg>Mark attendance</button>
+          <button class="btn-new" data-toast="Add employee|New employee onboarding form ready.">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>Add employee</button>
+        </div>
+      </div>
+
+      <section class="kstrip">
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-blue"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 20a5.5 5.5 0 0111 0M16 5.5a3 3 0 010 5.8M17.5 20a5.5 5.5 0 00-3-4.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Headcount</div><div class="kbox__val"><span class="cup" data-to="24">0</span></div><div class="kbox__note">Studio 10 · site 14</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-green"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Present today</div><div class="kbox__val"><span class="cup" data-to="20">0</span><small>/24</small></div><div class="kbox__note">83% attendance</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-violet"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="2.2" stroke="currentColor" stroke-width="1.7"/></svg></span>Payroll / mo</div><div class="kbox__val">₹<span class="cup" data-to="9.8" data-dec="1">0</span><small>L</small></div><div class="kbox__note">Next run 31 Jul</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-amber"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M8 2v4M16 2v4M3 9h18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="1.7"/></svg></span>On leave</div><div class="kbox__val"><span class="cup" data-to="3">0</span></div><div class="kbox__note">+1 absent today</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-sky"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M5 20a6 6 0 0112 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M19 7v5M21.5 9.5h-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Open roles</div><div class="kbox__val"><span class="cup" data-to="2">0</span></div><div class="kbox__note">Site engineer · 3D artist</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-danger"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 16.5 7.1 18.2l.9-5.5-4-3.9 5.5-.8L12 3z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>Reviews due</div><div class="kbox__val"><span class="cup" data-to="4">0</span></div><div class="kbox__note">This quarter</div></div>
+      </section>
+
+      <!-- attendance + department -->
+      <div class="grid2">
+        <section class="card reveal">
+          <div class="card__head"><div><div class="card__title">Attendance trend</div><div class="card__sub">Present count · last 10 working days</div></div><span class="card__tag">of 24</span></div>
+          <div class="card__body"><div class="chart-wrap"><canvas id="attChart" data-skel></canvas></div></div>
+        </section>
+        <section class="card reveal">
+          <div class="card__head"><div class="card__title">Headcount by dept</div></div>
+          <div class="card__body">
+            <div class="chart-wrap donut"><canvas id="deptChart" data-skel></canvas></div>
+            <div class="legend" id="deptLegend"></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- roster + leave -->
+      <div class="grid2">
+        <section class="card reveal">
+          <div class="card__head"><div class="card__title">Team roster</div><span class="card__tag">24 people</span></div>
+          <div class="card__body" style="padding-top:6px"><div class="roster" id="roster"></div><div class="roster__more">+16 more team members</div></div>
+        </section>
+        <section class="card reveal">
+          <div class="card__head"><div class="card__title">Leave requests</div><span class="card__tag" id="lvTag">3</span></div>
+          <div class="card__body"><div class="leaves" id="leaves"></div></div>
+        </section>
+      </div>
+
+      <!-- upcoming + payroll -->
+      <div class="grid2">
+        <section class="card reveal">
+          <div class="card__head"><div class="card__title">Upcoming</div><span class="card__tag">next 2 weeks</span></div>
+          <div class="card__body"><div class="ups" id="ups"></div></div>
+        </section>
+        <section class="card reveal">
+          <div class="card__head"><div class="card__title">Payroll snapshot</div><span class="card__tag">July</span></div>
+          <div class="card__body">
+            <div class="pay">
+              <div class="pay__lbl">Gross monthly</div>
+              <div class="pay__big">₹9,82,000</div>
+              <div class="pay__rows">
+                <div class="pay__row"><span>Studio salaries</span><b>₹8,10,000</b></div>
+                <div class="pay__row"><span>Site wages</span><b>₹1,42,000</b></div>
+                <div class="pay__row"><span>Statutory (PF / ESI)</span><b>₹30,000</b></div>
+              </div>
+              <div class="pay__meta"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="var(--success)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>June payroll <b>processed</b> · next run <b>31 Jul</b></div>
+              <button class="pay__btn" data-toast="Run payroll|July payroll run queued for 31 Jul.">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7z" fill="#fff"/></svg>Run July payroll</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <footer class="footer">
+        <span>© 2026 Studio Bind Architects · Chennai</span>
+        <span class="footer__v">Bind Build ERP v0.9.0 · build 2026.07</span>
+      </footer>
+    
+    </main>
+  </div>
+
+</div>
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/hr.js"></script>
+</body>
+</html>

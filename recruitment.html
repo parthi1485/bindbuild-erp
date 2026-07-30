@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Recruitment · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/recruitment.css" />
+
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <div class="ctx reveal">
+        <div class="ctx__main">
+          <div class="ctx__eyebrow">People · Recruitment</div>
+          <h1 class="ctx__title">Recruitment</h1>
+          <div class="ctx__sub">2 open roles · 9 active candidates · drag a candidate to advance their stage</div>
+        </div>
+        <div class="ctx__actions">
+          <button class="btn-ghost" data-toast="Job board|Role reposted to Naukri &amp; LinkedIn.">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 12l16-7-7 16-2-6-7-3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>Repost</button>
+          <button class="btn-new" data-toast="Post a role|Opening the new requisition form…">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>Post a role</button>
+        </div>
+      </div>
+
+      <section class="kstrip">
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M6 3h9l4 4v14H6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Open roles</div><div class="kbox__val" data-count="2">0</div><div class="kbox__note">1 urgent</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-violet"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 20a5.5 5.5 0 0111 0M16 5.5a3 3 0 010 5.8M17.5 20a5.5 5.5 0 00-3-4.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Active candidates</div><div class="kbox__val" data-count="9">0</div><div class="kbox__note">across both roles</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>In interview</div><div class="kbox__val" id="kInterview" data-count="2">0</div><div class="kbox__note">this week</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-green"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Offers out</div><div class="kbox__val" id="kOffer" data-count="1">0</div><div class="kbox__note">awaiting response</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-sky"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 4-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Time-to-hire</div><div class="kbox__val"><span data-count="28">0</span><small> days</small></div><div class="kbox__note">avg last 3 hires</div></div>
+      </section>
+
+      <section class="roles">
+        <div class="role reveal">
+          <div class="role__top">
+            <div class="role__ic i-amber"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 20V7l8-4 8 4v13" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 20v-6h6v6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></div>
+            <div><div class="role__t">Site Engineer</div><div class="role__m">Site &amp; Execution · Full-time · Adyar / OMR</div></div>
+            <span class="role__badge rb-urgent">Urgent</span>
+          </div>
+          <div class="role__stats">
+            <div class="rs"><span class="rs__n">5</span><span class="rs__l">candidates</span></div>
+            <div class="rs"><span class="rs__n">2</span><span class="rs__l">interviewing</span></div>
+            <div class="rs"><span class="rs__n">18</span><span class="rs__l">days open</span></div>
+          </div>
+          <div class="role__foot">
+            <div class="role__avs"><span class="pav c1">PR</span><span class="pav c4">SV</span><span class="pav c2">KS</span><span class="pav c3">MK</span></div>
+            <span class="role__link">View pipeline →</span>
+          </div>
+        </div>
+        <div class="role reveal">
+          <div class="role__top">
+            <div class="role__ic i-violet"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 15l5-4 4 3 3-2 6 5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="8" cy="9" r="1.4" fill="currentColor"/></svg></div>
+            <div><div class="role__t">3D Visualizer</div><div class="role__m">Design &amp; Architecture · Full-time · Studio</div></div>
+            <span class="role__badge rb-open">Open</span>
+          </div>
+          <div class="role__stats">
+            <div class="rs"><span class="rs__n">4</span><span class="rs__l">candidates</span></div>
+            <div class="rs"><span class="rs__n">1</span><span class="rs__l">interviewing</span></div>
+            <div class="rs"><span class="rs__n">11</span><span class="rs__l">days open</span></div>
+          </div>
+          <div class="role__foot">
+            <div class="role__avs"><span class="pav c2">AM</span><span class="pav c5">RT</span><span class="pav c3">VP</span><span class="pav c1">DN</span></div>
+            <span class="role__link">View pipeline →</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="grid">
+        <div class="stack">
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Candidate pipeline</div>
+              <select class="rolefilter" id="roleFilter">
+                <option value="all">All roles</option>
+                <option value="Site Engineer">Site Engineer</option>
+                <option value="3D Visualizer">3D Visualizer</option>
+              </select>
+            </div>
+            <div class="kan" id="kan">
+              <div class="col" data-stage="applied"><div class="col__head"><span class="col__dot" style="background:var(--text-3)"></span><span class="col__t">Applied</span><span class="col__n" id="n-applied">0</span></div><div class="col__body" id="c-applied"></div></div>
+              <div class="col" data-stage="screening"><div class="col__head"><span class="col__dot" style="background:var(--sky)"></span><span class="col__t">Screening</span><span class="col__n" id="n-screening">0</span></div><div class="col__body" id="c-screening"></div></div>
+              <div class="col" data-stage="interview"><div class="col__head"><span class="col__dot" style="background:var(--warning)"></span><span class="col__t">Interview</span><span class="col__n" id="n-interview">0</span></div><div class="col__body" id="c-interview"></div></div>
+              <div class="col" data-stage="offer"><div class="col__head"><span class="col__dot" style="background:var(--success)"></span><span class="col__t">Offer</span><span class="col__n" id="n-offer">0</span></div><div class="col__body" id="c-offer"></div></div>
+            </div>
+          </section>
+        </div>
+
+        <aside class="rail">
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Upcoming interviews</div><span class="card__tag">3</span></div>
+            <div class="card__body"><div class="ivs" id="ivs"></div></div>
+          </section>
+
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Hiring funnel</div><span class="card__tag">Q3</span></div>
+            <div class="card__body"><div class="funnel" id="funnel"></div></div>
+          </section>
+
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Candidate sources</div></div>
+            <div class="card__body"><div class="srcs" id="srcs"></div></div>
+          </section>
+        </aside>
+      </div>
+
+      <footer class="footer">
+        <span>© 2026 Studio Bind Architects · Chennai</span>
+        <span class="footer__v">Bind Build ERP v0.9.0 · build 2026.07</span>
+      </footer>
+    
+    </main>
+  </div>
+
+</div>
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/recruitment.js"></script>
+</body>
+</html>

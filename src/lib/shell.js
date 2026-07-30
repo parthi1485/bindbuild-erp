@@ -9,7 +9,8 @@ const BUILT = new Set([
   'dashboard', 'crm', 'clients', 'sales',
   'projects', 'site-visits',
   'procurement', 'inventory',
-  'finance'
+  'finance',
+  'hr', 'people'
 ]);
 
 /* ---------- theme (runs before paint to avoid a flash) ---------- */

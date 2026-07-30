@@ -50,7 +50,14 @@ automatically — no config change.
 | finance | finance | Live — KPIs, expense split, collected vs cost, ageing, project P&L |
 | invoice | finance | Live — GST-split tax invoice, record payment, timeline, print |
 | expenses | finance | Live — claims, approval workflow, category/mode breakdown |
-| 19–36 | — | Prototype ready, not yet converted |
+| hr | hr | Live — roster with today's status, leave approvals, dept split, attendance trend |
+| employee | hr | Live — profile, leave balances, documents |
+| attendance | hr | Live — daily register, one-click marking, mark-all, ring |
+| payroll | hr | Live — run processing, TDS entry, approve/disburse, CSV export |
+| people | people | Live — kudos wall, celebrations |
+| recruitment | hr | Live — candidate kanban, funnel, interviews, source mix |
+| learning | hr | Live — catalogue, enrolment, progress, certifications, leaderboard |
+| 26–36 | — | Prototype ready, not yet converted |
 
 Nav items for unconverted pages are dimmed and show a toast instead of a 404.
 As each page lands, add its slug to `BUILT` in `src/lib/shell.js`.
@@ -278,3 +285,62 @@ client means CGST+SGST; anything else means IGST.
 There is no bank account table, so `kCash` shows **net cash movement** over the
 selected window: payments received minus expenses marked paid. The label under
 the chart says so. Do not reconcile it against a bank statement.
+
+
+## Payroll: read this before running it live
+
+**Verify the statutory numbers with your CA.** The rates and slabs shipped here
+are starting values, not advice. They live in data, not code, so correcting them
+is an UPDATE and not a deploy:
+
+- `statutory_rates` — EPF 12%/12%, wage ceiling ₹15,000, ESI 0.75%/3.25%,
+  ESI gross limit ₹21,000
+- `pt_slabs` — Tamil Nadu (state code 33), Greater Chennai Corporation,
+  half-yearly. Slabs change and corporations differ.
+
+**TDS is not computed.** It needs annual income projection, old-vs-new regime
+choice and Section 80 declarations. Guessing it creates real liability, so
+`payslips.tds` is a field accounts fills in on the payroll page. The
+`payslips_resync` trigger recomputes deductions and net pay when it changes,
+so the arithmetic stays correct whoever edits it.
+
+What the engine does compute, and how:
+
+| Component | Basis |
+|-----------|-------|
+| EPF employee/employer | 12% of basic, basic capped at the wage ceiling |
+| ESI employee/employer | 0.75% / 3.25% of gross, only at or below the gross limit |
+| Professional tax | TN half-yearly slab ÷ 6 |
+| Loss of pay | Approved unpaid leave inside the month, pro-rated on calendar days |
+
+Worked example (July 2026, 31 days, basic 45,000 + HRA 22,500 + allowance 22,500):
+
+```
+gross            90,000
+PF employee       1,800   (15,000 ceiling x 12%, not 45,000 x 12%)
+ESI                   0   (gross above the 21,000 limit)
+professional tax    208.33 (1,250 half-yearly / 6)
+net              87,991.67
+```
+
+`generate_payroll()` is SECURITY INVOKER on purpose: the caller's RLS decides
+whether they may read salaries and write payslips. It refuses to regenerate a
+run that is no longer a draft, so an approved month cannot be quietly rebuilt.
+
+## Statutory identity is a separate table
+
+`employee_statutory` holds PAN, Aadhaar last four, UAN, ESIC number and bank
+details, keyed one-to-one on `employees`. It exists because **RLS is row-level,
+not column-level** — anyone who can read the `employees` row can read every
+column of it. Splitting the sensitive fields into their own table is the only
+way to let staff see the team roster while keeping identity documents to HR and
+the employee themselves.
+
+Aadhaar is stored as the last four digits only, with a check constraint. Full
+Aadhaar numbers should not be in an application database.
+
+## Leave balances are derived
+
+`leave_balances` is a view: annual quota from `leave_types`, minus approved days
+this calendar year. Same reasoning as stock and invoice balances — a stored
+balance column drifts the first time a request is edited or cancelled.

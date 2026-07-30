@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>People & Culture · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/people.css" />
+
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <div class="ctx reveal">
+        <div class="ctx__main">
+          <div class="ctx__eyebrow">People · Culture</div>
+          <h1 class="ctx__title">People &amp; Culture</h1>
+          <div class="ctx__sub">How the team is feeling, growing and celebrating · July 2026</div>
+        </div>
+        <div class="ctx__actions">
+          <button class="btn-ghost" data-toast="Pulse survey|Anonymous monthly pulse sent to 24 staff.">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 4-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Send pulse</button>
+          <button class="btn-new" id="kudoBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.4-9.5-8.5C.8 9.6 2 6 5.2 6c1.9 0 3.1 1.1 3.8 2.2C9.7 7.1 10.9 6 12.8 6 16 6 17.2 9.6 15.5 12.5 13 16.6 12 21 12 21z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/></svg>Give kudos</button>
+        </div>
+      </div>
+
+      <section class="kstrip">
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-green"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M7 11l3-3 3 3 4-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 19h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>eNPS</div><div class="kbox__val" data-count="50">0</div><div class="kbox__note">Great · up 8 pts</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Engagement</div><div class="kbox__val"><span data-count="84">0</span><small>%</small></div><div class="kbox__note">of 24 responded</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-violet"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M8 21V9l4-6 4 6v12M4 21V13h4M20 21V13h-4" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span>Kudos this month</div><div class="kbox__val" id="kudoCount" data-count="18">0</div><div class="kbox__note">peer recognitions</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Avg tenure</div><div class="kbox__val">2.8<small> yrs</small></div><div class="kbox__note">92% retention</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-pink"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.4-9.5-8.5C.8 9.6 2 6 5.2 6c1.9 0 3.1 1.1 3.8 2.2C9.7 7.1 10.9 6 12.8 6 16 6 17.2 9.6 15.5 12.5 13 16.6 12 21 12 21z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span>Celebrations</div><div class="kbox__val" data-count="4">0</div><div class="kbox__note">next 3 weeks</div></div>
+      </section>
+
+      <div class="grid">
+        <div class="stack">
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Recognition wall</div><a class="card__link" href="#" id="kudoBtn2">Give kudos →</a></div>
+            <div class="kudos" id="kudos"></div>
+          </section>
+
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Engagement pulse</div><span class="card__tag">24 responses</span></div>
+            <div class="card__body">
+              <div class="enps">
+                <div class="enps__score"><div class="enps__n">+50</div><div class="enps__lbl">eNPS</div></div>
+                <div class="enps__bar-wrap">
+                  <div class="enps__bar">
+                    <div class="enps__seg seg-pro" data-w="62.5">Promoters</div>
+                    <div class="enps__seg seg-pas" data-w="25">Passives</div>
+                    <div class="enps__seg seg-det" data-w="12.5">Detractors</div>
+                  </div>
+                  <div class="enps__legend">
+                    <span class="enps__lg"><span class="d" style="background:var(--success)"></span>Promoters <b>15</b></span>
+                    <span class="enps__lg"><span class="d" style="background:var(--warning)"></span>Passives <b>6</b></span>
+                    <span class="enps__lg"><span class="d" style="background:var(--danger)"></span>Detractors <b>3</b></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Values &amp; initiatives</div></div>
+            <div class="card__body">
+              <div class="vals" style="margin-bottom:20px">
+                <span class="val"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3l2.5 5 5.5.8-4 3.9 1 5.5L12 16l-5 2.6 1-5.5-4-3.9L9.5 8 12 3z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Ownership</span>
+                <span class="val"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M14 3l7 7-9 9-7 1 1-7 8-8z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Craft</span>
+                <span class="val"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M5 20a7 7 0 0114 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Client-first</span>
+                <span class="val"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 19l6-6 3 3 7-8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Growth</span>
+                <span class="val"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3l8 3v6c0 4.5-3 7.5-8 9-5-1.5-8-4.5-8-9V6l8-3z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Integrity</span>
+              </div>
+              <div class="inits">
+                <div class="init"><div class="init__ic i-danger"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 3l8 3v6c0 4.5-3 7.5-8 9-5-1.5-8-4.5-8-9V6l8-3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div><div class="init__t">Site Safety First</div><div class="init__d">Monthly toolbox talks and PPE audits across all sites.</div><div class="init__m">100% helmet compliance</div></div>
+                <div class="init"><div class="init__ic i-blue"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 6h16v12H4zM4 10h16" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div><div class="init__t">Learning Fridays</div><div class="init__d">Weekly skill session — Revit, BOQ, site tech, soft skills.</div><div class="init__m">6 sessions this quarter</div></div>
+                <div class="init"><div class="init__ic i-violet"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M8 21c-3 0-5-2-5-5 0-4 4-5 4-9M16 21c3 0 5-2 5-5 0-4-4-5-4-9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div><div class="init__t">Chai &amp; Critique</div><div class="init__d">Fortnightly open design review over chai — all welcome.</div><div class="init__m">Next: 25 Jul</div></div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <aside class="rail">
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Celebrations</div><span class="card__tag">Upcoming</span></div>
+            <div class="card__body"><div class="celeb" id="celeb"></div></div>
+          </section>
+
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Team spotlight</div><span class="card__tag">Jul</span></div>
+            <div class="card__body">
+              <div class="spot">
+                <div class="spot__av c1">AK<span class="spot__badge"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 3l2.5 5 5.5.8-4 3.9 1 5.5L12 16l-5 2.6 1-5.5-4-3.9L9.5 8 12 3z" fill="#3a2a08"/></svg></span></div>
+                <div class="spot__nm">Arun Kumar</div>
+                <div class="spot__role">Site Engineer · Adyar Courtyard</div>
+                <div class="spot__q">"For steering the Adyar site through the monsoon disruption without slipping the FF slab schedule."</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Quick pulse</div></div>
+            <div class="card__body">
+              <div class="poll" id="poll">
+                <div class="poll__q">How's your workload this week?</div>
+                <div class="poll__opts">
+                  <button class="popt" data-opt="light" data-v="5"><span class="popt__fill"></span><span class="popt__lbl"><span>😌 Light</span><span class="popt__pct"></span></span></button>
+                  <button class="popt" data-opt="right" data-v="13"><span class="popt__fill"></span><span class="popt__lbl"><span>🙂 Just right</span><span class="popt__pct"></span></span></button>
+                  <button class="popt" data-opt="heavy" data-v="6"><span class="popt__fill"></span><span class="popt__lbl"><span>😮‍💨 Heavy</span><span class="popt__pct"></span></span></button>
+                </div>
+                <div class="poll__done">Thanks — your response is anonymous.</div>
+              </div>
+            </div>
+          </section>
+        </aside>
+      </div>
+
+      <footer class="footer">
+        <span>© 2026 Studio Bind Architects · Chennai</span>
+        <span class="footer__v">Bind Build ERP v0.9.0 · build 2026.07</span>
+      </footer>
+    
+    </main>
+  </div>
+<!-- give kudos modal -->
+<div class="modal" id="kudoModal" role="dialog" aria-modal="true" aria-labelledby="kmTitle">
+  <div class="modal__scrim" data-close></div>
+  <div class="modal__box">
+    <div class="modal__title" id="kmTitle">Give kudos</div>
+    <div class="fld"><label for="kmTo">To</label>
+      <select id="kmTo">
+        <option value="Arun Kumar|c1">Arun Kumar · Site Engineer</option>
+        <option value="Sowmya V|c2">Sowmya V · Interior Lead</option>
+        <option value="Divya N|c3">Divya N · Architect</option>
+        <option value="Ramesh M|c4">Ramesh M · Site Supervisor</option>
+        <option value="Vignesh R|c5">Vignesh R · Junior Architect</option>
+        <option value="Karthik S|c1">Karthik S · Procurement</option>
+        <option value="Lakshmi P|c2">Lakshmi P · Accounts</option>
+      </select>
+    </div>
+    <div class="fld"><label>Value</label>
+      <div class="vchips" id="kmVals">
+        <button class="vchip on" data-val="Ownership">Ownership</button>
+        <button class="vchip" data-val="Craft">Craft</button>
+        <button class="vchip" data-val="Reliability">Reliability</button>
+        <button class="vchip" data-val="Growth">Growth</button>
+      </div>
+    </div>
+    <div class="fld"><label for="kmMsg">Message</label>
+      <textarea id="kmMsg" placeholder="What did they do well?">Great work this week — thank you!</textarea>
+    </div>
+    <div class="modal__acts">
+      <button class="btn-ghost" data-close>Cancel</button>
+      <button class="btn-new" id="kmSend"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 12l16-7-7 16-2-6-7-3z" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"/></svg>Post kudos</button>
+    </div>
+  </div>
+</div>
+</div>
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/people.js"></script>
+</body>
+</html>

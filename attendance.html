@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Attendance · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/attendance.css" />
+
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <div class="ctx reveal">
+        <div class="ctx__main">
+          <div class="ctx__eyebrow">People · Attendance</div>
+          <h1 class="ctx__title">Attendance register</h1>
+          <div class="ctx__sub">Studio &amp; site punch-ins · <span id="ctxDate">Monday, 20 Jul 2026</span></div>
+        </div>
+        <div class="ctx__actions">
+          <div class="datenav">
+            <button id="dPrev" aria-label="Previous day"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <span class="datenav__lbl" id="dLbl">Today · 20 Jul</span>
+            <button id="dNext" aria-label="Next day"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+          <button class="btn-ghost" data-toast="Export|Attendance sheet exported as XLSX.">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Export</button>
+          <button class="btn-new" id="markAll"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Mark all present</button>
+        </div>
+      </div>
+
+      <section class="kstrip">
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-green"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Present</div><div class="kbox__val" id="kPres">0<small>/24</small></div><div class="kbox__note">Clocked in today</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-sky"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>On leave</div><div class="kbox__val" id="kLeave">0</div><div class="kbox__note">Approved leave</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-danger"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Absent</div><div class="kbox__val" id="kAbs">0</div><div class="kbox__note">No punch-in</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Late in</div><div class="kbox__val" id="kLate">0</div><div class="kbox__note">After 09:15</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 4-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Attendance</div><div class="kbox__val"><span id="kPct">0</span><small>%</small></div><div class="kbox__note">of full strength</div></div>
+      </section>
+
+      <div class="grid">
+        <div class="stack">
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Today's register</div><span class="card__tag" id="regCount">— people</span></div>
+            <div class="filters">
+              <div class="seg" id="locSeg">
+                <button class="on" data-l="all">All</button>
+                <button data-l="Studio">Studio</button>
+                <button data-l="Adyar site">Site</button>
+              </div>
+              <select class="selctl" id="statSel">
+                <option value="all">Any status</option>
+                <option value="pres">Present</option>
+                <option value="late">Late</option>
+                <option value="leave">On leave</option>
+                <option value="abs">Absent</option>
+              </select>
+              <div class="fsearch">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-3.2-3.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                <input type="text" id="regSearch" placeholder="Search…" aria-label="Search people" />
+              </div>
+            </div>
+            <div class="reg" id="reg"></div>
+            <div class="reg__more">Showing studio staff + key site engineers · +14 site crew clocked via the site muster</div>
+          </section>
+
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Monthly heatmap</div><span class="card__tag">July 2026</span></div>
+            <div class="hm">
+              <div class="hm__grid" id="hmGrid"></div>
+              <div class="hm__legend">
+                <span class="hm__lg"><span class="hm__sw" style="background:var(--surface-2)"></span>Off day</span>
+                <span class="hm__lg"><span class="hm__sw" style="background:var(--danger-soft)"></span>&lt;70%</span>
+                <span class="hm__lg"><span class="hm__sw" style="background:var(--warning-soft)"></span>70–85%</span>
+                <span class="hm__lg"><span class="hm__sw" style="background:var(--accent-soft)"></span>85–95%</span>
+                <span class="hm__lg"><span class="hm__sw" style="background:var(--success-soft)"></span>&gt;95%</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <aside class="rail">
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Today at a glance</div></div>
+            <div class="card__body">
+              <div class="don">
+                <div class="ring" id="ring"><div class="ring__v"><span id="ringPct">83</span>%<small>present</small></div></div>
+                <div class="sumr">
+                  <div class="sr"><span class="d" style="background:var(--success)"></span>Present<b id="sPres">20</b></div>
+                  <div class="sr"><span class="d" style="background:var(--warning)"></span>Late<b id="sLate">2</b></div>
+                  <div class="sr"><span class="d" style="background:var(--sky)"></span>On leave<b id="sLeave">3</b></div>
+                  <div class="sr"><span class="d" style="background:var(--danger)"></span>Absent<b id="sAbs">1</b></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">By location</div></div>
+            <div class="card__body"><div class="loc" id="loc"></div></div>
+          </section>
+
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">On leave today</div><span class="card__tag">3</span></div>
+            <div class="card__body"><div class="leavelist" id="leavelist"></div></div>
+          </section>
+        </aside>
+      </div>
+
+      <footer class="footer">
+        <span>© 2026 Studio Bind Architects · Chennai</span>
+        <span class="footer__v">Bind Build ERP v0.9.0 · build 2026.07</span>
+      </footer>
+    
+    </main>
+  </div>
+
+</div>
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/attendance.js"></script>
+</body>
+</html>

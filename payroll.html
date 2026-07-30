@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Payroll · Bind Build ERP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/payroll.css" />
+
+<script>
+  (function(){
+    var s=localStorage.getItem('bindbuild.theme');
+    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+  })();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <!-- sidebar injected by shell.js -->
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <!-- topbar injected by shell.js -->
+    <main class="content" id="content">
+
+      <div class="ctx reveal">
+        <div class="ctx__main">
+          <div class="ctx__eyebrow">People · Payroll run</div>
+          <h1 class="ctx__title">Payroll · July 2026</h1>
+          <div class="ctx__sub">24 on payroll · pay cycle 01–31 Jul · payday 31 Jul 2026</div>
+        </div>
+        <div class="ctx__actions">
+          <button class="btn-ghost" id="exportBtn" data-toast="Bank file|NEFT bank advice (.csv) generated for HDFC.">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Export bank file</button>
+          <button class="btn-new" id="processBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7z" fill="#fff"/></svg>Process payroll</button>
+        </div>
+      </div>
+
+      <!-- run stepper -->
+      <section class="run reveal">
+        <div class="steps" id="steps">
+          <div class="step done" data-step="0"><span class="step__dot">✓</span><span class="step__lbl">Draft</span><span class="step__line"></span></div>
+          <div class="step active" data-step="1"><span class="step__dot">2</span><span class="step__lbl">Approved</span><span class="step__line"></span></div>
+          <div class="step" data-step="2"><span class="step__dot">3</span><span class="step__lbl">Processing</span><span class="step__line"></span></div>
+          <div class="step" data-step="3"><span class="step__dot">4</span><span class="step__lbl">Paid</span></div>
+        </div>
+        <div class="run__meta" id="runMeta">Approved by <b>Parthiban</b> · awaiting processing</div>
+      </section>
+
+      <section class="kstrip">
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 4-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Gross payroll</div><div class="kbox__val" id="kGross">₹0</div><div class="kbox__note">Total earnings</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-danger"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Deductions</div><div class="kbox__val" id="kDed">₹0</div><div class="kbox__note">PF + PT</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-green"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3v18M8 7h6a2.5 2.5 0 010 5H9a2.5 2.5 0 000 5h7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Net payable</div><div class="kbox__val" id="kNet">₹0</div><div class="kbox__note">To disburse</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-violet"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 20a5.5 5.5 0 0111 0M16 5.5a3 3 0 010 5.8M17.5 20a5.5 5.5 0 00-3-4.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>On payroll</div><div class="kbox__val">24</div><div class="kbox__note">Studio 10 · site 14</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Payday</div><div class="kbox__val">31 Jul</div><div class="kbox__note" id="kPayNote">In 11 days</div></div>
+      </section>
+
+      <div class="grid">
+        <div class="stack">
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Employee payroll</div><span class="card__tag" id="payCount">— rows</span></div>
+            <div class="filters">
+              <select class="selctl" id="depSel">
+                <option value="all">All departments</option>
+                <option>Design</option>
+                <option>Interiors</option>
+                <option>Site</option>
+                <option>Stores</option>
+                <option>Accounts</option>
+              </select>
+              <div class="fsearch">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-3.2-3.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                <input type="text" id="paySearch" placeholder="Search…" aria-label="Search payroll" />
+              </div>
+            </div>
+            <div class="tbl-wrap">
+              <table class="tbl">
+                <thead><tr><th>Employee</th><th class="num">Gross</th><th class="num">Deductions</th><th class="num">Net pay</th><th>Status</th></tr></thead>
+                <tbody id="payBody"></tbody>
+                <tfoot id="payFoot"></tfoot>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <aside class="rail">
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Statutory summary</div><span class="card__tag">July</span></div>
+            <div class="card__body">
+              <div class="stat">
+                <div class="stat__row"><span><span class="d" style="background:var(--accent)"></span>Provident fund (PF)</span><b>₹21,560</b></div>
+                <div class="stat__row"><span><span class="d" style="background:var(--sky)"></span>ESI</span><b>₹4,200</b></div>
+                <div class="stat__row"><span><span class="d" style="background:var(--warning)"></span>Professional tax</span><b>₹1,800</b></div>
+                <div class="stat__row tot"><span>Employee deductions</span><b id="statTot">₹27,560</b></div>
+              </div>
+              <div class="note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 11v5M12 8h.01" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>Employer PF/ESI contribution of ₹34,200 remitted separately by 15 Aug.</div>
+            </div>
+          </section>
+
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Gross by segment</div></div>
+            <div class="card__body"><div class="split" id="split"></div></div>
+          </section>
+
+          <section class="card reveal">
+            <div class="card__head"><div class="card__title">Payment</div></div>
+            <div class="card__body">
+              <div class="pinfo">
+                <div class="pi"><span class="pi__ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 9h18" stroke="currentColor" stroke-width="1.7"/></svg></span><div><div class="pi__k">Disbursement account</div><div class="pi__v">HDFC Bank ••4471</div></div></div>
+                <div class="pi"><span class="pi__ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/></svg></span><div><div class="pi__k">Mode</div><div class="pi__v">NEFT bulk transfer</div></div></div>
+                <div class="pi"><span class="pi__ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span><div><div class="pi__k">Scheduled</div><div class="pi__v" id="schedV">31 Jul 2026</div></div></div>
+              </div>
+            </div>
+          </section>
+        </aside>
+      </div>
+
+      <footer class="footer">
+        <span>© 2026 Studio Bind Architects · Chennai</span>
+        <span class="footer__v">Bind Build ERP v0.9.0 · build 2026.07</span>
+      </footer>
+    
+    </main>
+  </div>
+<!-- process confirm modal -->
+<div class="modal" id="procModal" role="dialog" aria-modal="true" aria-labelledby="pmTitle">
+  <div class="modal__scrim" data-close></div>
+  <div class="modal__box">
+    <div class="modal__ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></div>
+    <div class="modal__title" id="pmTitle">Process July payroll?</div>
+    <div class="modal__sub">This will disburse <b id="pmNet">₹0</b> to <b>24 employees</b> via NEFT on 31 Jul and lock the run.</div>
+    <div class="modal__acts">
+      <button class="btn-ghost" data-close>Cancel</button>
+      <button class="btn-new" id="pmConfirm"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Confirm &amp; process</button>
+    </div>
+  </div>
+</div>
+</div>
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/payroll.js"></script>
+</body>
+</html>
