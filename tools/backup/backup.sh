@@ -55,4 +55,12 @@ rm -rf "$OUT"
 
 echo
 echo "Backup written: $OUT.tar.gz  ($(du -h "$OUT.tar.gz" | cut -f1))"
-echo "Copy it somewhere that is NOT Supabase and NOT this machine."
+
+# push to every configured cloud, if any
+if [ -n "${BACKUP_REMOTES:-}" ]; then
+  echo
+  "$(dirname "$0")/sync.sh" "$(dirname "$OUT")"
+else
+  echo "Copy it somewhere that is NOT Supabase and NOT this machine."
+  echo "Set BACKUP_REMOTES and it will upload itself — see sync.sh."
+fi

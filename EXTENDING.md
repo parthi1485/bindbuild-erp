@@ -154,3 +154,15 @@ how soft-deleted rows are hidden without touching 220 existing policies.
 `authenticated`. Use `soft_delete(table, id, reason)`. If you add a statutory
 table, add it to the retained list in migration 021 and to the allow-list
 inside `soft_delete()`.
+
+
+## Adding a backup destination
+
+Nothing to code. `rclone config`, then add the remote to `BACKUP_REMOTES`:
+
+```bash
+export BACKUP_REMOTES="gdrive:BindBuild onedrive:BindBuild s3:bindbuild-backups"
+```
+
+Resist writing a provider integration. Every cloud changes its auth eventually,
+and each one you hand-roll is a thing you maintain forever.

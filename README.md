@@ -624,6 +624,33 @@ constraint name.
 A CSV of your invoices cannot rebuild the database. A pg_dump is useless to
 your CA. Run both.
 
+### Cloud destinations
+
+`tools/backup/sync.sh` pushes to **any number of clouds at once** through
+rclone — Google Drive, OneDrive, Dropbox, Box, S3, Backblaze B2, pCloud, Mega
+and around sixty others, from one config.
+
+Building OAuth per provider would be weeks of work and permanent maintenance
+for something rclone already does, so it is not built here.
+
+```bash
+# once
+rclone config          # repeat per provider
+rclone listremotes
+
+# then
+export BACKUP_REMOTES="gdrive:BindBuild onedrive:BindBuild b2:bindbuild-erp"
+./tools/backup/backup.sh          # dumps, then uploads to all three
+```
+
+`backup.sh` calls `sync.sh` automatically when `BACKUP_REMOTES` is set.
+`RETENTION_DAYS` (default 90) prunes old copies **on the remotes only**, never
+on your disk. If one destination fails the others still run and the archive
+stays local, so a flaky provider cannot cost you the backup.
+
+Two clouds from two different companies is the cheapest real redundancy there
+is. One provider is one point of failure.
+
 ### Google Drive backup
 
 `export.py` writes CSV per table, one multi-sheet Excel workbook, and a
@@ -658,3 +685,45 @@ See **[EXTENDING.md](EXTENDING.md)** — how to add a vertical, a proposal type
 or a whole module, and the five things in this codebase that will bite you.
 Business units and proposal templates (migration 023) are worked examples of
 the pattern.
+
+
+## Importing data back
+
+| Tool | Input | Use |
+|------|-------|-----|
+| `restore.sh` | `pg_dump` archive | **Disaster recovery.** Prefer this whenever you have a dump |
+| `import.py` | folder of CSVs | Recovering from an export, or bulk-loading existing records |
+
+```bash
+# always look first — this changes nothing
+python3 tools/backup/import.py ./exports/2026-07-30_1900/csv --dry-run
+
+# then commit
+python3 tools/backup/import.py ./exports/2026-07-30_1900/csv --on-conflict skip
+```
+
+`--on-conflict` takes `skip` (default), `update` or `error`. `--tables a,b,c`
+restricts scope; `--truncate` empties targets first and asks before it does.
+
+The import is a single transaction: any failure rolls the whole thing back, so
+a half-finished import cannot leave you worse off than before you started.
+
+### Three things it handles that a naive loop does not
+
+**Foreign key ordering.** Tables are sorted by their actual FK constraints, so
+`clients` loads before `invoices` before `invoice_items`. `clients` and `leads`
+reference each other, and a textbook topological sort stalls on that cycle and
+dumps everything remaining into an alphabetical tail — which put
+`invoice_items` ahead of `invoices` and would have failed on insert. When
+nothing is ready, the cycle is broken by emitting the table with the fewest
+unresolved dependencies. Both columns in that cycle are nullable, so one side
+going first is safe.
+
+**Generated columns.** `invoice_items.amount`, `po_items.amount` and
+`salary_structures.gross_monthly` are `GENERATED ALWAYS`. Supplying a value is
+an error, so those columns are dropped from the insert and reported.
+
+**Triggers still run.** Importing an invoice recomputes its own GST from
+`subtotal`, and importing a payslip resyncs its totals. The database stays the
+single source of truth for those figures rather than trusting whatever was in
+the CSV.
