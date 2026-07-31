@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase.js';
 import { mountShell } from '../lib/shell.js';
-import { toast, fail, esc, fmtDate } from '../lib/ui.js';
+import { toast, fail, esc, fmtDate, ensureHost } from '../lib/ui.js';
 const $ = (s,c=document)=>c.querySelector(s), $$=(s,c=document)=>[...c.querySelectorAll(s)];
 
 const user = await mountShell({ route: 'vendor-portal', title: 'Vendor portal' });
@@ -84,8 +84,10 @@ function paint(pos) {
 }
 
 async function thread(vendorId) {
-  const el = $('#supMsg') ? $('#thread') || $('#supThread') : null;
-  const box = el || $('#thread');
+  /* the prototype ships a message input but no list to render into */
+  const box = $('#thread') || $('#supThread')
+           || ensureHost('thread', { title: 'Messages', cls: 'msgs',
+                                     parent: '#supMsg' ? '#content' : '#content' });
   if (!box) return;
   const { data } = await supabase.from('portal_messages')
     .select('*').eq('vendor_id', vendorId).order('created_at');

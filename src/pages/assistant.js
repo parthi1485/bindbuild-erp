@@ -230,6 +230,14 @@ $('#send')?.addEventListener('click', send);
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
 });
 
+/* newChat sits in the prototype topbar, which the shell replaces. Put it back
+   next to the composer so the control is not simply lost. */
+if (!document.getElementById('newChat')) {
+  const composer = $('#send')?.parentElement || $('#chips')?.parentElement;
+  composer?.insertAdjacentHTML('beforebegin',
+    '<button class="btn btn--sm" id="newChat" style="margin:0 0 8px">New chat</button>');
+}
+
 $('#newChat')?.addEventListener('click', () => {
   convId = null;
   const t = $('#thread');

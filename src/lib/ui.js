@@ -115,3 +115,33 @@ export function fillSelect(id, rows, valueKey = 'id', labelKey = 'name') {
     `<option value="${r[valueKey]}">${String(r[labelKey] ?? '').replace(/[<>&"]/g, c =>
       ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]))}</option>`).join('');
 }
+
+/* ---- containers -------------------------------------------------
+   Some prototype pages are static layouts with hardcoded content and no
+   hooks — the two portals especially. Binding to an id that does not exist
+   fails silently and the section renders nowhere. This creates the container
+   if it is missing, styled with the page's own card classes so it looks
+   native rather than bolted on. */
+export function ensureHost(id, { parent = '#content', tag = 'ul', title = '', cls = '' } = {}) {
+  let el = document.getElementById(id);
+  if (el) return el;
+
+  const host = document.querySelector(parent) || document.getElementById('content');
+  if (!host) return null;
+
+  const wrap = document.createElement('section');
+  wrap.className = 'card card__pad';
+  wrap.style.marginTop = 'var(--s-5, 18px)';
+  if (title) {
+    const h = document.createElement('h3');
+    h.className = 'card__title';
+    h.textContent = title;
+    wrap.appendChild(h);
+  }
+  el = document.createElement(tag);
+  el.id = id;
+  if (cls) el.className = cls;
+  wrap.appendChild(el);
+  host.appendChild(wrap);
+  return el;
+}

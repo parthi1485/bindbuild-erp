@@ -104,9 +104,73 @@ def page_css(src: str, shared: str) -> str:
             out.append(f'/* page-specific tokens only; the rest live in app.css */\n:root{{{body}}}')
     return '\n'.join(out) + '\n'
 
+SHELL_IDS = {
+    'sidebar','navToggle','themeToggle','search','searchInput','searchPop',
+    'newBtn','newMenu','notifBtn','notifCount','profileBtn','profileMenu',
+    'profileName','profileRole','avatarInitials','menuName','menuEmail',
+    'signOutBtn','storageFill'
+}
+
+def derust_ids(html: str, slug: str):
+    """Rename page ids that collide with ones the shell injects.
+
+    The shell mounts its topbar before the page content, so
+    document.querySelector('#newBtn') finds the TOPBAR button, not the page's.
+    A page handler bound to that id silently never fires - which is exactly
+    how "New project" stopped working. Renaming at generation time means no
+    page module has to know the shell's id list.
+    """
+    renamed = {}
+    for sid in SHELL_IDS:
+        if f'id="{sid}"' not in html:
+            continue
+        new = 'pg' + sid[0].upper() + sid[1:]
+        html = html.replace(f'id="{sid}"', f'id="{new}"')
+        html = html.replace(f'for="{sid}"', f'for="{new}"')
+        html = html.replace(f'aria-controls="{sid}"', f'aria-controls="{new}"')
+        html = html.replace(f'aria-labelledby="{sid}"', f'aria-labelledby="{new}"')
+        renamed[sid] = new
+    if renamed:
+        print(f'    {slug}: renamed clashing ids -> ' +
+              ', '.join(f'{k}=>{v}' for k, v in renamed.items()))
+    return html
+
+def _close_index(html: str, open_end: int) -> int:
+    """Index of the tag that closes the element whose opening tag ended at
+    open_end. Brace-style depth tracking over div-ish tags."""
+    depth = 1
+    for m in re.finditer(r'<(/?)(div|main|section|aside|header|footer)\b[^>]*?(/?)>',
+                         html[open_end:]):
+        if m.group(3) == '/':
+            continue
+        depth += -1 if m.group(1) else 1
+        if depth == 0:
+            return open_end + m.start()
+    return len(html)
+
 def content(src: str) -> str:
-    m = re.search(r'<main class="content"[^>]*>(.*?)</main>', src, re.S)
-    body = m.group(1) if m else ''
+    """The page's own content.
+
+    Most prototypes use <main class="content">. The AI assistant has no <main>
+    at all — its chat sits directly inside <div class="main"> after the topbar.
+    Assuming <main> silently produced an empty page, so fall back to the
+    column wrapper and drop the topbar from it.
+    """
+    m = re.search(r'<main[^>]*class="[^"]*\bcontent\b[^"]*"[^>]*>', src)
+    if m:
+        end = _close_index(src, m.end())
+        body = src[m.end():end]
+    else:
+        col = re.search(r'<div[^>]*class="[^"]*\bmain\b[^"]*"[^>]*>', src)
+        if not col:
+            return ''
+        end = _close_index(src, col.end())
+        body = src[col.end():end]
+        # the shell supplies its own topbar
+        head = re.search(r'<header[^>]*class="[^"]*\btopbar\b[^"]*"[^>]*>', body)
+        if head:
+            body = body[_close_index(body, head.end()) + len('</header>'):]
+
     return re.sub(r'<script.*?</script>', '', body, flags=re.S)
 
 VOID_TAGS = {'br','img','input','hr','meta','link','path','circle','rect','line',
@@ -134,7 +198,18 @@ def after_main(src: str):
     """
     m = re.search(r'</main>(.*?)</body>', src, re.S)
     if not m:
-        return '', ''
+        # no <main>: anything after the .main column closes is outside-app markup
+        col = re.search(r'<div[^>]*class="[^"]*\bmain\b[^"]*"[^>]*>', src)
+        if not col:
+            return '', ''
+        end = _close_index(src, col.end())
+        rest = src[end:]
+        rest = rest[:rest.find('</body>')] if '</body>' in rest else rest
+        tail = re.sub(r'<script.*?</script>', '', rest, flags=re.S)
+        tail = re.sub(r'^\s*(</div>\s*)+', '', tail)
+        tail = re.sub(r'<div[^>]*class="toast-region"[^>]*>\s*</div>', '', tail)
+        tail = re.sub(r'<div[^>]*id="toasts"[^>]*>\s*</div>', '', tail)
+        return '', tail.strip()
     tail = re.sub(r'<script.*?</script>', '', m.group(1), flags=re.S)
 
     depth, split_at = 0, None
@@ -207,6 +282,7 @@ def build(proto, slug, title, route, extra_head=''):
 </body>
 </html>
 '''
+    html = derust_ids(html, slug)
     (ROOT / f'{slug}.html').write_text(html)
     print(f'{slug:14s} html={len(html):>6}B  css={(ROOT/f"src/styles/{slug}.css").stat().st_size:>6}B')
 

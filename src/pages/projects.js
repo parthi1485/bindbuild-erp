@@ -167,7 +167,7 @@ document.addEventListener('keydown', e => {
 /* ---------------------------------------------------------------
    new project
 --------------------------------------------------------------- */
-$('#newBtn')?.addEventListener('click', async () => {
+$('#pgNewBtn')?.addEventListener('click', async () => {
   const name = prompt('Project name');
   if (!name) return;
 

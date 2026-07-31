@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase.js';
 import { mountShell } from '../lib/shell.js';
-import { toast, fail, esc, fmtDate } from '../lib/ui.js';
+import { toast, fail, esc, fmtDate, ensureHost } from '../lib/ui.js';
 const $ = (s,c=document)=>c.querySelector(s), $$=(s,c=document)=>[...c.querySelectorAll(s)];
 
 const user = await mountShell({ route: 'client-portal', title: 'Client portal' });
@@ -45,6 +45,14 @@ function paint(projects, invoices, approvals, docs) {
   if (t) t.textContent = CLIENT?.name
     ? `${CLIENT.name}${isStaffView ? ' · staff preview' : ''}` : 'Client portal';
 
+  /* the prototype's hero facts are static; fill them by label instead */
+  const facts = [...document.querySelectorAll('.hfact')];
+  const setFact = (label, v) => {
+    const f = facts.find(x => (x.querySelector('.hfact__l')?.textContent || '')
+                              .trim().toLowerCase().startsWith(label));
+    const val = f?.querySelector('.hfact__v, .hfact__n, b');
+    if (val) val.textContent = v;
+  };
   const set=(id,v)=>{const x=document.getElementById(id); if(x)x.textContent=v;};
   const billed = invoices.reduce((a,r)=>a+Number(r.total||0),0);
   const paid   = invoices.reduce((a,r)=>a+Number(r.amount_paid||0),0);
@@ -52,8 +60,12 @@ function paint(projects, invoices, approvals, docs) {
   set('pBilled', money(billed));
   set('pPaid', money(paid));
   set('pDue', money(billed - paid));
+  setFact('stage', projects[0]?.progress_pct != null ? projects[0].progress_pct + '% complete' : '—');
+  setFact('next milestone', projects[0]?.next_milestone || '—');
+  setFact('est. handover', projects[0]?.target_end_date ? fmtDate(projects[0].target_end_date) : '—');
 
-  const pl = $('#projList') || $('#plist');
+  const pl = $('#projList') || $('#plist')
+           || ensureHost('projList', { title: 'Your projects', cls: 'plist' });
   if (pl) pl.innerHTML = projects.length
     ? projects.map(p => `<li class="pp">
         <span class="pp__nm">${esc(p.name)}</span>
@@ -61,7 +73,8 @@ function paint(projects, invoices, approvals, docs) {
         <span class="pp__pct">${p.progress_pct}%</span></li>`).join('')
     : '<li class="pp"><span class="pp__nm">No projects yet</span></li>';
 
-  const il = $('#invList') || $('#invBody');
+  const il = $('#invList') || $('#invBody')
+           || ensureHost('invList', { title: 'Invoices', cls: 'ilist' });
   if (il) il.innerHTML = invoices.length
     ? invoices.map(v => `<li class="pi">
         <span class="pi__no">${esc(v.invoice_no)}</span>
@@ -75,7 +88,8 @@ function paint(projects, invoices, approvals, docs) {
   const badge = $('#apprBadge');
   if (badge) { badge.textContent = String(pending.length); badge.hidden = !pending.length; }
 
-  const al = $('#apprList') || $('#appr');
+  const al = $('#apprList') || $('#appr')
+           || ensureHost('apprList', { title: 'Awaiting your approval', cls: 'alist' });
   if (al) al.innerHTML = approvals.length
     ? approvals.map(a => `<li class="pa" data-id="${a.id}">
         <span class="pa__body"><span class="pa__nm">${esc(a.title)}</span>
@@ -87,7 +101,8 @@ function paint(projects, invoices, approvals, docs) {
       </li>`).join('')
     : '<li class="pa"><span class="pa__body">Nothing awaiting your approval</span></li>';
 
-  const dl = $('#docList') || $('#docs');
+  const dl = $('#docList') || $('#docs')
+           || ensureHost('docList', { title: 'Shared documents', cls: 'dlist' });
   if (dl) dl.innerHTML = docs.length
     ? docs.map(d => `<li class="pd" data-path="${esc(d.storage_path)}">
         <span class="pd__nm">${esc(d.name)}</span>

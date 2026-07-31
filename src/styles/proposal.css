@@ -331,15 +331,3 @@ table.fee{width:100%;border-collapse:collapse;min-width:720px}
   .toast-region{left:14px;right:14px;bottom:14px}
   .toast{max-width:none}
 }
-
-/* template-driven sections */
-.tpl-pick{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--text-2)}
-.tpl-pick select{background:var(--surface-2);color:var(--text-1);border:1px solid var(--line);
-  border-radius:var(--r-xs);padding:6px 10px;font:inherit}
-.tpl-sec{margin-top:var(--s-5)}
-.tpl-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
-.tpl-list li{display:flex;gap:8px;align-items:center}
-.tpl-tbl{width:100%;border-collapse:collapse}
-.tpl-tbl td{padding:4px 6px 4px 0}
-.tpl-tbl td:last-child{width:34px}
-.btn--sm{padding:5px 12px;font-size:12px;margin-top:10px}

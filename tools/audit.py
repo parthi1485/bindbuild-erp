@@ -33,12 +33,18 @@ def ids_in_page(html):
     b = re.sub(r'<script.*?</script>', '', body.group(1) if body else html, flags=re.S)
     return set(re.findall(r'id="([A-Za-z0-9_]+)"', b))
 
-rows, lost_total, dead_total, css_total = [], 0, 0, 0
+import json as _json
+SHELL = set(_json.loads('''["sidebar","navToggle","themeToggle","search","searchInput",
+"searchPop","newBtn","newMenu","notifBtn","notifCount","profileBtn","profileMenu",
+"profileName","profileRole","avatarInitials","menuName","menuEmail","signOutBtn",
+"storageFill"]'''))
+
+rows, lost_total, dead_total, css_total, clash_total = [], 0, 0, 0, 0
 for proto, slug in PAGES.items():
     p_html = (UP / proto).read_text()
     g_path = ROOT / f'{slug}.html'
     if not g_path.exists():
-        rows.append((slug, 'MISSING PAGE', '', '')); continue
+        rows.append((slug, 'MISSING PAGE', '', '', [])); continue
     g_html = g_path.read_text()
     js_path = ROOT / f'src/pages/{slug}.js'
     js = js_path.read_text() if js_path.exists() else ''
@@ -58,19 +64,27 @@ for proto, slug in PAGES.items():
     defined = set(re.findall(r'\.([a-zA-Z][\w-]*)', css))
     undef = sorted(c for c in used if c not in defined)
 
-    lost_total += len(lost); dead_total += len(dead); css_total += len(undef)
-    rows.append((slug, lost, dead, undef))
+    # a page id that matches one the shell injects is a silent dead handler:
+    # the shell mounts first, so querySelector finds the topbar element
+    main = re.search(r'<main class="content".*?</main>', g_html, re.S)
+    page_ids = set(re.findall(r'id="([A-Za-z0-9_]+)"', main.group(0))) if main else set()
+    clash = sorted(page_ids & SHELL)
 
-print(f'{"page":16s} {"lostUI":>7s} {"deadCtrl":>9s} {"noCSS":>6s}   detail')
-print('-'*94)
-for slug, lost, dead, undef in rows:
+    lost_total += len(lost); dead_total += len(dead)
+    css_total += len(undef); clash_total += len(clash)
+    rows.append((slug, lost, dead, undef, clash))
+
+print(f'{"page":16s} {"lostUI":>7s} {"deadCtrl":>9s} {"noCSS":>6s} {"idClash":>8s}   detail')
+print('-'*100)
+for slug, lost, dead, undef, clash in rows:
     if lost == 'MISSING PAGE':
         print(f'{slug:16s}   MISSING PAGE'); continue
-    flag = '' if not (lost or dead or undef) else '  <-'
+    flag = '' if not (lost or dead or undef or clash) else '  <-'
     det = []
     if lost: det.append('lost=' + ','.join(lost[:4]))
     if dead: det.append('dead=' + ','.join(dead[:5]))
     if undef: det.append('css=' + ','.join(undef[:3]))
-    print(f'{slug:16s} {len(lost):7d} {len(dead):9d} {len(undef):6d}   {" ".join(det)[:60]}{flag}')
-print('-'*94)
-print(f'{"TOTAL":16s} {lost_total:7d} {dead_total:9d} {css_total:6d}')
+    if clash: det.append('CLASH=' + ','.join(clash))
+    print(f'{slug:16s} {len(lost):7d} {len(dead):9d} {len(undef):6d} {len(clash):8d}   {" ".join(det)[:56]}{flag}')
+print('-'*100)
+print(f'{"TOTAL":16s} {lost_total:7d} {dead_total:9d} {css_total:6d} {clash_total:8d}')
