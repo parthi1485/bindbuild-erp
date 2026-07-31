@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase.js';
-import { mountShell } from '../lib/shell.js';
+import { mountShell, scopeToUnit } from '../lib/shell.js';
 import { toast, fail, esc, fmtDate, initials } from '../lib/ui.js';
 
 const $  = (s, c = document) => c.querySelector(s);
@@ -31,8 +31,8 @@ let fProject = '', fStatus = '', fCat = '', q = '';
 
 async function load() {
   const [poRes, prRes] = await Promise.all([
-    supabase.from('purchase_orders')
-      .select('*, vendors(name,category), projects(name,code), po_items(description,qty,unit)')
+    scopeToUnit(supabase.from('purchase_orders')
+      .select('*, vendors(name,category), projects(name,code), po_items(description,qty,unit)'))
       .order('created_at', { ascending: false }),
     supabase.from('projects').select('id,code,name').order('name')
   ]);

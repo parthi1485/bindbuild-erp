@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase.js';
-import { mountShell } from '../lib/shell.js';
+import { mountShell, activeUnit, scopeToUnit } from '../lib/shell.js';
 import { toast, fail, esc, fmtDate } from '../lib/ui.js';
 
 const $  = (s, c = document) => c.querySelector(s);
@@ -216,6 +216,7 @@ $('#emSave')?.addEventListener('click', async () => {
     payment_mode: $('#emMode')?.value || 'neft',
     expense_date: $('#emDate')?.value || new Date().toISOString().slice(0, 10),
     requested_by: user.id,          // RLS requires this to be the caller
+    business_unit_id: activeUnit(),
     status: 'pending'
   });
 

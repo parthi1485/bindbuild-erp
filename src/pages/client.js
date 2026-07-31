@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase.js';
-import { mountShell } from '../lib/shell.js';
+import { mountShell, activeUnit } from '../lib/shell.js';
 import { toast, fail, esc, fmtDate, initials, openModal, closeAllModals,
          wireModalDismiss, val, setVal, fillSelect } from '../lib/ui.js';
 
@@ -329,6 +329,7 @@ $('#newInvBtn')?.addEventListener('click', async () => {
     sgst_rate: interstate ? 0 : 9,
     igst_rate: interstate ? 18 : 0,
     status: 'draft',
+    business_unit_id: CLIENT.business_unit_id ?? activeUnit(),
     created_by: user.id
   }).select('id').single();
 

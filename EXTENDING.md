@@ -72,14 +72,29 @@ What you get for free: every `leads`, `clients`, `projects`, `proposals`,
 `invoices`, `credit_notes`, `purchase_orders`, `expenses` and `employees` row
 can carry a unit, and reports can group by it.
 
-What still needs doing when you actually launch one:
+The picker and scoping are built. `shell.js` exports:
 
-1. A unit picker in the topbar, writing to `localStorage`
-2. `business_unit_id` on insert in the page modules
-3. A `filter('business_unit_id', ...)` on the list queries
-4. If it has its own GSTIN, invoice numbering must read the unit's prefix
+```js
+activeUnit()            // the selected unit id, or null
+activeUnitName()        // for display
+scopeToUnit(query)      // adds a unit filter to a Supabase query
+```
 
-That is roughly a day, and none of it is a migration.
+The topbar selector appears **only once a second unit exists** — a dropdown
+with one option is noise. Choice persists in `localStorage` and reloads the
+page, which is the simplest correct way to refresh every query at once.
+
+`scopeToUnit()` matches the active unit **or null**, so records created before
+units existed stay visible instead of silently vanishing.
+
+Wired so far: leads, projects, clients, invoices, expenses, purchase orders.
+
+Still to do when you actually launch a second unit:
+
+1. Invoice numbering should read the unit's `invoice_prefix` rather than the
+   fixed `INV-`. Matters most if the unit has its own GSTIN, because GST
+   expects an unbroken series per registration.
+2. Reports (`analytics`, `finance`) do not group by unit yet.
 
 ## Adding a proposal type
 
@@ -106,9 +121,27 @@ Four ship already: `TURNKEY` (per sq ft, stage-wise), `INTERIOR` (room-wise),
 `pricing_model` values: `lump_sum`, `per_sqft`, `per_unit`, `hourly`,
 `stage_wise`, `room_wise`, `percentage_of_cost`.
 
-The `sections` array is what the editor should render, in order. Section types
-are `list`, `table` and `schedule`. Reading it in `proposal.js` and rendering
-each section is the remaining work — the data model is already there.
+The `sections` array is what the editor renders, in order. Section types are
+`list`, `table` and `schedule`, and `proposal.js` renders all three — a new
+proposal type needs no page changes at all.
+
+Content lives in `proposals.sections_data`, keyed by section:
+
+```json
+{"exclusions": ["Civil work", "Electrical rough-in"],
+ "specs": [{"c": ["Flooring", "600x600 vitrified"]}]}
+```
+
+One jsonb column rather than a table per section type, because sections are
+document prose — nobody will filter projects by "exclusions". The two sections
+that *are* queried keep their own homes: the fee table in `proposal_items` and
+the payment schedule in `proposals.stages`, because `get_proposal()` exposes
+both to unauthenticated client links and a live proposal URL must not break.
+
+A `proposals_apply_template` trigger fills scope, terms, schedule, tax rate and
+validity from the template on insert — but only where the field is still empty,
+so it never overwrites what someone wrote. Switching template in the editor
+follows the same rule.
 
 ## Adding a whole module
 

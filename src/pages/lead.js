@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase.js';
-import { mountShell } from '../lib/shell.js';
+import { mountShell, activeUnit } from '../lib/shell.js';
 import { toast, fail, esc, initials, fmtDate, openModal, closeAllModals,
          wireModalDismiss, val, setVal } from '../lib/ui.js';
 
@@ -293,6 +293,7 @@ $('#btnWon')?.addEventListener('click', async () => {
     email: LEAD.email || null,
     address_line: LEAD.area,
     city: 'Chennai',
+    business_unit_id: LEAD.business_unit_id ?? activeUnit(),
     converted_from_lead_id: LEAD.id,
     owner_id: user.id,
     notes: LEAD.note || ''

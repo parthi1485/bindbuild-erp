@@ -22,6 +22,7 @@ const moneyL = v => {
 };
 
 let PROPOSAL = null, LEAD = null, ITEMS = [], SCOPE = [], SCHEDULE = [];
+let TEMPLATE = null, TEMPLATES = [], SECTIONS = {};
 let dirty = false, saveTimer = null;
 
 /* ---------------------------------------------------------------
@@ -50,8 +51,17 @@ async function load() {
     LEAD = data;
   }
 
-  const { data: items } = await supabase.from('proposal_items')
-    .select('*').eq('proposal_id', PROPOSAL.id).order('sort_order');
+  const [{ data: items }, { data: tpls }] = await Promise.all([
+    supabase.from('proposal_items').select('*').eq('proposal_id', PROPOSAL.id).order('sort_order'),
+    supabase.from('proposal_templates').select('*').eq('status', 'active').order('name')
+  ]);
+
+  TEMPLATES = tpls ?? [];
+  TEMPLATE  = TEMPLATES.find(t => t.id === PROPOSAL.template_id)
+           || TEMPLATES.find(t => t.is_default)
+           || null;
+  SECTIONS  = PROPOSAL.sections_data && typeof PROPOSAL.sections_data === 'object'
+            ? { ...PROPOSAL.sections_data } : {};
 
   /* fall back to the single service line the generator created */
   ITEMS = (items ?? []).length
@@ -75,9 +85,11 @@ async function load() {
   SCHEDULE = Array.isArray(PROPOSAL.stages) ? PROPOSAL.stages : [];
 
   paintMeta();
+  renderTemplatePicker();
   renderItems();
   renderScope();
   renderSchedule();
+  renderTemplateSections();
   calc();
   await paintTracking();
 }
@@ -215,6 +227,159 @@ function renderSchedule() {
 }
 
 /* ---------------------------------------------------------------
+   template
+--------------------------------------------------------------- */
+const MODEL_LABEL = {
+  lump_sum:'Lump sum', per_sqft:'Per sq ft', per_unit:'Per unit', hourly:'Hourly',
+  stage_wise:'Stage-wise', room_wise:'Room-wise', percentage_of_cost:'% of cost'
+};
+
+function renderTemplatePicker() {
+  const host = $('#tplPicker') || $('#dTitle')?.closest('.meta, .doc-meta, .head')
+            || $('.doc__meta') || $('#feeCount')?.parentElement;
+  if (!host || !TEMPLATES.length) return;
+
+  if (!document.getElementById('tplSel')) {
+    host.insertAdjacentHTML('beforeend',
+      `<label class="tpl-pick"><span>Proposal type</span>
+         <select id="tplSel" aria-label="Proposal type"></select>
+       </label>`);
+  }
+  const sel = document.getElementById('tplSel');
+  sel.innerHTML = TEMPLATES.map(t =>
+    `<option value="${t.id}"${t.id === TEMPLATE?.id ? ' selected' : ''}>${esc(t.name)}</option>`).join('');
+
+  const model = $('#tplModel');
+  if (model && TEMPLATE) model.textContent = MODEL_LABEL[TEMPLATE.pricing_model] || TEMPLATE.pricing_model;
+}
+
+document.addEventListener('change', async e => {
+  if (e.target.id !== 'tplSel') return;
+  const next = TEMPLATES.find(t => t.id === e.target.value);
+  if (!next) return;
+
+  if (!confirm(`Switch to "${next.name}"?\n\nSections change to match. Content you have already written is kept.`)) {
+    e.target.value = TEMPLATE?.id ?? '';
+    return;
+  }
+
+  TEMPLATE = next;
+  PROPOSAL.template_id = next.id;
+
+  /* fill only what is still empty — never overwrite the user's words */
+  if (!SCOPE.length && next.default_scope) {
+    SCOPE = next.default_scope.split(/[\n;]+/).map(x => x.trim()).filter(Boolean);
+  }
+  if (!SCHEDULE.length && Array.isArray(next.default_schedule)) {
+    SCHEDULE = next.default_schedule;
+  }
+  const terms = $('#terms');
+  if (terms && !terms.value.trim()) terms.value = next.default_terms || '';
+
+  renderScope();
+  renderSchedule();
+  renderTemplateSections();
+  calc();
+  markDirty();
+});
+
+/* ---------------------------------------------------------------
+   sections the template defines
+   list     -> editable lines
+   table    -> editable grid
+   schedule -> handled by the existing payment schedule block
+--------------------------------------------------------------- */
+const BUILT_IN = new Set(['scope', 'schedule', 'fee', 'items']);
+
+function sectionHost() {
+  let host = document.getElementById('tplSections');
+  if (host) return host;
+  const anchor = $('#scopeList')?.closest('section, .panel, .card')
+              || $('#schList')?.closest('section, .panel, .card');
+  if (!anchor) return null;
+  anchor.insertAdjacentHTML('afterend', '<div id="tplSections"></div>');
+  return document.getElementById('tplSections');
+}
+
+function renderTemplateSections() {
+  const host = sectionHost();
+  if (!host) return;
+
+  const defs = Array.isArray(TEMPLATE?.sections) ? TEMPLATE.sections : [];
+  const extra = defs.filter(d => !BUILT_IN.has(d.key));
+
+  if (!extra.length) { host.innerHTML = ''; return; }
+
+  host.innerHTML = extra.map(d => {
+    const rows = SECTIONS[d.key];
+    if (d.type === 'table') {
+      const grid = Array.isArray(rows) && rows.length ? rows : [{ c: ['', ''] }];
+      return `<section class="panel tpl-sec" data-sec="${esc(d.key)}">
+        <h3 class="sec-title">${esc(d.label)}</h3>
+        <table class="tpl-tbl"><tbody>
+          ${grid.map((r, i) => `<tr>
+            ${(r.c || ['','']).map((cell, ci) =>
+              `<td><input class="in" value="${esc(cell)}" data-sec="${esc(d.key)}" data-r="${i}" data-c="${ci}" /></td>`).join('')}
+            <td><button class="rm" data-secrm="${esc(d.key)}:${i}" aria-label="Remove row">×</button></td>
+          </tr>`).join('')}
+        </tbody></table>
+        <button class="btn btn--sm" data-secadd="${esc(d.key)}:table">Add row</button>
+      </section>`;
+    }
+    const lines = Array.isArray(rows) && rows.length ? rows : [''];
+    return `<section class="panel tpl-sec" data-sec="${esc(d.key)}">
+      <h3 class="sec-title">${esc(d.label)}</h3>
+      <ul class="tpl-list">
+        ${lines.map((line, i) => `<li>
+          <input class="in" value="${esc(line)}" data-sec="${esc(d.key)}" data-r="${i}" />
+          <button class="rm" data-secrm="${esc(d.key)}:${i}" aria-label="Remove line">×</button>
+        </li>`).join('')}
+      </ul>
+      <button class="btn btn--sm" data-secadd="${esc(d.key)}:list">Add line</button>
+    </section>`;
+  }).join('');
+}
+
+document.addEventListener('input', e => {
+  const key = e.target.dataset?.sec;
+  if (key === undefined || e.target.tagName !== 'INPUT') return;
+  const r = Number(e.target.dataset.r);
+  const c = e.target.dataset.c;
+
+  if (c === undefined) {
+    const arr = Array.isArray(SECTIONS[key]) ? SECTIONS[key] : [];
+    arr[r] = e.target.value;
+    SECTIONS[key] = arr;
+  } else {
+    const arr = Array.isArray(SECTIONS[key]) ? SECTIONS[key] : [];
+    arr[r] = arr[r] || { c: [] };
+    arr[r].c[Number(c)] = e.target.value;
+    SECTIONS[key] = arr;
+  }
+  markDirty();
+});
+
+document.addEventListener('click', e => {
+  const add = e.target.closest('[data-secadd]');
+  if (add) {
+    const [key, kind] = add.dataset.secadd.split(':');
+    const arr = Array.isArray(SECTIONS[key]) ? SECTIONS[key] : [];
+    arr.push(kind === 'table' ? { c: ['', ''] } : '');
+    SECTIONS[key] = arr;
+    renderTemplateSections();
+    markDirty();
+    return;
+  }
+  const rm = e.target.closest('[data-secrm]');
+  if (rm) {
+    const [key, i] = rm.dataset.secrm.split(':');
+    if (Array.isArray(SECTIONS[key])) SECTIONS[key].splice(Number(i), 1);
+    renderTemplateSections();
+    markDirty();
+  }
+});
+
+/* ---------------------------------------------------------------
    totals — GST aware
 --------------------------------------------------------------- */
 function totals() {
@@ -264,6 +429,8 @@ async function save() {
   if (txt) txt.textContent = 'Saving…';
 
   const { error: pErr } = await supabase.from('proposals').update({
+    template_id:   PROPOSAL.template_id ?? null,
+    sections_data: SECTIONS,
     scope:       SCOPE.join('\n'),
     stages:      SCHEDULE,
     terms:       $('#terms')?.value ?? PROPOSAL.terms,

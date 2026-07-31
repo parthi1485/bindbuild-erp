@@ -1,6 +1,6 @@
 import { SIDEBAR_HTML, TOPBAR_HTML } from './shell-template.js';
 import { requireAuth, signOut } from './auth.js';
-import { initials, toast } from './ui.js';
+import { initials, toast, esc } from './ui.js';
 import { supabase } from './supabase.js';
 
 /* Routes that have a real page. Everything else in the nav is still a
@@ -12,6 +12,59 @@ const BUILT = new Set([
   'hr', 'people', 'documents', 'calendar', 'meetings',
   'client-portal', 'vendor-portal', 'settings'
 ]);
+
+/* ---------------------------------------------------------------
+   business unit
+   The active unit is a session preference, not a filter the database
+   enforces — RLS is about who may see a row, not which vertical the user is
+   looking at. Pages read activeUnit() on insert and when filtering lists.
+--------------------------------------------------------------- */
+const UNIT_KEY = 'bindbuild.unit';
+let UNITS = [];
+
+export const activeUnit = () => localStorage.getItem(UNIT_KEY) || null;
+export const activeUnitName = () =>
+  UNITS.find(u => u.id === activeUnit())?.name || 'All units';
+
+/** Scope a query to the active unit. Rows with no unit stay visible, so
+ *  anything created before units existed does not vanish. */
+export function scopeToUnit(query, column = 'business_unit_id') {
+  const id = activeUnit();
+  return id ? query.or(`${column}.eq.${id},${column}.is.null`) : query;
+}
+
+async function mountUnitPicker() {
+  const { data, error } = await supabase
+    .from('business_units').select('id,code,name,is_default')
+    .eq('status', 'active').order('name');
+  if (error || !data?.length) return;
+
+  UNITS = data;
+  if (!activeUnit()) {
+    const def = data.find(u => u.is_default) || data[0];
+    localStorage.setItem(UNIT_KEY, def.id);
+  }
+
+  /* only worth showing once there is more than one vertical */
+  if (data.length < 2) return;
+
+  const host = document.querySelector('.topbar__right, .topbar .right')
+            || document.getElementById('newBtn')?.parentElement
+            || document.querySelector('.topbar');
+  if (!host || document.getElementById('unitSel')) return;
+
+  host.insertAdjacentHTML('afterbegin',
+    `<label class="unit-pick" title="Business unit">
+       <select id="unitSel" aria-label="Business unit">
+         ${data.map(u => `<option value="${u.id}"${u.id === activeUnit() ? ' selected' : ''}>${esc(u.code)}</option>`).join('')}
+       </select>
+     </label>`);
+
+  document.getElementById('unitSel').addEventListener('change', e => {
+    localStorage.setItem(UNIT_KEY, e.target.value);
+    location.reload();          // simplest correct refresh of every query
+  });
+}
 
 /* ---------- theme (runs before paint to avoid a flash) ---------- */
 export function initTheme() {
@@ -115,6 +168,8 @@ export async function mountShell({ route, title }) {
       document.body.classList.remove('nav-open');
     });
   });
+
+  await mountUnitPicker();
 
   /* live nav counters straight off the database */
   paintCounts();

@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase.js';
-import { mountShell } from '../lib/shell.js';
+import { mountShell, activeUnit, scopeToUnit } from '../lib/shell.js';
 import { toast, fail, esc, openModal, closeModal, closeAllModals,
          wireModalDismiss, val, setVal } from '../lib/ui.js';
 
@@ -58,7 +58,7 @@ const toCard = r => ({
 async function load() {
   const [stageRes, leadRes] = await Promise.all([
     supabase.from('lead_stage_config').select('*').order('sort_order'),
-    supabase.from('leads').select('*').order('updated_at', { ascending: false })
+    scopeToUnit(supabase.from('leads').select('*')).order('updated_at', { ascending: false })
   ]);
 
   if (stageRes.error) return fail(stageRes.error);
@@ -349,6 +349,7 @@ $('#saveLead')?.addEventListener('click', async () => {
     area:    val('nlLoc') || 'Chennai',
     source:  val('nlSource') || 'Direct',
     stage_key: stage,
+    business_unit_id: activeUnit(),
     owner_id: user.id,
     assigned_to: user.id,
     last_contact_at: new Date().toISOString()

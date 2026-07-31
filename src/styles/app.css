@@ -377,3 +377,13 @@ html[data-theme="light"] #themeToggle .ico-moon { display:none }
 .i-violet{background:var(--violet-soft); color:var(--violet)}
 .i-sky   {background:var(--sky-soft);    color:var(--sky,#38bdf8)}
 .i-danger{background:var(--danger-soft); color:var(--danger)}
+
+/* business unit picker — only rendered when more than one unit exists */
+.unit-pick{display:inline-flex;align-items:center;margin-right:10px}
+.unit-pick select{
+  background:var(--surface-2);color:var(--text-2);border:1px solid var(--line);
+  border-radius:var(--r-pill);padding:6px 12px;font:500 12px/1 var(--font-mono);
+  letter-spacing:.04em;cursor:pointer
+}
+.unit-pick select:hover{color:var(--text-1);border-color:var(--line-2,var(--line))}
+@media (max-width:720px){ .unit-pick{display:none} }

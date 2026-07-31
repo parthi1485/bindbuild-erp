@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase.js';
-import { mountShell } from '../lib/shell.js';
+import { mountShell, activeUnit, scopeToUnit } from '../lib/shell.js';
 import { toast, fail, esc, fmtDate, initials } from '../lib/ui.js';
 
 const $  = (s, c = document) => c.querySelector(s);
@@ -25,9 +25,9 @@ const burnClass = p => p.burn_pct > p.progress_pct + 8 ? 'over'
                      : p.burn_pct > p.progress_pct ? 'warn' : 'ok';
 
 async function load() {
-  const { data, error } = await supabase
+  const { data, error } = await scopeToUnit(supabase
     .from('projects')
-    .select('*, clients(name), profiles!projects_pm_id_fkey(full_name)')
+    .select('*, clients(name), profiles!projects_pm_id_fkey(full_name)'))
     .neq('status', 'cancelled')
     .order('updated_at', { ascending: false });
 
@@ -178,7 +178,8 @@ $('#newBtn')?.addEventListener('click', async () => {
   const code = 'PRJ-' + String(n).padStart(3, '0');
 
   const { data, error } = await supabase.from('projects')
-    .insert({ code, name, pm_id: user.id, status: 'active' })
+    .insert({ code, name, pm_id: user.id, status: 'active',
+              business_unit_id: activeUnit() })
     .select('id').single();
 
   if (error) return fail(error);
