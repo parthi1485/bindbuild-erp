@@ -727,3 +727,31 @@ an error, so those columns are dropped from the insert and reported.
 `subtotal`, and importing a payslip resyncs its totals. The database stays the
 single source of truth for those figures rather than trusting whatever was in
 the CSV.
+
+
+## Text-mode fetches show every hidden view — that is expected
+
+A text-only fetch of `login.html` will show the login form, the reset flow,
+and the "You're in" success message all at once, in one block. That is not a
+bug: `.view.is-active { display:block }` and its siblings `display:none` hide
+everything except the active view, but a text-extraction tool reads the DOM
+and does not execute CSS. If you fetch a page and see content that should be
+mutually exclusive, check `is-active` before assuming something is broken.
+
+## Stale prototype copy, found and removed
+
+The login prototype shipped the line *"Demo access: use demo@studiobind.in
+with any password. Any 6-digit code passes 2FA."* That was true of the static
+prototype and became false the moment real Supabase auth was wired — the app
+accepts the real password and nothing else. Left in place, it actively
+misleads: someone reads it, tries a fake password, and gets an error with no
+idea why.
+
+The OTP and two-factor views it referenced were markup with no way to reach
+them — `login.js` never navigates to `data-view="otp"` or `"twofa"`, because
+there is no OTP or 2FA step. Both were removed rather than left as inert
+clutter that looks like an unfinished feature.
+
+If a future login redesign adds real 2FA, wire the view *and* update this
+copy together — a hint describing a feature that does not exist is worse than
+no hint.

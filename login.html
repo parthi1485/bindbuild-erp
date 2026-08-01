@@ -91,7 +91,7 @@
 
           <div class="hint" role="note">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v.01M11 12h1v4h1"/></svg>
-            <p><b>Demo access:</b> use <code>demo@studiobind.in</code> with any password. Any 6-digit code passes 2FA.</p>
+            <p class="hint">Sign in with the email and password your admin created for you.</p>
           </div>
 
           <form id="loginForm" novalidate>
@@ -156,52 +156,10 @@
         </div>
 
         <!-- ---------------- VIEW: OTP (email code) ---------------- -->
-        <div class="view" data-view="otp">
-          <button class="back" type="button" data-go="forgot"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back</button>
-          <div class="view__head">
-            <h2 class="view__title">Check your email</h2>
-            <p class="view__sub">We sent a code to <b id="otpTarget">you@studiobind.in</b>. Enter it below.</p>
-          </div>
-          <div class="otp" id="otpInputs" data-otp>
-            <input class="otp__cell" inputmode="numeric" maxlength="1" aria-label="Digit 1" />
-            <input class="otp__cell" inputmode="numeric" maxlength="1" aria-label="Digit 2" />
-            <input class="otp__cell" inputmode="numeric" maxlength="1" aria-label="Digit 3" />
-            <input class="otp__cell" inputmode="numeric" maxlength="1" aria-label="Digit 4" />
-            <input class="otp__cell" inputmode="numeric" maxlength="1" aria-label="Digit 5" />
-            <input class="otp__cell" inputmode="numeric" maxlength="1" aria-label="Digit 6" />
-          </div>
-          <div class="otp-meta stack-gap">
-            <span>Didn't get it?</span>
-            <button class="btn btn--link" type="button" data-resend>Resend in <span class="timer" data-timer>30s</span></button>
-          </div>
-          <button class="btn btn--primary stack-gap" type="button" data-verify="otp">
-            <span class="spin"></span><span class="btn-label">Verify code</span>
-          </button>
-        </div>
+        
 
         <!-- ---------------- VIEW: 2FA (authenticator) ---------------- -->
-        <div class="view" data-view="twofa">
-          <button class="back" type="button" data-go="login"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Cancel</button>
-          <div class="view__head">
-            <h2 class="view__title">Two-factor authentication</h2>
-            <p class="view__sub">Open your authenticator app and enter the 6-digit code for <b>Bind Build ERP</b>.</p>
-          </div>
-          <div class="otp" id="twofaInputs" data-otp>
-            <input class="otp__cell" inputmode="numeric" maxlength="1" aria-label="Digit 1" />
-            <input class="otp__cell" inputmode="numeric" maxlength="1" aria-label="Digit 2" />
-            <input class="otp__cell" inputmode="numeric" maxlength="1" aria-label="Digit 3" />
-            <input class="otp__cell" inputmode="numeric" maxlength="1" aria-label="Digit 4" />
-            <input class="otp__cell" inputmode="numeric" maxlength="1" aria-label="Digit 5" />
-            <input class="otp__cell" inputmode="numeric" maxlength="1" aria-label="Digit 6" />
-          </div>
-          <div class="otp-meta stack-gap">
-            <span>Lost your device?</span>
-            <button class="btn btn--link" type="button" data-toast="A recovery link has been sent to your admin.">Use a recovery code</button>
-          </div>
-          <button class="btn btn--primary stack-gap" type="button" data-verify="twofa">
-            <span class="spin"></span><span class="btn-label">Verify &amp; continue</span>
-          </button>
-        </div>
+        
 
         <!-- ---------------- VIEW: SUCCESS ---------------- -->
         <div class="view" data-view="done">
