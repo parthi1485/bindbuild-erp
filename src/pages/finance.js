@@ -1,262 +1,178 @@
 import { supabase } from '../lib/supabase.js';
-import { mountShell } from '../lib/shell.js';
+import { mountShell, scopeToUnit } from '../lib/shell.js';
 import { toast, fail, esc, fmtDate } from '../lib/ui.js';
 
-const $  = (s, c = document) => c.querySelector(s);
-const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+const $=(s,c=document)=>c.querySelector(s);
+const $$=(s,c=document)=>[...c.querySelectorAll(s)];
 
-const user = await mountShell({ route: 'finance', title: 'Finance' });
-if (!user) throw new Error('redirecting');
+const user=await mountShell({route:'finance',title:'Finance'});
+if(!user)throw new Error('redirecting');
 
-const money = v => {
-  const n = Number(v) || 0;
-  if (Math.abs(n) >= 1e7) return '₹' + (n / 1e7).toFixed(2).replace(/\.00$/, '') + ' Cr';
-  if (Math.abs(n) >= 1e5) return '₹' + (n / 1e5).toFixed(2).replace(/\.00$/, '') + ' L';
-  return '₹' + Math.round(n).toLocaleString('en-IN');
+const money=v=>{
+  const n=Number(v)||0;
+  if(Math.abs(n)>=1e7)return '₹'+(n/1e7).toFixed(2).replace(/\.00$/,'')+' Cr';
+  if(Math.abs(n)>=1e5)return '₹'+(n/1e5).toFixed(2).replace(/\.00$/,'')+' L';
+  return '₹'+Math.round(n).toLocaleString('en-IN');
 };
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim()||'#5a8dee';
 
-const cssVar = c => c.startsWith('var(')
-  ? getComputedStyle(document.documentElement).getPropertyValue(c.slice(4, -1)).trim() || '#5a8dee'
-  : c;
+let period='YTD',INVOICES=[],PROFORMAS=[],RECEIPTS=[],EXPENSES=[],PROJECTS=[],CLIENTS=[];
+function rangeStart(){
+  const now=new Date();
+  if(period==='Q')return new Date(now.getFullYear(),Math.floor(now.getMonth()/3)*3,1);
+  if(period==='FY'){
+    const y=now.getMonth()>=3?now.getFullYear():now.getFullYear()-1;
+    return new Date(y,3,1);
+  }
+  return new Date(now.getFullYear(),0,1);
+}
+const after=(value,start)=>!value||new Date(value)>=start;
 
-const CAT_LABEL = {
-  materials: 'Materials', labour: 'Labour', subcontractor: 'Subcontractors',
-  site: 'Site expenses', equipment: 'Equipment', overheads: 'Overheads',
-  statutory: 'Statutory', other: 'Other'
-};
-const CAT_COLOR = {
-  materials: 'var(--accent)', labour: 'var(--violet)', subcontractor: '#38bdf8',
-  site: 'var(--warning)', equipment: '#f59e0b', overheads: 'var(--success)',
-  statutory: 'var(--danger)', other: 'var(--text-3)'
-};
+async function load(){
+  try{
+    const [i,p,r,e,pr,c]=await Promise.all([
+      scopeToUnit(supabase.from('invoices').select('*').is('deleted_at',null)),
+      scopeToUnit(supabase.from('proforma_invoices').select('*').is('deleted_at',null)),
+      scopeToUnit(supabase.from('receipts').select('*')).eq('status','issued'),
+      scopeToUnit(supabase.from('expenses').select('*')),
+      scopeToUnit(supabase.from('projects').select('*').is('deleted_at',null)),
+      scopeToUnit(supabase.from('clients').select('id,name').is('deleted_at',null))
+    ]);
+    [i,p,r,e,pr,c].forEach(x=>{if(x.error)throw x.error;});
+    INVOICES=i.data||[];PROFORMAS=p.data||[];RECEIPTS=r.data||[];EXPENSES=e.data||[];PROJECTS=pr.data||[];CLIENTS=c.data||[];
+    paint();
+  }catch(err){fail(err);}
+}
 
-let months = 6;
-let FIN = [], AGE = [], EXPENSES = [], PAYMENTS = [];
+function periodData(){
+  const start=rangeStart();
+  return {
+    invoices:INVOICES.filter(x=>after(x.issue_date,start)),
+    proformas:PROFORMAS.filter(x=>after(x.issue_date,start)),
+    receipts:RECEIPTS.filter(x=>after(x.receipt_date,start)),
+    expenses:EXPENSES.filter(x=>after(x.expense_date||x.created_at,start))
+  };
+}
 
-async function load() {
-  const from = new Date();
-  from.setMonth(from.getMonth() - (months - 1));
-  from.setDate(1);
-  const fromISO = from.toISOString().slice(0, 10);
+function outstandingRows(){
+  const converted=new Set(INVOICES.map(i=>i.proforma_id).filter(Boolean));
+  const inv=INVOICES.map(x=>({...x,kind:'Invoice',balance:Math.max(Number(x.total||0)-Number(x.amount_paid||0),0)}));
+  const pi=PROFORMAS.filter(x=>!converted.has(x.id)).map(x=>({...x,kind:'Proforma',balance:Math.max(Number(x.total||0)-Number(x.amount_paid||0),0)}));
+  return [...inv,...pi].filter(x=>x.balance>0.01);
+}
 
-  const [fRes, aRes, eRes, pRes] = await Promise.all([
-    supabase.from('project_financials').select('*'),
-    supabase.from('receivables_ageing').select('*'),
-    supabase.from('expenses').select('*').gte('expense_date', fromISO),
-    supabase.from('invoice_payments').select('amount,paid_on,method').gte('paid_on', fromISO)
-  ]);
+function paint(){
+  const d=periodData();
+  const invoiced=d.invoices.reduce((a,x)=>a+Number(x.total||0),0);
+  const collected=d.receipts.reduce((a,x)=>a+Number(x.amount||0),0);
+  const cost=d.expenses.filter(x=>x.status!=='cancelled').reduce((a,x)=>a+Number(x.amount||0),0);
+  const outstanding=outstandingRows().reduce((a,x)=>a+x.balance,0);
+  const gm=invoiced?((invoiced-cost)/invoiced*100):null;
+  const cash=collected-d.expenses.filter(x=>x.status==='paid').reduce((a,x)=>a+Number(x.amount||0),0);
 
-  if (fRes.error) return fail(fRes.error);
-  FIN      = fRes.data ?? [];
-  AGE      = aRes.data ?? [];
-  EXPENSES = eRes.data ?? [];
-  PAYMENTS = pRes.data ?? [];
+  $('#kInv').textContent=money(invoiced);
+  $('#kColl').textContent=money(collected);
+  $('#kCost').textContent=money(cost);
+  $('#kGm').textContent=gm===null?'—':gm.toFixed(1)+'%';
+  $('#kCash').textContent=money(cash);
+  $('#kRecv').textContent=money(outstanding);
 
-  paintKpis();
-  paintExpenseSplit();
-  paintRevenueCost();
-  paintAgeing();
+  const boxes=$$('.kbox');
+  const labels=['GST invoiced','Collected','Recorded cost','Gross margin','Net cash movement','Receivables'];
+  const notes=['Tax invoices in period','Issued receipts','Expenses in period','Invoice less recorded cost','Collections less paid expenses','Invoices + unconverted proformas'];
+  boxes.forEach((b,i)=>{
+    const top=b.querySelector('.kbox__top');if(top){const span=top.querySelector('span');top.childNodes[top.childNodes.length-1].nodeValue=labels[i]||'';}
+    const n=b.querySelector('.kbox__note');if(n)n.textContent=notes[i]||'';
+  });
+
+  paintRevenueCost(d);
+  paintExpenses(d);
   paintProjects();
-  await paintTransactions();
+  paintAgeing();
+  paintTransactions(d);
+  document.body.classList.add('loaded');
 }
 
-function paintKpis() {
-  const billed   = FIN.reduce((a, r) => a + Number(r.billed || 0), 0);
-  const received = FIN.reduce((a, r) => a + Number(r.received || 0), 0);
-  const cost     = FIN.reduce((a, r) => a + Number(r.cost || 0), 0);
-  const recv     = AGE.reduce((a, r) => a + Number(r.balance || 0), 0);
-  const gm       = billed ? ((billed - cost) / billed * 100) : null;
-
-  /* cash in minus cash out over the window. This is net movement, NOT a bank
-     balance — there is no bank account table, so calling it "balance" would
-     be a lie. */
-  const cashIn  = PAYMENTS.reduce((a, p) => a + Number(p.amount || 0), 0);
-  const cashOut = EXPENSES.filter(e => e.status === 'paid')
-                          .reduce((a, e) => a + Number(e.amount || 0), 0);
-
-  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  set('kInv',  money(billed));
-  set('kColl', money(received));
-  set('kRecv', money(recv));
-  set('kCost', money(cost));
-  set('kGm',   gm === null ? '—' : gm.toFixed(1) + '%');
-  set('kCash', money(cashIn - cashOut));
-
-  const sub = $('#rcSub');
-  if (sub) sub.textContent = `Last ${months} months · net cash movement, not a bank balance`;
-
-  const marg = $('#rcMargin');
-  if (marg) marg.textContent = gm === null ? '—' : gm.toFixed(1) + '%';
+function buckets(){
+  const now=new Date(), arr=[];
+  for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);arr.push({key:d.toISOString().slice(0,7),label:d.toLocaleString('en-IN',{month:'short'})});}
+  return arr;
 }
 
-function paintExpenseSplit() {
-  const byCat = new Map();
-  EXPENSES.filter(e => e.status === 'paid').forEach(e => {
-    byCat.set(e.category, (byCat.get(e.category) || 0) + Number(e.amount || 0));
-  });
-  const rows = [...byCat].sort((a, b) => b[1] - a[1]);
-  const total = rows.reduce((a, r) => a + r[1], 0);
+function paintRevenueCost(d){
+  const canvas=$('#rcChart');if(!canvas||!window.Chart)return;
+  if(canvas._chart)canvas._chart.destroy();
+  const b=buckets();
+  const rev=b.map(m=>d.receipts.filter(x=>String(x.receipt_date||'').startsWith(m.key)).reduce((a,x)=>a+Number(x.amount||0),0));
+  const cost=b.map(m=>d.expenses.filter(x=>String(x.expense_date||x.created_at||'').startsWith(m.key)&&x.status!=='cancelled').reduce((a,x)=>a+Number(x.amount||0),0));
+  canvas._chart=new Chart(canvas,{type:'bar',data:{labels:b.map(x=>x.label),datasets:[
+    {label:'Collections',data:rev,backgroundColor:css('--accent'),borderRadius:5},
+    {label:'Cost',data:cost,backgroundColor:css('--danger'),borderRadius:5}
+  ]},options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,ticks:{callback:v=>money(v)}}},maintainAspectRatio:false}});
+  $('#rcSub').textContent='Actual collections vs recorded cost · last 6 months';
+  $('#rcMargin').textContent='Net '+money(rev.reduce((a,b)=>a+b,0)-cost.reduce((a,b)=>a+b,0));
+  $('#lgRev').textContent=money(rev.reduce((a,b)=>a+b,0));
+  $('#lgCost').textContent=money(cost.reduce((a,b)=>a+b,0));
+}
 
-  const canvas = $('#expChart');
-  if (canvas && window.Chart) {
-    if (!rows.length) {
-      canvas.replaceWith(Object.assign(document.createElement('p'),
-        { className: 't-empty', textContent: 'No paid expenses in this period.' }));
-    } else {
-      new window.Chart(canvas, {
-        type: 'doughnut',
-        data: {
-          labels: rows.map(r => CAT_LABEL[r[0]] || r[0]),
-          datasets: [{ data: rows.map(r => r[1]), borderWidth: 0,
-                       backgroundColor: rows.map(r => cssVar(CAT_COLOR[r[0]] || 'var(--text-3)')) }]
-        },
-        options: { cutout: '66%', plugins: { legend: { display: false } }, maintainAspectRatio: false }
-      });
-    }
+function paintExpenses(d){
+  const by=new Map();
+  d.expenses.filter(x=>x.status!=='cancelled').forEach(x=>{const k=x.category||'other';by.set(k,(by.get(k)||0)+Number(x.amount||0));});
+  const rows=[...by.entries()].sort((a,b)=>b[1]-a[1]),total=rows.reduce((a,x)=>a+x[1],0);
+  const canvas=$('#expChart');
+  if(canvas&&window.Chart&&rows.length){
+    if(canvas._chart)canvas._chart.destroy();
+    canvas._chart=new Chart(canvas,{type:'doughnut',data:{labels:rows.map(x=>String(x[0]).replaceAll('_',' ')),datasets:[{data:rows.map(x=>x[1]),borderWidth:0}]},options:{cutout:'66%',plugins:{legend:{display:false}},maintainAspectRatio:false}});
   }
-
-  const lg = $('#expLegend');
-  if (lg) {
-    lg.innerHTML = rows.length
-      ? rows.map(([cat, amt]) => `<li class="lg">
-          <span class="lg__dot" style="background:${cssVar(CAT_COLOR[cat] || 'var(--text-3)')}"></span>
-          <span class="lg__nm">${esc(CAT_LABEL[cat] || cat)}</span>
-          <span class="lg__v">${money(amt)}</span>
-          <span class="lg__p">${total ? Math.round(amt / total * 100) : 0}%</span>
-        </li>`).join('')
-      : '<li class="lg">Nothing recorded yet</li>';
-  }
+  $('#expLegend').innerHTML=rows.length?rows.map(([k,v])=>`<div class="lg"><span class="lg__nm">${esc(String(k).replaceAll('_',' '))}</span><span class="lg__val">${money(v)}</span><span>${total?Math.round(v/total*100):0}%</span></div>`).join(''):'<div class="lg">No expenses in this period</div>';
 }
 
-function paintRevenueCost() {
-  const canvas = $('#rcChart');
-  if (!canvas || !window.Chart) return;
-
-  const labels = [];
-  for (let i = months - 1; i >= 0; i--) {
-    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i);
-    labels.push({ key: d.toISOString().slice(0, 7), label: d.toLocaleString('en-IN', { month: 'short' }) });
-  }
-
-  const rev  = labels.map(m => PAYMENTS.filter(p => (p.paid_on || '').startsWith(m.key))
-                                       .reduce((a, p) => a + Number(p.amount || 0), 0));
-  const cost = labels.map(m => EXPENSES.filter(e => e.status === 'paid' && (e.expense_date || '').startsWith(m.key))
-                                       .reduce((a, e) => a + Number(e.amount || 0), 0));
-
-  new window.Chart(canvas, {
-    type: 'bar',
-    data: {
-      labels: labels.map(m => m.label),
-      datasets: [
-        { label: 'Collected', data: rev,  backgroundColor: cssVar('var(--accent)'), borderRadius: 5 },
-        { label: 'Cost',      data: cost, backgroundColor: cssVar('var(--danger)'), borderRadius: 5 }
-      ]
-    },
-    options: {
-      plugins: { legend: { display: false } },
-      scales: { x: { grid: { display: false } },
-                y: { beginAtZero: true, ticks: { callback: v => money(v) } } },
-      maintainAspectRatio: false
-    }
-  });
-
-  const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  setTxt('lgRev',  money(rev.reduce((a, b) => a + b, 0)));
-  setTxt('lgCost', money(cost.reduce((a, b) => a + b, 0)));
+function paintProjects(){
+  const clientMap=new Map(CLIENTS.map(x=>[x.id,x.name]));
+  const rows=PROJECTS.map(p=>{
+    const billed=INVOICES.filter(i=>i.project_id===p.id).reduce((a,x)=>a+Number(x.total||0),0);
+    const received=RECEIPTS.filter(r=>r.project_id===p.id).reduce((a,x)=>a+Number(x.amount||0),0);
+    const cost=EXPENSES.filter(e=>e.project_id===p.id&&e.status!=='cancelled').reduce((a,x)=>a+Number(x.amount||0),0);
+    return {p,billed,received,cost,margin:billed?((billed-cost)/billed*100):null,client:clientMap.get(p.client_id)||''};
+  }).filter(x=>x.billed||x.cost||x.received).sort((a,b)=>b.billed-a.billed);
+  $('#projList').innerHTML=rows.length?rows.map(x=>`<div class="prow" data-project="${x.p.id}" style="padding:10px 0;border-bottom:1px solid var(--hairline);cursor:pointer"><div class="prow__top"><span class="prow__nm">${esc(x.p.project_no||x.p.code)} · ${esc(x.p.name)}</span><span class="prow__fig">Billed ${money(x.billed)} · Cost ${money(x.cost)} · <b>${x.margin===null?'—':x.margin.toFixed(1)+'%'}</b></span></div><small>${esc(x.client)} · Collected ${money(x.received)}</small></div>`).join(''):'<div class="t-empty">No project financial activity yet.</div>';
 }
 
-function paintAgeing() {
-  const el = $('#aging');
-  if (!el) return;
-
-  const BUCKETS = ['current', '1-30', '31-60', '61-90', '90+', 'no due date'];
-  const rows = BUCKETS.map(b => ({
-    name: b === 'current' ? 'Not yet due' : b === 'no due date' ? 'No due date' : b + ' days',
-    value: AGE.filter(a => a.bucket === b).reduce((s, a) => s + Number(a.balance || 0), 0),
-    n: AGE.filter(a => a.bucket === b).length,
-    risk: ['61-90', '90+'].includes(b)
-  })).filter(r => r.n);
-
-  const top = Math.max(...rows.map(r => r.value), 1);
-
-  el.innerHTML = rows.length
-    ? rows.map(r => `<div class="age">
-        <span class="age__nm">${esc(r.name)}</span>
-        <span class="age__bar"><span class="age__fill${r.risk ? ' risk' : ''}" style="width:${Math.round(r.value / top * 100)}%"></span></span>
-        <span class="age__n">${r.n}</span>
-        <span class="age__v">${money(r.value)}</span>
-      </div>`).join('')
-    : '<div class="t-empty">Nothing outstanding</div>';
+function paintAgeing(){
+  const rows=outstandingRows();
+  const now=new Date();
+  const defs=[['Not due',x=>!x.due_date||new Date(x.due_date)>=now],['1–30 days',x=>x.due_date&&((now-new Date(x.due_date))/86400000)>0&&((now-new Date(x.due_date))/86400000)<=30],['31–60 days',x=>x.due_date&&((now-new Date(x.due_date))/86400000)>30&&((now-new Date(x.due_date))/86400000)<=60],['61+ days',x=>x.due_date&&((now-new Date(x.due_date))/86400000)>60]];
+  const groups=defs.map(([name,test])=>({name,items:rows.filter(test)})).filter(x=>x.items.length);
+  const max=Math.max(...groups.map(g=>g.items.reduce((a,x)=>a+x.balance,0)),1);
+  $('#aging').innerHTML=groups.length?groups.map(g=>{const v=g.items.reduce((a,x)=>a+x.balance,0);return `<div class="age"><div class="age__top"><span class="age__k">${esc(g.name)}</span><span class="age__v">${money(v)} · ${g.items.length}</span></div><div class="bar"><div class="bar__fill" style="width:${Math.round(v/max*100)}%;background:var(--accent)"></div></div></div>`}).join(''):'<div class="t-empty">Nothing outstanding</div>';
+  const total=rows.reduce((a,x)=>a+x.balance,0);
+  const tag=$('#aging')?.closest('.card')?.querySelector('.card__tag');if(tag)tag.textContent=money(total);
+  const totalEl=$('#aging')?.closest('.card')?.querySelector('.age__total b');if(totalEl)totalEl.textContent=money(total);
 }
 
-function paintProjects() {
-  const el = $('#projList');
-  if (!el) return;
-
-  const rows = FIN.filter(r => Number(r.billed) > 0 || Number(r.cost) > 0)
-                  .sort((a, b) => Number(b.billed) - Number(a.billed));
-
-  el.innerHTML = rows.length
-    ? rows.map(r => {
-        const gm = r.gross_margin_pct;
-        const cls = gm === null ? '' : gm < 10 ? 'bad' : gm < 20 ? 'warn' : 'ok';
-        return `<li class="pf" data-id="${r.project_id}">
-          <span class="pf__nm">${esc(r.code)} · ${esc(r.name)}</span>
-          <span class="pf__billed">${money(r.billed)}</span>
-          <span class="pf__cost">${money(r.cost)}</span>
-          <span class="pf__gm ${cls}">${gm === null ? '—' : gm + '%'}</span>
-        </li>`;
-      }).join('')
-    : '<li class="t-empty">No project has been billed or costed yet</li>';
+function paintTransactions(d){
+  const rows=[
+    ...d.receipts.map(r=>({dir:'in',date:r.receipt_date,title:'Receipt '+r.receipt_no,meta:String(r.payment_mode||'').replaceAll('_',' '),amount:r.amount})),
+    ...d.expenses.filter(e=>e.status!=='cancelled').map(e=>({dir:'out',date:e.expense_date||e.created_at,title:e.title||'Expense',meta:e.category||'',amount:e.amount}))
+  ].sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,12);
+  $('#tx').innerHTML=rows.length?rows.map(x=>`<div class="trow"><span class="tx__ic ${x.dir}">${x.dir==='in'?'↓':'↑'}</span><div><div class="tx__t">${esc(x.title)}</div><div class="tx__m">${esc(String(x.meta))} · ${fmtDate(x.date)}</div></div><span class="tx__amt ${x.dir}">${x.dir==='in'?'+':'−'}${money(x.amount)}</span></div>`).join(''):'<div class="t-empty">No transactions in this period.</div>';
 }
 
-async function paintTransactions() {
-  const el = $('#tx');
-  if (!el) return;
-
-  const [{ data: pays }, { data: exps }] = await Promise.all([
-    supabase.from('invoice_payments')
-      .select('amount,paid_on,method,reference,invoices(invoice_no)')
-      .order('paid_on', { ascending: false }).limit(10),
-    supabase.from('expenses')
-      .select('title,amount,expense_date,payment_mode,status')
-      .eq('status', 'paid')
-      .order('expense_date', { ascending: false }).limit(10)
-  ]);
-
-  const rows = [
-    ...(pays ?? []).map(p => ({
-      dir: 'in', when: p.paid_on, amount: p.amount,
-      title: `Payment received${p.invoices?.invoice_no ? ' · ' + p.invoices.invoice_no : ''}`,
-      meta: (p.method || '').toUpperCase() + (p.reference ? ' · ' + p.reference : '')
-    })),
-    ...(exps ?? []).map(e => ({
-      dir: 'out', when: e.expense_date, amount: e.amount,
-      title: e.title, meta: (e.payment_mode || '').toUpperCase()
-    }))
-  ].sort((a, b) => String(b.when).localeCompare(String(a.when))).slice(0, 12);
-
-  el.innerHTML = rows.length
-    ? rows.map(r => `<li class="txr tx--${r.dir}">
-        <span class="txr__nm">${esc(r.title)}</span>
-        <span class="txr__meta">${esc(r.meta)} · ${fmtDate(r.when)}</span>
-        <span class="txr__amt">${r.dir === 'in' ? '+' : '−'}${money(r.amount)}</span>
-      </li>`).join('')
-    : '<li class="t-empty">No transactions yet</li>';
-}
-
-/* period switcher */
-$('#periodSeg')?.addEventListener('click', e => {
-  const b = e.target.closest('[data-months]');
-  if (!b) return;
-  months = Number(b.dataset.months) || 6;
-  $$('#periodSeg [data-months]').forEach(x => x.classList.toggle('is-on', x === b));
-  load();
+$('#periodSeg')?.addEventListener('click',e=>{
+  const b=e.target.closest('[data-p]');if(!b)return;
+  period=b.dataset.p;
+  $$('#periodSeg button').forEach(x=>x.classList.toggle('on',x===b));
+  paint();
 });
-
-document.addEventListener('click', e => {
-  const pf = e.target.closest('.pf[data-id]');
-  if (pf) location.href = `/project.html?id=${pf.dataset.id}`;
+document.addEventListener('click',e=>{const p=e.target.closest('[data-project]');if(p)location.href='/project.html?id='+p.dataset.project;});
+const exportBtn=$('.ctx__actions .btn-ghost:last-child');
+if(exportBtn)exportBtn.addEventListener('click',()=>{
+  const rows=[['Type','Number','Date','Amount']]
+    .concat(RECEIPTS.map(x=>['Receipt',x.receipt_no,x.receipt_date,x.amount]))
+    .concat(INVOICES.map(x=>['Invoice',x.invoice_no,x.issue_date,x.total]))
+    .concat(EXPENSES.map(x=>['Expense',x.title,x.expense_date,x.amount]));
+  const csv=rows.map(r=>r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const u=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));const a=document.createElement('a');a.href=u;a.download='bindbuild-finance-'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(u);toast('Finance CSV exported');
 });
 
 await load();
