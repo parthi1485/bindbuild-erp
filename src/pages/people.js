@@ -49,7 +49,7 @@ function render(){
   const allocatedPeople=new Set(activeAlloc.map(a=>a.employee_id)).size;
   const avg=EMP.length?Math.round(activeAlloc.reduce((a,x)=>a+Number(x.allocation_pct||0),0)/EMP.length):0;
   const atRisk=GOALS.filter(g=>g.status==='at_risk').length;
-  const due=REVIEWS.filter(r=>r.status!=='final'&&(!r.due_date||r.due_date>=today())).length;
+  const due=REVIEWS.filter(r=>r.status!=='final').length;
   const kudosMonth=KUDOS.filter(k=>String(k.created_at).slice(0,7)===monthKey()).length;
 
   $('#kPeople').textContent=String(EMP.length);
