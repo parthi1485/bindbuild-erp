@@ -54,7 +54,7 @@ export const SIDEBAR_HTML = `
           Projects
           <span class="nav-item__count">12</span>
         </a>
-        <a class="nav-item" href="/projects.html" data-route="design" data-nav="Design">
+        <a class="nav-item" href="/design.html" data-route="design" data-nav="Design">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19 5 12l7-7 7 7z"/><path d="M5 12h14"/></svg>
           Design Studio
         </a>
