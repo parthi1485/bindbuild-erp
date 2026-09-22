@@ -51,7 +51,7 @@ input,select,textarea{font-family:inherit}
 .i-sky{background:var(--sky-soft);color:var(--sky)}
 .i-pink{background:var(--pink-soft);color:var(--pink)}
 .grid{display:grid;grid-template-columns:1.6fr 1fr;gap:var(--s-5);margin-bottom:var(--s-5)}
-.grid-3{display:grid;grid-template-columns:1fr 1fr;gap:var(--s-5);margin-bottom:var(--s-5)}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s-5);margin-bottom:var(--s-5)}
 .card{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--r-lg);box-shadow:var(--shadow-1)}
 .card__head{display:flex;align-items:center;gap:var(--s-3);padding:var(--s-4) var(--s-5);border-bottom:1px solid var(--hairline)}
 .card__title{font-family:var(--font-display);font-size:15px;font-weight:600;letter-spacing:-.01em}
