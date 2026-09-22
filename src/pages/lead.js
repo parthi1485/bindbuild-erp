@@ -75,6 +75,8 @@ function paintHeader() {
   setKv('Plot', '—');
   setKv('Source', LEAD.source || '—');
   setKv('Owner', user.name);
+  setKv('Built-up', 'Not captured');
+  setKv('Start', 'Not scheduled');
 
   document.title = `${LEAD.lead_no || 'Lead'} · ${LEAD.name} · Bind Builds ERP`;
   const here=$('.crumbs .here');
@@ -295,7 +297,8 @@ $('#noteBtn')?.addEventListener('click', async () => {
 
 $('#schedBtn')?.addEventListener('click', () => toast('Calendar/meeting module is the next backend stage.'));
 
-$('#addTag')?.addEventListener('click', async () => {
+document.addEventListener('click', async e => {
+  if (!e.target.closest('#addTag')) return;
   const tag=val('tagIn') || prompt('Add a tag');
   if (!tag) return;
   await appendNote('#'+tag.replace(/^#/,''));
@@ -330,6 +333,26 @@ $('#fileInput')?.addEventListener('change', e => {
 $('#dropzone')?.addEventListener('click', e => {
   e.preventDefault();
   toast('File storage will be enabled when Documents is migrated.');
+});
+
+
+document.addEventListener('click', e => {
+  const btn=e.target.closest('[data-contact]');
+  if(!btn)return;
+  const kind=String(btn.dataset.contact||'').toLowerCase();
+  if(kind==='call'){
+    if(!LEAD?.phone)return toast('No mobile number on this lead','err');
+    location.href='tel:+91'+String(LEAD.phone).replace(/\D/g,'').slice(-10);
+  }
+  if(kind==='whatsapp'){
+    if(!LEAD?.phone)return toast('No mobile number on this lead','err');
+    const phone=String(LEAD.phone).replace(/\D/g,'').slice(-10);
+    window.open('https://wa.me/91'+phone,'_blank');
+  }
+  if(kind==='email'){
+    if(!LEAD?.email)return toast('No email address on this lead','err');
+    location.href='mailto:'+LEAD.email;
+  }
 });
 
 document.addEventListener('click', e => {
