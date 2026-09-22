@@ -131,7 +131,7 @@
               <span class="block__ic i-blue"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 5h16M4 12h16M4 19h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
               <span class="block__title">Architect's instructions</span>
             </div>
-            <div class="remark"><b>PB:</b> Maintain 25 mm clear cover for slab reinforcement. Ensure all electrical conduits & sleeves are laid and inspected before the pour. Use Sri Balaji RMC M25 mix as specified; collect cube samples on casting day.</div>
+            <textarea class="remark" id="instructionInput" placeholder="Architect / project manager instruction for this day"></textarea>
           </div>
 
           <!-- sign off -->
@@ -143,11 +143,11 @@
             <div class="signoff">
               <div class="sign">
                 <div class="sign__k">Prepared by</div>
-                <div class="sign__who"><span class="av c4">RM</span><div><div class="sign__nm">Ramesh M</div><div class="sign__rl">Site Supervisor</div></div></div>
+                <div class="sign__who"><span class="av c4" id="preparedAvatar">—</span><div><div class="sign__nm" id="preparedName">—</div><div class="sign__rl" id="preparedRole">—</div></div></div>
               </div>
               <div class="sign">
                 <div class="sign__k">Reviewed by</div>
-                <div class="sign__who"><span class="av c1">AK</span><div><div class="sign__nm">Arun Kumar</div><div class="sign__rl">Site Engineer</div></div></div>
+                <div class="sign__who"><span class="av c1" id="reviewedAvatar">—</span><div><div class="sign__nm" id="reviewedName">Not reviewed</div><div class="sign__rl" id="reviewedRole">—</div></div></div>
               </div>
             </div>
           </div>
