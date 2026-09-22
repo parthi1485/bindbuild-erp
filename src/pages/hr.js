@@ -46,6 +46,13 @@ async function load(){
     ]);
     a.forEach(r=>{if(r.error)throw r.error;});
     [EMP,ATT,LEAVES,LTYPES,RUNS,INPUTS,REIMB,ALLOCS,PROJECTS,REVIEWS,PROFILES,COMP]=a.map(r=>r.data||[]);
+    const empIds=new Set(EMP.map(e=>e.id));
+    ATT=ATT.filter(x=>empIds.has(x.employee_id));
+    LEAVES=LEAVES.filter(x=>empIds.has(x.employee_id));
+    INPUTS=INPUTS.filter(x=>empIds.has(x.employee_id));
+    ALLOCS=ALLOCS.filter(x=>empIds.has(x.employee_id));
+    REVIEWS=REVIEWS.filter(x=>empIds.has(x.employee_id));
+    COMP=COMP.filter(x=>empIds.has(x.employee_id));
     render();
   }catch(e){fail(e);}
 }
