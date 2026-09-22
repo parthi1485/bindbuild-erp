@@ -5,6 +5,7 @@ import { toast, fail, esc, fmtDate, initials } from '../lib/ui.js';
 const $=(s,c=document)=>c.querySelector(s);
 const user=await mountShell({route:'clients',title:'Clients'});
 if(!user)throw new Error('redirecting');
+const canPortal=['founder','admin','sales','project_manager'].includes(user.role);
 
 const id=new URLSearchParams(location.search).get('id');
 const money=v=>{
@@ -87,6 +88,20 @@ function paintProfile(){
 
   $('#listBtn').onclick=()=>location.href='/client.html';
   $('#editBtn').onclick=editBilling;
+  let portalBtn=$('#clientPortalBtn');
+  if(canPortal&&!portalBtn){
+    portalBtn=document.createElement('button');portalBtn.id='clientPortalBtn';portalBtn.className='btn-ghost';portalBtn.textContent='Client Portal';
+    $('#editBtn')?.insertAdjacentElement('afterend',portalBtn);
+  }
+  if(portalBtn)portalBtn.onclick=async()=>{
+    const action=confirm('Create / refresh portal access for this client?\n\nOK = invite access\nCancel = preview portal');
+    if(!action)return location.href='/client-portal.html?client='+CLIENT.id;
+    const email=(prompt('Client portal email',CLIENT.email||'')||'').trim();if(!email)return;
+    const r=await supabase.rpc('invite_portal_member',{p_portal_type:'client',p_entity_id:CLIENT.id,p_email:email,p_display_name:CLIENT.name});
+    if(r.error)return fail(r.error);
+    const link=location.origin+'/client-portal.html';
+    try{await navigator.clipboard.writeText(link);toast('Client portal invited · link copied');}catch{toast('Client portal invited');}
+  };
   document.addEventListener('click',e=>{
     const p=e.target.closest('[data-project]');if(p)location.href='/project.html?id='+p.dataset.project;
     const d=e.target.closest('[data-doc]');if(d)location.href=d.dataset.doc;
