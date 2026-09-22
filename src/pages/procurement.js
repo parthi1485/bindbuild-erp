@@ -12,6 +12,7 @@ const canManager=['founder','admin','project_manager'].includes(user.role);
 const canFinance=['founder','admin','finance'].includes(user.role);
 const money=v=>'₹'+Math.round(Number(v)||0).toLocaleString('en-IN');
 const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
+const projectHint=new URLSearchParams(location.search).get('project');
 
 let PROJECTS=[],VENDORS=[],MATERIALS=[],REQS=[],REQITEMS=[],QUOTES=[],QUOTEITEMS=[],POS=[],POITEMS=[],GRNS=[],BILLS=[],PAYMENTS=[];
 
@@ -156,7 +157,7 @@ async function newVendor(){
 }
 
 async function newRequisition(){
-  const project=promptChoice('Choose project',PROJECTS,p=>(p.project_no||p.code)+' · '+p.name);if(!project)return;
+  const project=(projectHint&&PROJECTS.find(p=>p.id===projectHint))||promptChoice('Choose project',PROJECTS,p=>(p.project_no||p.code)+' · '+p.name);if(!project)return;
   const purpose=prompt('Purpose / work package','Site material requirement')||null;
   const required=prompt('Required by date (YYYY-MM-DD)',today())||null;
   const priority=(prompt('Priority: low / normal / high / urgent','normal')||'normal').toLowerCase();
