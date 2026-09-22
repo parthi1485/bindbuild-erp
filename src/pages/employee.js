@@ -13,7 +13,7 @@ const money=v=>'₹'+Math.round(Number(v)||0).toLocaleString('en-IN');
 const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
 
 let empId=new URLSearchParams(location.search).get('id')||null;
-let EMP=null,PROJECTS=[],ALLOC=[],ATT=[],LEAVES=[],LTYPES=[],BAL=[],COMP=[],PENTRIES=[],PRUNS=[],PINPUTS=[],REIMB=[],GOALS=[],REVIEWS=[],CYCLES=[];
+let EMP=null,TEAM=[],PROJECTS=[],ALLOC=[],ATT=[],LEAVES=[],LTYPES=[],BAL=[],COMP=[],PENTRIES=[],PRUNS=[],PINPUTS=[],REIMB=[],GOALS=[],REVIEWS=[],CYCLES=[];
 
 const byId=(rows,id)=>rows.find(x=>x.id===id);
 const self=()=>EMP?.profile_id===user.id;
@@ -33,6 +33,7 @@ async function load(){
     EMP=er.data;empId=EMP.id;
 
     const a=await Promise.all([
+      supabase.from('employees').select('id,full_name,designation,status').order('full_name'),
       supabase.from('projects').select('id,project_no,code,name,status').is('deleted_at',null).order('name'),
       supabase.from('project_allocations').select('*').eq('employee_id',empId).order('start_date',{ascending:false}),
       supabase.from('attendance').select('*').eq('employee_id',empId).order('on_date',{ascending:false}).limit(45),
@@ -47,10 +48,10 @@ async function load(){
       supabase.from('performance_reviews').select('*').eq('employee_id',empId).order('due_date',{ascending:false}),
       supabase.from('performance_cycles').select('*').order('start_date',{ascending:false})
     ]);
-    a.forEach((r,i)=>{if(r.error&&![6,7,8,9].includes(i))throw r.error;});
-    PROJECTS=a[0].data||[];ALLOC=a[1].data||[];ATT=a[2].data||[];LEAVES=a[3].data||[];LTYPES=a[4].data||[];BAL=a[5].data||[];
-    COMP=a[6].error?[]:(a[6].data||[]);PENTRIES=a[7].error?[]:(a[7].data||[]);PINPUTS=a[8].error?[]:(a[8].data||[]);REIMB=a[9].error?[]:(a[9].data||[]);
-    GOALS=a[10].data||[];REVIEWS=a[11].data||[];CYCLES=a[12].data||[];
+    a.forEach((r,i)=>{if(r.error&&![7,8,9,10].includes(i))throw r.error;});
+    TEAM=a[0].data||[];PROJECTS=a[1].data||[];ALLOC=a[2].data||[];ATT=a[3].data||[];LEAVES=a[4].data||[];LTYPES=a[5].data||[];BAL=a[6].data||[];
+    COMP=a[7].error?[]:(a[7].data||[]);PENTRIES=a[8].error?[]:(a[8].data||[]);PINPUTS=a[9].error?[]:(a[9].data||[]);REIMB=a[10].error?[]:(a[10].data||[]);
+    GOALS=a[11].data||[];REVIEWS=a[12].data||[];CYCLES=a[13].data||[];
 
     const runIds=[...new Set(PENTRIES.map(x=>x.payroll_run_id))];
     if(runIds.length){
@@ -71,7 +72,7 @@ function paint(){
   $('#empFacts').innerHTML='<span class="po-fact">'+esc(EMP.employee_no||'EMP')+'</span><span class="po-fact">'+esc(EMP.employment_type.replaceAll('_',' '))+'</span><span class="po-fact">'+esc(EMP.status)+'</span><span class="po-fact">Joined '+fmtDate(EMP.joining_date)+'</span>';
   $('#editEmpBtn').hidden=!canHr;$('#compBtn').hidden=!canHr;$('#leaveBtn').hidden=!(canHr||self());$('#reimbBtn').hidden=!(canHr||canFinance||self());
 
-  const mgr=EMP.manager_employee_id?'Employee '+EMP.manager_employee_id.slice(0,8):'—';
+  const mgr=byId(TEAM,EMP.manager_employee_id)?.full_name||'—';
   $('#jobDetails').innerHTML=kv('Employee no.',EMP.employee_no)+kv('Designation',EMP.designation)+kv('Department',EMP.department)+kv('Employment',EMP.employment_type.replaceAll('_',' '))+kv('Work location',EMP.work_location)+kv('Joining date',fmtDate(EMP.joining_date))+kv('Work email',EMP.work_email)+kv('Phone',EMP.phone)+kv('Manager',mgr)+kv('Status',EMP.status);
 
   const currentAlloc=ALLOC.filter(a=>['active','planned'].includes(a.status));
