@@ -1,114 +1,57 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Inventory · Bind Build ERP</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/src/styles/app.css" />
-<link rel="stylesheet" href="/src/styles/inventory.css" />
-
-<script>
-  (function(){
-    var s=localStorage.getItem('bindbuild.theme');
-    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
-    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
-  })();
-</script>
+<link rel="stylesheet" href="/src/styles/app.css"/>
+<link rel="stylesheet" href="/src/styles/inventory.css"/>
+<link rel="stylesheet" href="/src/styles/supply.css"/>
+<script>(function(){var s=localStorage.getItem('bindbuild.theme');var l=matchMedia('(prefers-color-scheme: light)').matches;document.documentElement.setAttribute('data-theme',s||(l?'light':'dark'));})();</script>
 </head>
 <body>
-<div class="app" id="app">
-  <!-- sidebar injected by shell.js -->
-  <div class="scrim" id="scrim"></div>
-  <div class="main" id="main">
-    <!-- topbar injected by shell.js -->
-    <main class="content" id="content">
+<div class="app" id="app"><div class="scrim" id="scrim"></div><div class="main" id="main">
+<main class="content" id="content">
+  <section class="s-head">
+    <div><div class="s-eyebrow">SUPPLY · SITE STOCK CONTROL</div><h1>Inventory</h1><p>GRN inward, site stock, consumption, reorder levels and adjustments</p></div>
+    <div class="s-actions"><button class="btn-ghost" id="procurementBtn">Procurement</button><button class="btn-ghost" id="adjustBtn">Stock adjustment</button><button class="btn-new" id="addItemBtn">Add material</button></div>
+  </section>
 
-      <div class="ctx reveal">
-        <div class="ctx__main">
-          <div class="ctx__eyebrow">Supply · Stock control</div>
-          <h1 class="ctx__title">Inventory</h1>
-          <div class="ctx__sub">Material stock, reorder levels and movements across site stores</div>
+  <section class="s-kpis">
+    <article><span>Stock value</span><b id="kValue">₹0</b><small>On hand across stores</small></article>
+    <article><span>SKUs tracked</span><b id="kSku">0</b><small>Active material master</small></article>
+    <article><span>Low stock</span><b id="kLow">0</b><small>At / below reorder</small></article>
+    <article><span>Out of stock</span><b id="kOut">0</b><small>Requires replenishment</small></article>
+    <article><span>Movements today</span><b id="kMove">0</b><small>Inward / issue / adjustment</small></article>
+  </section>
+
+  <section class="s-grid">
+    <div class="s-stack">
+      <article class="card">
+        <div class="card__head"><div><div class="card__title">Stock on hand</div><div class="card__sub">Derived only from immutable stock movements</div></div><span class="card__tag" id="invCount">0</span></div>
+        <div class="filters" style="padding:12px 14px">
+          <select class="selctl" id="storeSel"><option value="">All stores</option></select>
+          <select class="selctl" id="catSel"><option value="">All categories</option></select>
+          <select class="selctl" id="statSel"><option value="">Any status</option><option value="ok">In stock</option><option value="low">Low</option><option value="out">Out</option></select>
+          <div class="fsearch"><input type="text" id="invSearch" placeholder="Search material…"/></div>
         </div>
-        <div class="ctx__actions">
-          <button class="btn-ghost" id="adjustBtn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M7 12h10M10 17h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Adjust stock</button>
-          <button class="btn-new" id="addItemBtn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>Add item</button>
-        </div>
-      </div>
+        <div class="s-table"><table><thead><tr><th>Material</th><th>Store / Project</th><th class="num">On hand</th><th class="num">Reorder</th><th>Status</th><th class="num">Value</th><th></th></tr></thead><tbody id="invBody"></tbody></table></div>
+      </article>
 
-      <section class="kstrip">
-        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-green"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 010 3h-3a1.5 1.5 0 000 3h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>Stock value</div><div class="kbox__val"><span id="kValue">₹0</span></div><div class="kbox__note">On hand across stores</div></div>
-        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 8l9-4 9 4-9 4-9-4z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span>SKUs tracked</div><div class="kbox__val"><span id="kSku">0</span></div><div class="kbox__note">Active materials</div></div>
-        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3l9 16H3L12 3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 10v4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>Low stock</div><div class="kbox__val" id="kLow">0</div><div class="kbox__note">At / below reorder</div></div>
-        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-danger"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Out of stock</div><div class="kbox__val" id="kOut">0</div><div class="kbox__note">Blocking work</div></div>
-        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-sky"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 12h16M4 12l4-4M4 12l4 4M20 12l-4-4M20 12l-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Movements today</div><div class="kbox__val"><span id="kMoves">0</span></div><div class="kbox__note" id="kMovesMeta">Today</div></div>
-      </section>
+      <article class="card">
+        <div class="card__head"><div><div class="card__title">Recent stock movements</div><div class="card__sub">Ledger is append-only; corrections use reversing entries</div></div><span class="card__tag">latest 50</span></div>
+        <div class="s-table"><table><thead><tr><th>Date</th><th>Material</th><th>Store</th><th>Movement</th><th class="num">Qty</th><th>Reference / purpose</th></tr></thead><tbody id="moveBody"></tbody></table></div>
+      </article>
+    </div>
 
-      <div class="grid">
-        <div class="stack">
-          <section class="card reveal">
-            <div class="card__head"><div class="card__title">Stock on hand</div><span class="card__tag" id="invCount">12 items</span></div>
-            <div class="filters">
-              <div class="seg" id="catSeg"><button class="on" data-cat="all">All</button></div>
-              <select class="selctl" id="storeSel"><option value="all">All stores</option></select>
-              <select class="selctl" id="statSel">
-                <option value="all">Any status</option>
-                <option value="ok">In stock</option>
-                <option value="low">Low</option>
-                <option value="out">Out</option>
-              </select>
-              <div class="fsearch">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-3.2-3.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-                <input type="text" id="invSearch" placeholder="Search item…" aria-label="Search items" />
-              </div>
-            </div>
-            <div class="tbl-wrap">
-              <table class="tbl">
-                <thead><tr><th>Material</th><th>Store</th><th class="num">On hand</th><th class="num">Reorder</th><th>Status</th><th class="num">Value</th><th></th></tr></thead>
-                <tbody id="invBody"></tbody>
-              </table>
-            </div>
-          </section>
-
-          <section class="card reveal">
-            <div class="card__head"><div class="card__title">Recent stock movements</div><span class="card__tag">today</span></div>
-            <div class="card__body" style="padding-top:6px"><div class="moves" id="moves"></div></div>
-          </section>
-        </div>
-
-        <aside class="rail">
-          <section class="card reveal">
-            <div class="card__head"><div class="card__title">Reorder alerts</div><span class="card__tag" id="alertTag">4</span></div>
-            <div class="card__body"><div class="alerts" id="alerts"></div></div>
-          </section>
-
-          <section class="card reveal">
-            <div class="card__head"><div class="card__title">Stock by category</div><span class="card__tag">value</span></div>
-            <div class="card__body"><div class="cat" id="cat"></div></div>
-          </section>
-
-          <section class="card reveal">
-            <div class="card__head"><div class="card__title">Stores</div></div>
-            <div class="card__body"><div class="cat" id="stores"></div></div>
-          </section>
-        </aside>
-      </div>
-
-      <footer class="footer">
-        <span>© 2026 Studio Bind Architects · Chennai</span>
-        <span class="footer__v">Bind Build ERP v0.9.0 · build 2026.07</span>
-      </footer>
-    
-    </main>
-
-  </div>
-</div>
-
+    <aside class="s-rail">
+      <article class="card"><div class="card__head"><div class="card__title">Reorder alerts</div><span class="card__tag" id="alertTag">0</span></div><div class="card__body s-list" id="alerts"></div></article>
+      <article class="card"><div class="card__head"><div class="card__title">Stores</div><span class="card__tag" id="storeCount">0</span></div><div class="card__body s-list" id="stores"></div></article>
+      <article class="card"><div class="card__head"><div class="card__title">Stock by category</div><span class="card__tag">value</span></div><div class="card__body s-list" id="categoryList"></div></article>
+    </aside>
+  </section>
+</main>
+<footer class="footer"><span>© 2026 Studio Bind Architects · Chennai</span><span>Bind Build ERP</span></footer>
+</div></div>
 <div class="toast-region" aria-live="polite"></div>
 <script type="module" src="/src/pages/inventory.js"></script>
-</body>
-</html>
+</body></html>
