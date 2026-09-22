@@ -34,7 +34,7 @@
           <div class="ctx__sub"><span id="ctxDate">—</span><span id="ctxReportNo">Draft report</span></div>
         </div>
         <div class="ctx__actions">
-          <button class="btn-ghost" data-toast="Print / PDF|Report exported as PDF for the day file.">
+          <button class="btn-ghost" id="printBtn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 9V3h12v6M6 18H4v-5a2 2 0 012-2h12a2 2 0 012 2v5h-2M8 14h8v7H8z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>Export PDF</button>
           <button class="btn-new" id="submitTop">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Submit report</button>
@@ -168,7 +168,7 @@
                 <div class="mini__b"><div class="mini__v" id="sMats">0</div><div class="mini__l">Materials</div></div>
               </div>
               <button class="btn-new btn-block" id="submitBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Submit report</button>
-              <button class="btn-ghost btn-block" data-toast="Draft saved|Report saved locally. You can finish it later.">Save draft</button>
+              <button class="btn-ghost btn-block" id="saveDraftBtn">Save draft</button><div id="reviewActions" style="display:grid;gap:8px;margin-top:8px"></div>
             </div>
           </section>
 
