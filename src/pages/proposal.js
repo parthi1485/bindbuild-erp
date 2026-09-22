@@ -227,7 +227,7 @@ function paint(){
       <span class="track__step ${accepted?'done now':sent?'now':''}"><span class="tdot"></span>${accepted?'Accepted':'Awaiting decision'} ${accepted?'<small>· '+fmtDate(PROPOSAL.accepted_at)+'</small>':''}</span>`;
   }
 
-  const versionCard=[...$('.rail .card')].find(card=>card.querySelector('.rail__title')?.textContent.trim()==='Versions');
+  const versionCard=$('.rail .card').find(card=>card.querySelector('.rail__title')?.textContent.trim()==='Versions');
   if(versionCard){
     versionCard.innerHTML=`
       <h2 class="rail__title">Document state</h2>
@@ -237,6 +237,11 @@ function paint(){
       <div class="kv"><span class="kv__k">Estimate</span><span class="kv__v">${PROPOSAL.estimate_id?'Linked':'Direct proposal'}</span></div>`;
   }
 
+  const acceptBtn=$('#acceptBtn');
+  if(acceptBtn){
+    acceptBtn.hidden = !PROPOSAL.proposal_no || !!PROPOSAL.accepted_at;
+    acceptBtn.textContent = PROPOSAL.accepted_at ? 'Accepted' : 'Accept & create project';
+  }
   renderItems();renderScope();renderSchedule();paintTimeline();
   document.title=(PROPOSAL.proposal_no||'Draft Proposal')+' · Bind Build ERP';
 }
@@ -396,6 +401,18 @@ $('#schList').addEventListener('click',e=>{
 });
 
 ['dClient','dTitle','dArea','dValid','terms','tDiscIn'].forEach(id=>$('#'+id)?.addEventListener('input',()=>{calc();markDirty();}));
+
+$('#acceptBtn')?.addEventListener('click', async()=>{
+  if(dirty) await save();
+  if(!PROPOSAL.proposal_no) return toast('Issue/send the proposal before accepting it','err');
+  const {data,error}=await supabase.rpc('accept_proposal_to_project',{p_proposal_id:PROPOSAL.id});
+  if(error) return fail(error);
+  const row=Array.isArray(data)?data[0]:data;
+  PROPOSAL.status='accepted';
+  PROPOSAL.accepted_at=new Date().toISOString();
+  toast(`Proposal accepted · ${row?.project_no || 'project created'}`);
+  if(row?.project_id) location.href='/project.html?id='+row.project_id;
+});
 
 $('#sendBtn')?.addEventListener('click',openSend);
 $('#sendBtn2')?.addEventListener('click',openSend);
