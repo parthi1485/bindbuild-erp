@@ -57,6 +57,7 @@ async function load() {
   paintHeader();
   paintStage();
   paintCorePanels();
+  await paintCommercials();
 }
 
 function paintHeader() {
@@ -92,6 +93,8 @@ function paintStage() {
     fill.setAttribute('aria-valuenow',String(pct));
     const lbl=fill.closest('[data-prob]')?.querySelector('.prob__pct') || fill.parentElement?.querySelector('.prob__pct');
     if (lbl) lbl.textContent=pct+'%';
+    const railPct = $('.deal-prob__row b');
+    if (railPct) railPct.textContent = pct + '%';
   }
 
   const stepper=$('#stepper');
@@ -130,6 +133,73 @@ function paintCorePanels() {
   if ($('#nFiles')) $('#nFiles').textContent='0';
 }
 
+async function paintCommercials() {
+  const [estRes, propRes, taskRes] = await Promise.all([
+    supabase.from('estimates')
+      .select('id,estimate_no,title,status,total,created_at')
+      .eq('lead_id', leadId).is('deleted_at', null)
+      .order('created_at', { ascending:false }).limit(1),
+    supabase.from('proposals')
+      .select('id,proposal_no,title,status,grand_total,sent_at,accepted_at,created_at')
+      .eq('lead_id', leadId).is('deleted_at', null)
+      .order('created_at', { ascending:false }).limit(1),
+    supabase.from('tasks')
+      .select('id,title,due_at,status')
+      .ilike('title', '%'+(LEAD.lead_no || LEAD.name)+'%')
+      .not('status','in','("done","cancelled")')
+      .order('due_at',{ascending:true}).limit(1)
+  ]);
+
+  if (estRes.error) fail(estRes.error);
+  if (propRes.error) fail(propRes.error);
+
+  const estimate = estRes.data?.[0] || null;
+  const proposal = propRes.data?.[0] || null;
+
+  const propCard = $('.card.prop');
+  if (propCard) {
+    const doc = proposal || estimate;
+    const kind = proposal ? 'Proposal' : estimate ? 'Estimate' : 'Commercials';
+    propCard.innerHTML = doc ? `
+      <h2 class="rail__title">${kind} status</h2>
+      <div class="prop__ver"><span class="prop__badge">${esc(proposal?.proposal_no || estimate?.estimate_no || 'DRAFT')}</span></div>
+      <p class="prop__val">${money(proposal?.grand_total ?? estimate?.total ?? 0)}</p>
+      <p class="prop__meta">${esc(doc.status || 'draft')}${proposal?.sent_at ? ' · sent ' + fmtDate(proposal.sent_at) : ''}${proposal?.accepted_at ? ' · accepted ' + fmtDate(proposal.accepted_at) : ''}</p>
+      <div class="prop__acts">
+        <button class="act-btn" id="openCommercialBtn">Open ${kind.toLowerCase()}</button>
+        <button class="act-btn" id="remindBtn">Remind</button>
+      </div>`
+      : `
+      <h2 class="rail__title">Commercials</h2>
+      <p class="prop__meta">No estimate or proposal created yet.</p>
+      <div class="prop__acts"><button class="act-btn" id="railEstimateBtn">Create estimate</button></div>`;
+
+    $('#openCommercialBtn')?.addEventListener('click', () => {
+      location.href = proposal ? '/proposal.html?id='+proposal.id : '/estimate.html?id='+estimate.id;
+    });
+    $('#railEstimateBtn')?.addEventListener('click', () => location.href='/estimate.html?lead='+leadId);
+  }
+
+  const next = $('.card.next');
+  if (next) {
+    const task = taskRes.data?.[0];
+    next.innerHTML = task ? `
+      <h2 class="rail__title">Next action</h2>
+      <p class="next__due">${task.due_at ? fmtDate(task.due_at) : 'No due date'}</p>
+      <p class="next__txt">${esc(task.title)}</p>`
+      : `
+      <h2 class="rail__title">Next action</h2>
+      <p class="next__txt">No open follow-up task. Use Remind to create one.</p>`;
+  }
+
+  const tags = $('#tags');
+  if (tags) {
+    const found = [...String(LEAD.notes || '').matchAll(/#([\w-]+)/g)].map(m => m[1]);
+    tags.innerHTML = [...new Set(found)].map(t => `<span class="tag">${esc(t)}</span>`).join('')
+      + '<button class="tag tag--add" id="addTag">＋ Add tag</button>';
+  }
+}
+
 async function setStage(stage) {
   const { error } = await supabase.from('leads').update({stage}).eq('id',leadId);
   if (error) return fail(error);
@@ -150,9 +220,26 @@ async function appendNote(text) {
   LEAD.notes=next;
   LEAD.updated_at=new Date().toISOString();
   paintCorePanels();
+  await paintCommercials();
 }
 
 wireModalDismiss();
+
+$('#estimateBtn')?.addEventListener('click', async () => {
+  const { data, error } = await supabase.from('estimates')
+    .select('id').eq('lead_id',leadId).is('deleted_at',null)
+    .order('created_at',{ascending:false}).limit(1);
+  if (error) return fail(error);
+  location.href = data?.length ? '/estimate.html?id='+data[0].id : '/estimate.html?lead='+leadId;
+});
+
+$('#proposalQuickBtn')?.addEventListener('click', async () => {
+  const { data, error } = await supabase.from('proposals')
+    .select('id').eq('lead_id',leadId).is('deleted_at',null)
+    .order('created_at',{ascending:false}).limit(1);
+  if (error) return fail(error);
+  location.href = data?.length ? '/proposal.html?id='+data[0].id : '/proposal.html?lead='+leadId;
+});
 
 $('#btnWon')?.addEventListener('click', async () => {
   await setStage('won');
@@ -216,7 +303,8 @@ $('#addTag')?.addEventListener('click', async () => {
   toast('Tag saved in lead notes');
 });
 
-$('#remindBtn')?.addEventListener('click', async () => {
+document.addEventListener('click', async e => {
+  if (!e.target.closest('#remindBtn')) return;
   const when=prompt('Follow up on? (YYYY-MM-DD)',new Date(Date.now()+3*86400000).toISOString().slice(0,10));
   if (!when) return;
   const at=new Date(when+'T10:00:00');
@@ -232,6 +320,7 @@ $('#remindBtn')?.addEventListener('click', async () => {
   });
   if (error) return fail(error);
   toast(`Follow-up task created for ${fmtDate(at)}`);
+  await paintCommercials();
 });
 
 $('#fileInput')?.addEventListener('change', e => {
