@@ -1,197 +1,131 @@
 import { supabase } from '../lib/supabase.js';
 import { mountShell } from '../lib/shell.js';
-import { toast, fail, esc, fmtDate, initials } from '../lib/ui.js';
+import { toast, fail, esc, fmtDate } from '../lib/ui.js';
 
-const $  = (s, c = document) => c.querySelector(s);
-const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+const $=(s,c=document)=>c.querySelector(s);
+const user=await mountShell({route:'projects',title:'Project'});
+if(!user)throw new Error('redirecting');
 
-const user = await mountShell({ route: 'projects', title: 'Project' });
-if (!user) throw new Error('redirecting');
+const projectId=new URLSearchParams(location.search).get('id');
+const money=v=>{
+  const n=Number(v)||0;
+  if(Math.abs(n)>=1e7)return '₹'+(n/1e7).toFixed(2).replace(/\.00$/,'')+' Cr';
+  if(Math.abs(n)>=1e5)return '₹'+(n/1e5).toFixed(1).replace(/\.0$/,'')+' L';
+  return '₹'+Math.round(n).toLocaleString('en-IN');
+};
 
-let projectId = new URLSearchParams(location.search).get('id') || '';
+let P=null,CLIENT=null,PROPOSAL=null,PROFORMAS=[],INVOICES=[],RECEIPTS=[],TASKS=[];
 
-const money = l => l >= 100
-  ? '₹' + (l / 100).toFixed(2).replace(/\.00$/, '') + ' Cr'
-  : '₹' + Math.round(l) + ' L';
+async function load(){
+  try{
+    if(!projectId)throw new Error('Open a project from Projects.');
+    const pRes=await supabase.from('projects').select('*').eq('id',projectId).is('deleted_at',null).maybeSingle();
+    if(pRes.error)throw pRes.error;if(!pRes.data)throw new Error('Project not found');
+    P=pRes.data;
 
-const HEALTH_LABEL = { ontrack: 'On track', atrisk: 'At risk', delayed: 'Delayed', hold: 'On hold' };
-const TYPE_LABEL = { residential: 'Residential', interior: 'Interior', commercial: 'Commercial', industrial: 'Industrial', landscape: 'Landscape' };
-
-let P = null;
-
-async function load() {
-  if (!projectId) {
-    const { data } = await supabase.from('projects').select('id').limit(1);
-    if (!data?.length) return empty('No projects yet. Create one from the Projects page.');
-    return location.replace(`/project.html?id=${data[0].id}`);
-  }
-
-  const { data, error } = await supabase
-    .from('projects').select('*, clients(id,name)').eq('id', projectId).maybeSingle();
-
-  if (error) return fail(error);
-  if (!data)  return empty('That project no longer exists.');
-
-  P = data;
-  paintHero();
-  await Promise.all([paintKpis(), paintTasks(), paintMilestones(), paintReports()]);
-  wireLinks();
+    const [cRes,propRes,piRes,invRes,recRes,tRes]=await Promise.all([
+      P.client_id?supabase.from('clients').select('*').eq('id',P.client_id).maybeSingle():Promise.resolve({data:null}),
+      P.proposal_id?supabase.from('proposals').select('*').eq('id',P.proposal_id).maybeSingle():Promise.resolve({data:null}),
+      supabase.from('proforma_invoices').select('*').eq('project_id',projectId).is('deleted_at',null).order('created_at',{ascending:false}),
+      supabase.from('invoices').select('*').eq('project_id',projectId).is('deleted_at',null).order('created_at',{ascending:false}),
+      supabase.from('receipts').select('*').eq('project_id',projectId).eq('status','issued').order('receipt_date',{ascending:false}),
+      supabase.from('tasks').select('*').eq('project_id',projectId).order('due_at',{ascending:true})
+    ]);
+    [cRes,propRes,piRes,invRes,recRes,tRes].forEach(r=>{if(r.error)throw r.error;});
+    CLIENT=cRes.data;PROPOSAL=propRes.data;PROFORMAS=piRes.data||[];INVOICES=invRes.data||[];RECEIPTS=recRes.data||[];TASKS=tRes.data||[];
+    paint();
+  }catch(e){fail(e);}
 }
 
-function empty(msg) {
-  const n = $('.hero__name');
-  if (n) n.textContent = 'No project';
-  const m = $('.hero__meta');
-  if (m) m.textContent = msg;
-  toast(msg, 'err');
-}
+function paint(){
+  const received=RECEIPTS.reduce((a,r)=>a+Number(r.amount||0),0);
+  const billed=INVOICES.reduce((a,r)=>a+Number(r.total||0),0);
+  const provisional=PROFORMAS.reduce((a,r)=>a+Number(r.total||0),0);
+  const contract=Number(P.contract_value||0);
+  const outstanding=Math.max(contract-received,0);
 
-function paintHero() {
-  const set = (sel, v) => { const el = $(sel); if (el) el.textContent = v; };
-  set('.hero__name', P.name);
-  set('.hero__id', P.code);
+  const content=$('#content');
+  content.innerHTML=`
+    <section class="hero">
+      <div class="hero__cover"></div>
+      <div class="hero__body">
+        <div class="hero__top">
+          <div class="hero__badge">BB</div>
+          <div class="hero__id">
+            <h1 class="hero__name">${esc(P.name)}</h1>
+            <div class="hero__meta">
+              <span class="mi">${esc(CLIENT?.name||'Client not linked')}</span><span class="dotsep"></span>
+              <span class="mi">${esc(P.project_no||P.code||'—')}</span><span class="dotsep"></span>
+              <span class="mi">${esc(P.service_type||'Project')}</span><span class="dotsep"></span>
+              <span class="mi">${esc(P.location||'—')}</span>
+            </div>
+          </div>
+          <div class="hero__acts">
+            <span class="health ${esc(P.health||'ontrack')}"><span class="hd"></span>${esc(P.health||'ontrack')}</span>
+            <button class="btn-ghost" id="clientBtn">Client</button>
+            <button class="btn-ghost" id="proposalBtn">Proposal</button>
+            <button class="btn-new" id="newPiBtn">Create proforma</button>
+          </div>
+        </div>
+        <div class="hero__kpis">
+          <div class="hkpi"><div class="hkpi__lbl">Contract value</div><div class="hkpi__val">${money(contract)}</div><div class="hkpi__sub">Accepted proposal</div></div>
+          <div class="hkpi"><div class="hkpi__lbl">Progress</div><div class="hkpi__val">${Number(P.progress_pct||0)}%</div><div class="hkpi__bar"><div class="hkpi__fill a" style="width:${Number(P.progress_pct||0)}%"></div></div></div>
+          <div class="hkpi"><div class="hkpi__lbl">Collected</div><div class="hkpi__val">${money(received)}</div><div class="hkpi__sub">${contract?Math.round(received/contract*100):0}% of contract</div></div>
+          <div class="hkpi"><div class="hkpi__lbl">Outstanding</div><div class="hkpi__val">${money(outstanding)}</div><div class="hkpi__sub">${P.target_end_date?'Target '+fmtDate(P.target_end_date):'Target end not set'}</div></div>
+        </div>
+      </div>
+    </section>
 
-  const badge = $('.hero__badge');
-  if (badge) {
-    badge.textContent = HEALTH_LABEL[P.health] || P.health;
-    badge.dataset.health = P.health;
-  }
+    <div class="layout">
+      <div class="stack">
+        <section class="card card__pad">
+          <div class="sec-title"><div><span class="card__title">Commercial ledger</span><div class="card__sub">Proforma → receipt → GST invoice</div></div></div>
+          <div style="overflow:auto"><table style="width:100%;border-collapse:collapse">
+            <thead><tr><th style="text-align:left;padding:10px">Document</th><th style="text-align:left;padding:10px">Status</th><th style="text-align:right;padding:10px">Total</th><th style="text-align:right;padding:10px">Paid</th><th></th></tr></thead>
+            <tbody>
+              ${PROFORMAS.map(x=>`<tr><td style="padding:10px"><b>${esc(x.proforma_no||'DRAFT PI')}</b><br><small>${esc(x.milestone_name||x.title)}</small></td><td style="padding:10px">${esc(x.status)}</td><td style="padding:10px;text-align:right">${money(x.total)}</td><td style="padding:10px;text-align:right">${money(x.amount_paid)}</td><td style="padding:10px;text-align:right"><button class="btn-ghost" data-pi="${x.id}">Open</button></td></tr>`).join('')}
+              ${INVOICES.map(x=>`<tr><td style="padding:10px"><b>${esc(x.invoice_no||'DRAFT INV')}</b><br><small>${esc(x.milestone_name||'Tax invoice')}</small></td><td style="padding:10px">${esc(x.status)}</td><td style="padding:10px;text-align:right">${money(x.total)}</td><td style="padding:10px;text-align:right">${money(x.amount_paid)}</td><td style="padding:10px;text-align:right"><button class="btn-ghost" data-inv="${x.id}">Open</button></td></tr>`).join('')}
+              ${!PROFORMAS.length&&!INVOICES.length?'<tr><td colspan="5" style="padding:18px;color:var(--text-3)">No billing documents yet.</td></tr>':''}
+            </tbody>
+          </table></div>
+        </section>
 
-  const meta = $('.hero__meta');
-  if (meta) {
-    const bits = [
-      P.clients?.name || 'No client linked',
-      P.code,
-      TYPE_LABEL[P.project_type] || P.project_type,
-      P.location || '—'
-    ];
-    meta.innerHTML = bits
-      .map(b => `<span class="mi">${esc(b)}</span>`)
-      .join('<span class="dotsep"></span>');
-  }
+        <section class="card card__pad">
+          <div class="sec-title"><div><span class="card__title">Receipts</span><div class="card__sub">Actual money received</div></div></div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            ${RECEIPTS.length?RECEIPTS.map(r=>`<button class="btn-ghost" data-rec="${r.id}" style="justify-content:space-between"><span>${esc(r.receipt_no)} · ${fmtDate(r.receipt_date)}</span><b>${money(r.amount)}</b></button>`).join(''):'<p style="color:var(--text-3)">No receipts yet.</p>'}
+          </div>
+        </section>
 
-  document.title = `${P.code} · ${P.name} · Bind Build ERP`;
-  const here = $('.crumbs .here');
-  if (here) here.textContent = P.code;
-}
+        <section class="card card__pad">
+          <div class="sec-title"><div><span class="card__title">Open tasks</span><div class="card__sub">Execution queue linked to this project</div></div></div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            ${TASKS.filter(t=>!['done','cancelled'].includes(t.status)).length?TASKS.filter(t=>!['done','cancelled'].includes(t.status)).map(t=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--hairline)"><span>${esc(t.title)}</span><small>${t.due_at?fmtDate(t.due_at):'No due date'}</small></div>`).join(''):'<p style="color:var(--text-3)">No open tasks.</p>'}
+          </div>
+        </section>
+      </div>
 
-async function paintKpis() {
-  const value = Number(P.contract_value) || 0;
-  const spent = value * P.burn_pct / 100;
+      <aside class="rail">
+        <section class="card card__pad">
+          <div class="card__title">Project state</div>
+          <div class="kv"><span class="kv__k">Status</span><span class="kv__v">${esc(P.status)}</span></div>
+          <div class="kv"><span class="kv__k">Health</span><span class="kv__v">${esc(P.health)}</span></div>
+          <div class="kv"><span class="kv__k">Started</span><span class="kv__v">${P.start_date?fmtDate(P.start_date):'—'}</span></div>
+          <div class="kv"><span class="kv__k">Billed</span><span class="kv__v">${money(billed)}</span></div>
+          <div class="kv"><span class="kv__k">Proforma</span><span class="kv__v">${money(provisional)}</span></div>
+        </section>
+      </aside>
+    </div>`;
 
-  const [{ count: taskTotal }, { count: taskDone }, { data: inv }] = await Promise.all([
-    supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('project_id', projectId),
-    supabase.from('tasks').select('id', { count: 'exact', head: true })
-      .eq('project_id', projectId).eq('board_column', 'done'),
-    supabase.from('invoice_balances').select('total,amount_paid').eq('project_id', projectId)
-  ]);
+  $('#clientBtn')?.addEventListener('click',()=>CLIENT?.id?location.href='/client.html?id='+CLIENT.id:toast('No client linked','err'));
+  $('#proposalBtn')?.addEventListener('click',()=>P.proposal_id?location.href='/proposal.html?id='+P.proposal_id:toast('No proposal linked','err'));
+  $('#newPiBtn')?.addEventListener('click',()=>location.href='/proforma.html?project='+P.id);
+  document.querySelectorAll('[data-pi]').forEach(b=>b.addEventListener('click',()=>location.href='/proforma.html?id='+b.dataset.pi));
+  document.querySelectorAll('[data-inv]').forEach(b=>b.addEventListener('click',()=>location.href='/invoice.html?id='+b.dataset.inv));
+  document.querySelectorAll('[data-rec]').forEach(b=>b.addEventListener('click',()=>location.href='/receipt.html?id='+b.dataset.rec));
 
-  const billed = (inv ?? []).reduce((a, r) => a + Number(r.total || 0), 0);
-  const received = (inv ?? []).reduce((a, r) => a + Number(r.amount_paid || 0), 0);
-
-  const kpis = [
-    ['Contract value', money(value)],
-    ['Progress',       P.progress_pct + '%'],
-    ['Budget burn',    `${money(spent)} of ${money(value)}`],
-    ['Tasks',          `${taskDone ?? 0} of ${taskTotal ?? 0} done`],
-    ['Billed',         '₹' + billed.toLocaleString('en-IN')],
-    ['Received',       '₹' + received.toLocaleString('en-IN')],
-    ['Target end',     P.target_end_date ? fmtDate(P.target_end_date) : 'Not set']
-  ];
-
-  const wrap = $('.hero__kpis');
-  if (wrap) {
-    wrap.innerHTML = kpis.map(([k, v]) => `
-      <div class="kpi">
-        <div class="kpi__k">${esc(k)}</div>
-        <div class="kpi__v">${esc(v)}</div>
-      </div>`).join('');
-  }
-}
-
-/* fill the first matching panel body, identified by its section title */
-function panelBody(titleText) {
-  const title = $$('.sec-title').find(t =>
-    t.textContent.trim().toLowerCase().includes(titleText.toLowerCase()));
-  if (!title) return null;
-  const panel = title.closest('.panel') || title.parentElement;
-  return panel?.querySelector('.panel__body, ul, tbody') || panel;
-}
-
-async function paintTasks() {
-  const host = panelBody('task') || panelBody('activity');
-  if (!host) return;
-
-  const { data, error } = await supabase
-    .from('tasks')
-    .select('id,title,board_column,due_date,priority')
-    .eq('project_id', projectId)
-    .neq('board_column', 'done')
-    .order('due_date', { nullsFirst: false })
-    .limit(8);
-
-  if (error) return;
-
-  host.innerHTML = data.length
-    ? data.map(t => `<li class="prow">
-        <span class="prow__dot prio--${t.priority}"></span>
-        <span class="prow__txt">${esc(t.title)}</span>
-        <span class="prow__meta">${t.due_date ? fmtDate(t.due_date) : '—'}</span>
-      </li>`).join('')
-    : '<li class="t-empty">No open tasks</li>';
-}
-
-async function paintMilestones() {
-  const host = panelBody('milestone');
-  if (!host) return;
-
-  const { data } = await supabase
-    .from('milestones').select('*').eq('project_id', projectId).order('due_date');
-
-  host.innerHTML = data?.length
-    ? data.map(m => `<li class="prow ${m.done ? 'is-done' : ''}">
-        <span class="prow__dot"></span>
-        <span class="prow__txt">${esc(m.name)}</span>
-        <span class="prow__meta">${fmtDate(m.due_date)}</span>
-      </li>`).join('')
-    : '<li class="t-empty">No milestones set</li>';
-}
-
-async function paintReports() {
-  const host = panelBody('site') || panelBody('report');
-  if (!host) return;
-
-  const { data } = await supabase
-    .from('site_reports')
-    .select('id,report_date,status')
-    .eq('project_id', projectId)
-    .order('report_date', { ascending: false })
-    .limit(6);
-
-  host.innerHTML = data?.length
-    ? data.map(r => `<li class="prow">
-        <span class="prow__txt"><a href="/dsr.html?project=${projectId}&date=${r.report_date}">DSR ${fmtDate(r.report_date)}</a></span>
-        <span class="prow__meta">${esc(r.status)}</span>
-      </li>`).join('')
-    : `<li class="t-empty"><a href="/dsr.html?project=${projectId}">Log today's site report</a></li>`;
-}
-
-/* point the hero action buttons at the sibling pages */
-function wireLinks() {
-  const map = [
-    [/task|board/i,    `/tasks.html?project=${projectId}`],
-    [/schedule|gantt/i, `/gantt.html?project=${projectId}`],
-    [/progress|site/i,  `/progress.html?project=${projectId}`],
-    [/report|dsr/i,     `/dsr.html?project=${projectId}`]
-  ];
-
-  $$('.hero__acts a, .hero__acts button, .tabs .tab').forEach(el => {
-    const label = el.textContent.trim();
-    const hit = map.find(([re]) => re.test(label));
-    if (!hit) return;
-    if (el.tagName === 'A') el.setAttribute('href', hit[1]);
-    else el.addEventListener('click', () => location.href = hit[1]);
-  });
+  document.title=`${P.project_no||P.code} · ${P.name} · Bind Build ERP`;
+  const here=$('.crumbs .here');if(here)here.textContent=P.project_no||P.code||'Project';
 }
 
 await load();
