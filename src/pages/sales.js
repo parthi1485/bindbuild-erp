@@ -98,10 +98,18 @@ function paintFunnel(){
 
 function paintWinLoss(){
   const el=$('#wlChart');if(!el||!window.Chart)return;
+  const won=LEADS.filter(x=>x.stage==='won').length;
+  const lost=LEADS.filter(x=>x.stage==='lost').length;
+  const open=LEADS.filter(x=>!['won','lost'].includes(x.stage)).length;
   new Chart(el,{type:'doughnut',data:{labels:['Won','Lost','Open'],datasets:[{
-    data:[LEADS.filter(x=>x.stage==='won').length,LEADS.filter(x=>x.stage==='lost').length,LEADS.filter(x=>!['won','lost'].includes(x.stage)).length],
+    data:[won,lost,open],
     borderWidth:0,backgroundColor:[cssVar('--success'),cssVar('--danger'),cssVar('--text-3')]
   }]},options:{cutout:'66%',plugins:{legend:{display:false}},maintainAspectRatio:false}});
+  const legend=el.closest('.card')?.querySelector('.legend');
+  if(legend)legend.innerHTML=`
+    <span><i style="background:var(--success)"></i>Won · ${won}</span>
+    <span><i style="background:var(--danger)"></i>Lost · ${lost}</span>
+    <span><i style="background:var(--text-3)"></i>Open · ${open}</span>`;
 }
 
 function paintStageChart(){
@@ -126,6 +134,13 @@ function paintRevenue(){
   new Chart(el,{type:'line',data:{labels:months.map(m=>m.label),datasets:[{
     data,borderColor:cssVar('--accent'),backgroundColor:'rgba(90,141,238,.14)',fill:true,tension:.35,pointRadius:3
   }]},options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,ticks:{callback:v=>rupees(v)}}},maintainAspectRatio:false}});
+  const card=el.closest('.card');
+  const title=card?.querySelector('.card__title');
+  const sub=card?.querySelector('.card__sub');
+  const legend=card?.querySelector('.legend');
+  if(title)title.textContent='Accepted proposal value';
+  if(sub)sub.textContent='Monthly accepted commercial value';
+  if(legend)legend.innerHTML='<span><i style="background:var(--accent)"></i>Accepted value</span>';
 }
 
 function paintForecast(){
@@ -220,8 +235,11 @@ $('#exportBtn')?.addEventListener('click',()=>{
   toast('Commercial documents exported');
 });
 
+const head=$('.page-head__title');
+if(head)head.textContent='Sales & Commercials';
 const sub=$('.page-head__sub');
 if(sub)sub.textContent='Live CRM → Estimate → Proposal workflow';
+$('.page-head__acts .seg')?.remove();
 const newDeal=$('.page-head__acts .btn-new');
 if(newDeal){newDeal.href='/crm.html';newDeal.textContent='＋ New lead';}
 
