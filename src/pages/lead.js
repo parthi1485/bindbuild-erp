@@ -173,7 +173,6 @@ $('#btnWon')?.addEventListener('click', async () => {
 
   if (error) return fail(error);
   toast('Lead won · client record created');
-  if (data?.id) setTimeout(()=>location.href=`/clients.html`,700);
 });
 
 $('#btnLost')?.addEventListener('click', () => {
@@ -244,7 +243,10 @@ $('#dropzone')?.addEventListener('click', e => {
   toast('File storage will be enabled when Documents is migrated.');
 });
 
-$$('.step[data-stage]').forEach(step => step.addEventListener('click',()=>setStage(step.dataset.stage)));
+document.addEventListener('click', e => {
+  const step = e.target.closest('.step[data-stage]');
+  if (step) setStage(step.dataset.stage);
+});
 
 $$('.tab[data-tab]').forEach(t => t.addEventListener('click', () => {
   $$('.tab').forEach(x => { x.classList.remove('is-on'); x.setAttribute('aria-selected','false'); });
