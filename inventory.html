@@ -33,19 +33,19 @@
           <div class="ctx__sub">Material stock, reorder levels and movements across site stores</div>
         </div>
         <div class="ctx__actions">
-          <button class="btn-ghost" data-toast="Stock adjustment|Adjust on-hand quantities with a reason note.">
+          <button class="btn-ghost" id="adjustBtn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M7 12h10M10 17h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Adjust stock</button>
-          <button class="btn-new" data-toast="Add item|New material master ready to register.">
+          <button class="btn-new" id="addItemBtn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>Add item</button>
         </div>
       </div>
 
       <section class="kstrip">
-        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-green"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 010 3h-3a1.5 1.5 0 000 3h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>Stock value</div><div class="kbox__val">₹<span class="cup" data-to="14.6" data-dec="1">0</span><small>L</small></div><div class="kbox__note">On hand across stores</div></div>
-        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 8l9-4 9 4-9 4-9-4z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span>SKUs tracked</div><div class="kbox__val"><span class="cup" data-to="12">0</span></div><div class="kbox__note">Active materials</div></div>
-        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3l9 16H3L12 3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 10v4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>Low stock</div><div class="kbox__val" id="kLow"><span class="cup" data-to="3">0</span></div><div class="kbox__note">At / below reorder</div></div>
-        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-danger"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Out of stock</div><div class="kbox__val" id="kOut"><span class="cup" data-to="2">0</span></div><div class="kbox__note">Blocking work</div></div>
-        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-sky"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 12h16M4 12l4-4M4 12l4 4M20 12l-4-4M20 12l-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Movements today</div><div class="kbox__val"><span class="cup" data-to="6">0</span></div><div class="kbox__note">3 in · 3 out</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-green"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 010 3h-3a1.5 1.5 0 000 3h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>Stock value</div><div class="kbox__val"><span id="kValue">₹0</span></div><div class="kbox__note">On hand across stores</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 8l9-4 9 4-9 4-9-4z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span>SKUs tracked</div><div class="kbox__val"><span id="kSku">0</span></div><div class="kbox__note">Active materials</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3l9 16H3L12 3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 10v4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>Low stock</div><div class="kbox__val" id="kLow">0</div><div class="kbox__note">At / below reorder</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-danger"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Out of stock</div><div class="kbox__val" id="kOut">0</div><div class="kbox__note">Blocking work</div></div>
+        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-sky"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 12h16M4 12l4-4M4 12l4 4M20 12l-4-4M20 12l-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Movements today</div><div class="kbox__val"><span id="kMoves">0</span></div><div class="kbox__note" id="kMovesMeta">Today</div></div>
       </section>
 
       <div class="grid">
@@ -53,21 +53,8 @@
           <section class="card reveal">
             <div class="card__head"><div class="card__title">Stock on hand</div><span class="card__tag" id="invCount">12 items</span></div>
             <div class="filters">
-              <div class="seg" id="catSeg">
-                <button class="on" data-c="all">All</button>
-                <button data-c="Steel">Steel</button>
-                <button data-c="Cement & masonry">Cement</button>
-                <button data-c="Aggregate">Aggregate</button>
-                <button data-c="Formwork">Formwork</button>
-                <button data-c="Finishes">Finishes</button>
-                <button data-c="Electrical">Electrical</button>
-              </div>
-              <select class="selctl" id="storeSel">
-                <option value="all">All stores</option>
-                <option>Adyar site store</option>
-                <option>Central warehouse</option>
-                <option>Besant Nagar site</option>
-              </select>
+              <div class="seg" id="catSeg"><button class="on" data-cat="all">All</button></div>
+              <select class="selctl" id="storeSel"><option value="all">All stores</option></select>
               <select class="selctl" id="statSel">
                 <option value="all">Any status</option>
                 <option value="ok">In stock</option>
@@ -81,7 +68,7 @@
             </div>
             <div class="tbl-wrap">
               <table class="tbl">
-                <thead><tr><th>Material</th><th>Store</th><th>On hand / reorder</th><th>Status</th><th class="num">Value</th></tr></thead>
+                <thead><tr><th>Material</th><th>Store</th><th class="num">On hand</th><th class="num">Reorder</th><th>Status</th><th class="num">Value</th><th></th></tr></thead>
                 <tbody id="invBody"></tbody>
               </table>
             </div>
