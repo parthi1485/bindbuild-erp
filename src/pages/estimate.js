@@ -225,7 +225,10 @@ async function save() {
   dirty=false;
   $('#autosaveTxt').textContent='All changes saved';
   $('#autosave')?.classList.remove('saving');
-  paint();
+  $('#pageTitle').textContent = ESTIMATE.title || 'Preliminary Estimate';
+  $('#clientChip').textContent = LEAD?.name || 'Unassigned';
+  $('#metaLead').textContent = LEAD ? `${LEAD.lead_no || ''} · ${LEAD.name}` : '—';
+  $('#backToLead').href = LEAD ? `/lead.html?id=${LEAD.id}` : '/sales.html';
 }
 
 async function issueEstimate() {
