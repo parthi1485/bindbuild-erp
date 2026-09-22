@@ -36,6 +36,9 @@ async function load(){
     ]);
     a.forEach(r=>{if(r.error)throw r.error;});
     [DOCS,REVS,APPROVALS,PROJECTS]=a.map(r=>r.data||[]);
+    const docIds=new Set(DOCS.map(d=>d.id));
+    REVS=REVS.filter(r=>docIds.has(r.document_id));
+    APPROVALS=APPROVALS.filter(a=>docIds.has(a.document_id));
     if(!selected&&DOCS.length)selected=DOCS[0].id;
     render();
   }catch(e){fail(e);}
