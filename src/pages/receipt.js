@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase.js';
 import { mountShell } from '../lib/shell.js';
-import { fail, esc, fmtDate } from '../lib/ui.js';
+import { toast, fail, esc, fmtDate } from '../lib/ui.js';
 
 const $=(s,c=document)=>c.querySelector(s);
 const user=await mountShell({route:'finance',title:'Receipt'});
@@ -54,9 +54,23 @@ function paint(){
     else if(P?.id)location.href='/project.html?id='+P.id;
     else history.back();
   };
+  const host=$('.ctx__actions');
+  if(host&&!$('#cancelReceiptBtn')&&R.status!=='cancelled'&&['founder','admin','finance'].includes(user.role)){
+    host.insertAdjacentHTML('beforeend','<button class="btn-ghost" id="cancelReceiptBtn">Cancel receipt</button>');
+    $('#cancelReceiptBtn').onclick=cancelReceipt;
+  }
   $('#printBtn').onclick=()=>window.print();
   document.title=R.receipt_no+' · Bind Build ERP';
   const here=$('.crumbs .here');if(here)here.textContent=R.receipt_no;
+}
+
+async function cancelReceipt(){
+  const reason=prompt('Receipt cancellation reason');
+  if(!reason)return;
+  if(!confirm('Cancel '+R.receipt_no+' and reverse this payment from the linked document?'))return;
+  const {error}=await supabase.rpc('cancel_receipt',{p_receipt_id:R.id,p_reason:reason});
+  if(error)return fail(error);
+  location.reload();
 }
 
 await load();
