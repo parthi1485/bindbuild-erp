@@ -44,7 +44,7 @@ function setKpi(index, value, sub = '') {
 }
 
 async function loadCore() {
-  const [leadRes, projectRes, invoiceRes, receiptRes, expenseRes, taskRes, approvalRes, clientRes] = await Promise.all([
+  const [leadRes, projectRes, invoiceRes, receiptRes, expenseRes, taskRes, approvalRes, clientRes, meetingRes] = await Promise.all([
     supabase.from('leads').select('id,business_unit_id,lead_no,name,stage,expected_value,created_at,updated_at').is('deleted_at', null),
     supabase.from('projects').select('id,business_unit_id,project_no,code,name,status,health,client_id,contract_value,progress_pct,created_at,updated_at').is('deleted_at', null),
     supabase.from('invoices').select('id,business_unit_id,invoice_no,total,amount_paid,status,issue_date,due_date,created_at').is('deleted_at', null),
@@ -52,21 +52,24 @@ async function loadCore() {
     supabase.from('expenses').select('id,business_unit_id,title,amount,expense_date,status,created_at'),
     supabase.from('tasks').select('id,project_id,title,priority,status,due_at,created_at').order('due_at', { ascending:true, nullsFirst:false }),
     supabase.from('approvals').select('id,title,amount,status,created_at').order('created_at', { ascending:false }),
-    supabase.from('clients').select('id,business_unit_id,name,created_at').is('deleted_at', null)
+    supabase.from('clients').select('id,business_unit_id,name,created_at').is('deleted_at', null),
+    supabase.from('meetings').select('id,business_unit_id,project_id,meeting_no,title,meeting_type,scheduled_at,duration_minutes,location,status').in('status',['scheduled','in_progress']).order('scheduled_at')
   ]);
 
-  [leadRes,projectRes,invoiceRes,receiptRes,expenseRes,taskRes,approvalRes,clientRes]
+  [leadRes,projectRes,invoiceRes,receiptRes,expenseRes,taskRes,approvalRes,clientRes,meetingRes]
     .forEach(r => { if (r.error) throw r.error; });
 
+  const projects=unitScope(projectRes.data),projectIds=new Set(projects.map(p=>p.id));
   return {
     leads: unitScope(leadRes.data),
-    projects: unitScope(projectRes.data),
+    projects,
     invoices: unitScope(invoiceRes.data),
     receipts: unitScope(receiptRes.data).filter(r => r.status !== 'cancelled'),
-    expenses: unitScope(expenseRes.data),
-    tasks: taskRes.data || [],
-    approvals: approvalRes.data || [],
-    clients: unitScope(clientRes.data)
+    expenses: unitScope(expenseRes.data).filter(r=>['approved','paid'].includes(r.status)),
+    tasks: (taskRes.data || []).filter(t=>!t.project_id||projectIds.has(t.project_id)),
+    approvals: (approvalRes.data || []).filter(a=>!a.project_id||projectIds.has(a.project_id)),
+    clients: unitScope(clientRes.data),
+    meetings: unitScope(meetingRes.data)
   };
 }
 
@@ -184,13 +187,15 @@ function paintTasks(d) {
     '<div class="empty"><div class="empty__title">No open tasks</div><div class="empty__sub">Your execution queue is clear.</div></div>';
 }
 
-function paintMeetings() {
+function paintMeetings(d) {
   const el = $('#meetList');
   if (!el) return;
-  el.innerHTML = `<div class="empty">
-    <div class="empty__title">Calendar integration is next</div>
-    <div class="empty__sub">The new core backend does not yet have the meetings table, so this panel is intentionally not showing prototype data.</div>
-  </div>`;
+  const cutoff=new Date(now.getTime()+48*3600000);
+  const rows=(d.meetings||[]).filter(m=>new Date(m.scheduled_at)>=now&&new Date(m.scheduled_at)<=cutoff).slice(0,6);
+  el.innerHTML=rows.length?rows.map(m=>{
+    const dt=new Date(m.scheduled_at);
+    return `<div class="meet-row"><div class="meet-row__date"><b>${dt.toLocaleDateString('en-IN',{day:'2-digit'})}</b><span>${dt.toLocaleDateString('en-IN',{month:'short'})}</span></div><div class="meet-row__body"><b>${esc(m.title)}</b><small>${dt.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})} · ${esc(m.location||m.meeting_type||'Meeting')}</small></div></div>`;
+  }).join(''):'<div class="empty"><div class="empty__title">No meetings in the next 48 hours</div><div class="empty__sub">Scheduled meetings will appear here automatically.</div></div>';
 }
 
 function paintFeed(d) {
@@ -207,7 +212,7 @@ function paintFeed(d) {
   `).join('') : '<div class="feed__item"><span class="feed__txt">No live ERP activity yet. Create the first lead to begin.</span></div>';
 }
 
-function paintCalendar() {
+function paintCalendar(meetings=[]) {
   const grid = $('#calGrid');
   if (!grid) return;
   const card = grid.closest('.card');
@@ -221,7 +226,8 @@ function paintCalendar() {
   const cells = ['S','M','T','W','T','F','S'].map(x=>`<span class="cal__dow">${x}</span>`);
   for (let i=0;i<first.getDay();i++) cells.push('<span class="cal__day is-out"></span>');
   for (let day=1; day<=last.getDate(); day++) {
-    cells.push(`<span class="cal__day ${day===now.getDate()?'is-today':''}">${day}</span>`);
+    const hasMeeting=meetings.some(m=>{const d=new Date(m.scheduled_at);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()&&d.getDate()===day;});
+    cells.push(`<span class="cal__day ${day===now.getDate()?'is-today':''} ${hasMeeting?'has-event':''}">${day}</span>`);
   }
   grid.innerHTML = cells.join('');
 }
@@ -235,21 +241,26 @@ function paintApprovals(d) {
 }
 
 greet();
-paintCalendar();
+$('.weather')?.remove();
 
 try {
   const data = await loadCore();
   paintKpis(data);
   paintCharts(data);
   paintTasks(data);
-  paintMeetings();
+  paintMeetings(data);
+  paintCalendar(data.meetings||[]);
   paintFeed(data);
   paintApprovals(data);
+  const revHint=$('#revChart')?.closest('.card')?.querySelector('.card__hint');
+  if(revHint)revHint.textContent='Last 6 months · issued receipts vs booked expenses';
+  const stageHint=$('#stageChart')?.closest('.card')?.querySelector('.card__hint');
+  if(stageHint)stageHint.textContent=data.projects.filter(p=>isOpenProject(p.status)).length+' active projects';
+} catch (error) {
+  fail(error);
 } catch (error) {
   fail(error);
 }
 
-$('#markRead')?.addEventListener('click', () => toast('Approvals remain until they are decided.'));
-$('#notifClose')?.addEventListener('click', () => {
-  $('#notifDrawer')?.setAttribute('aria-hidden','true');
-});
+$('#notifDrawer')?.setAttribute('hidden','');
+
