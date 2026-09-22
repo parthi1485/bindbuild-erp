@@ -14,7 +14,7 @@ const money=v=>{
   return '₹'+Math.round(n).toLocaleString('en-IN');
 };
 
-let P=null,CLIENT=null,PROPOSAL=null,PROFORMAS=[],INVOICES=[],RECEIPTS=[],TASKS=[];
+let P=null,CLIENT=null,PROPOSAL=null,PROFORMAS=[],INVOICES=[],RECEIPTS=[],TASKS=[],PRECON=[];
 
 async function load(){
   try{
@@ -23,16 +23,17 @@ async function load(){
     if(pRes.error)throw pRes.error;if(!pRes.data)throw new Error('Project not found');
     P=pRes.data;
 
-    const [cRes,propRes,piRes,invRes,recRes,tRes]=await Promise.all([
+    const [cRes,propRes,piRes,invRes,recRes,tRes,preRes]=await Promise.all([
       P.client_id?supabase.from('clients').select('*').eq('id',P.client_id).maybeSingle():Promise.resolve({data:null}),
       P.proposal_id?supabase.from('proposals').select('*').eq('id',P.proposal_id).maybeSingle():Promise.resolve({data:null}),
       supabase.from('proforma_invoices').select('*').eq('project_id',projectId).is('deleted_at',null).order('created_at',{ascending:false}),
       supabase.from('invoices').select('*').eq('project_id',projectId).is('deleted_at',null).order('created_at',{ascending:false}),
       supabase.from('receipts').select('*').eq('project_id',projectId).eq('status','issued').order('receipt_date',{ascending:false}),
-      supabase.from('tasks').select('*').eq('project_id',projectId).order('due_at',{ascending:true})
+      supabase.from('tasks').select('*').eq('project_id',projectId).order('due_at',{ascending:true}),
+      supabase.from('preconstruction_steps').select('*').eq('project_id',projectId).order('step_order')
     ]);
-    [cRes,propRes,piRes,invRes,recRes,tRes].forEach(r=>{if(r.error)throw r.error;});
-    CLIENT=cRes.data;PROPOSAL=propRes.data;PROFORMAS=piRes.data||[];INVOICES=invRes.data||[];RECEIPTS=recRes.data||[];TASKS=tRes.data||[];
+    [cRes,propRes,piRes,invRes,recRes,tRes,preRes].forEach(r=>{if(r.error)throw r.error;});
+    CLIENT=cRes.data;PROPOSAL=propRes.data;PROFORMAS=piRes.data||[];INVOICES=invRes.data||[];RECEIPTS=recRes.data||[];TASKS=tRes.data||[];PRECON=preRes.data||[];
     paint();
   }catch(e){fail(e);}
 }
@@ -43,6 +44,10 @@ function paint(){
   const provisional=PROFORMAS.reduce((a,r)=>a+Number(r.total||0),0);
   const contract=Number(P.contract_value||0);
   const outstanding=Math.max(contract-received,0);
+  const preRequired=PRECON.filter(x=>x.required);
+  const preDone=preRequired.filter(x=>x.status==='completed').length;
+  const prePct=preRequired.length?Math.round(preDone/preRequired.length*100):0;
+  const preCurrent=PRECON.find(x=>!['completed','skipped'].includes(x.status));
 
   const content=$('#content');
   content.innerHTML=`
@@ -115,12 +120,19 @@ function paint(){
           <div class="kv"><span class="kv__k">Billed</span><span class="kv__v">${money(billed)}</span></div>
           <div class="kv"><span class="kv__k">Proforma</span><span class="kv__v">${money(provisional)}</span></div>
         </section>
+        <section class="card card__pad">
+          <div class="card__title">Design & pre-construction</div>
+          <div class="kv"><span class="kv__k">Completion</span><span class="kv__v">${prePct}%</span></div>
+          <div class="kv"><span class="kv__k">Current</span><span class="kv__v">${esc(preCurrent?.title||'Complete')}</span></div>
+          <button class="btn-ghost" id="designRailBtn" style="width:100%;margin-top:12px">Open workflow</button>
+        </section>
       </aside>
     </div>`;
 
   $('#clientBtn')?.addEventListener('click',()=>CLIENT?.id?location.href='/client.html?id='+CLIENT.id:toast('No client linked','err'));
   $('#proposalBtn')?.addEventListener('click',()=>P.proposal_id?location.href='/proposal.html?id='+P.proposal_id:toast('No proposal linked','err'));
   $('#designBtn')?.addEventListener('click',()=>location.href='/design.html?project='+P.id);
+  $('#designRailBtn')?.addEventListener('click',()=>location.href='/design.html?project='+P.id);
   $('#newPiBtn')?.addEventListener('click',()=>location.href='/proforma.html?project='+P.id);
   document.querySelectorAll('[data-pi]').forEach(b=>b.addEventListener('click',()=>location.href='/proforma.html?id='+b.dataset.pi));
   document.querySelectorAll('[data-inv]').forEach(b=>b.addEventListener('click',()=>location.href='/invoice.html?id='+b.dataset.inv));
