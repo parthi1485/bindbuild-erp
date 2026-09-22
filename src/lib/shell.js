@@ -176,10 +176,11 @@ export async function mountShell({ route, title }) {
 async function paintCounts() {
   const head = { count: 'exact', head: true };
 
-  const [leads, projects, pos] = await Promise.all([
+  const [leads, projects, pos, reqs] = await Promise.all([
     supabase.from('leads').select('id', head).is('deleted_at', null).not('stage', 'in', '("won","lost")'),
     supabase.from('projects').select('id', head).is('deleted_at', null).not('status', 'in', '("completed","cancelled")'),
-    supabase.from('purchase_orders').select('id', head).eq('status', 'approval')
+    supabase.from('purchase_orders').select('id', head).eq('status', 'approval'),
+    supabase.from('material_requisitions').select('id', head).eq('status', 'submitted')
   ]);
 
   const set = (route, res) => {
@@ -192,7 +193,8 @@ async function paintCounts() {
 
   set('crm', leads);
   set('projects', projects);
-  set('procurement', pos);
+  const supplyPending = (pos?.error || reqs?.error) ? null : { count: Number(pos?.count||0)+Number(reqs?.count||0) };
+  set('procurement', supplyPending);
 
   /* any remaining hardcoded badge is prototype fiction — clear it */
   document.querySelectorAll('.nav-item .nav-item__count').forEach(b => {
