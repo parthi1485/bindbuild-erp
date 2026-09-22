@@ -5,7 +5,7 @@ import { toast, fail, esc, fmtDate } from '../lib/ui.js';
 const $=(s,c=document)=>c.querySelector(s);
 const $$=(s,c=document)=>[...c.querySelectorAll(s)];
 
-const user=await mountShell({route:'construction',title:'Daily Site Report'});
+const user=await mountShell({route:'site-visits',title:'Daily Site Report'});
 if(!user)throw new Error('redirecting');
 
 const canWrite=['founder','admin','project_manager','site_engineer'].includes(user.role);
@@ -14,7 +14,7 @@ const qs=new URLSearchParams(location.search);
 let projectId=qs.get('project')||'';
 let reportDate=qs.get('date')||new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
 
-let REPORT=null,PROJECTS=[],P=null,STAGES=[],LABOUR=[],ACTS=[],MATS=[],EQ=[],ISSUES=[],RECENT=[];
+let REPORT=null,PROJECTS=[],P=null,STAGES=[],LABOUR=[],ACTS=[],MATS=[],EQ=[],ISSUES=[],RECENT=[],PROFILES=new Map();
 const draft=()=>!REPORT||REPORT.status==='draft';
 
 const TABLES={
@@ -37,8 +37,12 @@ async function load(){
     if(!projectId||!PROJECTS.some(x=>x.id===projectId))projectId=PROJECTS[0].id;
     P=PROJECTS.find(x=>x.id===projectId);
 
-    const st=await supabase.from('construction_stages').select('id,title,sort_order,status,progress_pct').eq('project_id',projectId).order('sort_order');
-    if(st.error)throw st.error;STAGES=st.data||[];
+    const [st,prof]=await Promise.all([
+      supabase.from('construction_stages').select('id,title,sort_order,status,progress_pct').eq('project_id',projectId).order('sort_order'),
+      supabase.from('profiles').select('id,full_name,role')
+    ]);
+    if(st.error)throw st.error;if(prof.error)throw prof.error;
+    STAGES=st.data||[];PROFILES=new Map((prof.data||[]).map(x=>[x.id,x]));
 
     fillProjectPicker();
     $('#repDate').value=reportDate;
@@ -87,7 +91,16 @@ function paint(){
   $('#mastReportNo').textContent=REPORT?.report_no||'DRAFT DSR';
   $('#mastDay').textContent=P?.start_date?'Construction started '+fmtDate(P.start_date):'Construction site record';
   $('#mastDate').textContent=fmtDate(reportDate);
-  $('#mastPreparedBy').textContent=user.name;
+  const prepared=PROFILES.get(REPORT?.created_by)||{full_name:user.name,role:user.role};
+  const reviewed=PROFILES.get(REPORT?.approved_by)||null;
+  $('#mastPreparedBy').textContent=prepared.full_name||user.name;
+  $('#preparedName').textContent=prepared.full_name||user.name;
+  $('#preparedRole').textContent=String(prepared.role||'ERP user').replaceAll('_',' ');
+  $('#preparedAvatar').textContent=(prepared.full_name||user.name||'?').split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase();
+  $('#reviewedName').textContent=reviewed?.full_name||'Not reviewed';
+  $('#reviewedRole').textContent=reviewed?String(reviewed.role||'').replaceAll('_',' '):'—';
+  $('#reviewedAvatar').textContent=reviewed?(reviewed.full_name||'?').split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase():'—';
+  $('#instructionInput').value=REPORT?.architect_instruction||'';
   $('#weatherInput').value=REPORT?.weather||'';
   $('#groundInput').value=REPORT?.ground_condition||'';
   $('#startTimeInput').value=REPORT?.start_time?.slice(0,5)||'';
@@ -99,7 +112,7 @@ function paint(){
   paintStatus(status);
   renderLabour();renderActivities();renderMaterials();renderEquipment();renderIssues();paintTotals();renderRecent();renderReview();
   const locked=status!=='draft';
-  ['weatherInput','groundInput','startTimeInput','closeTimeInput'].forEach(id=>{$('#'+id).disabled=locked||!canWrite;});
+  ['weatherInput','groundInput','startTimeInput','closeTimeInput','instructionInput'].forEach(id=>{$('#'+id).disabled=locked||!canWrite;});
   $$('[data-add]').forEach(b=>b.disabled=locked||!canWrite);
   $('#saveDraftBtn').disabled=locked||!canWrite;
   document.title=(REPORT?.report_no||'Daily Site Report')+' · '+(P?.name||'Project')+' · Bind Build ERP';
@@ -179,7 +192,7 @@ async function ensureReport(){
 
 async function saveDraft(){
   const rep=await ensureReport();if(!rep)return;
-  const patch={weather:$('#weatherInput').value.trim()||null,ground_condition:$('#groundInput').value.trim()||null,start_time:$('#startTimeInput').value||null,close_time:$('#closeTimeInput').value||null,updated_at:new Date().toISOString()};
+  const patch={weather:$('#weatherInput').value.trim()||null,ground_condition:$('#groundInput').value.trim()||null,start_time:$('#startTimeInput').value||null,close_time:$('#closeTimeInput').value||null,architect_instruction:$('#instructionInput').value.trim()||null,updated_at:new Date().toISOString()};
   const r=await supabase.from('site_reports').update(patch).eq('id',rep.id).select('*').single();
   if(r.error)return fail(r.error);REPORT=r.data;toast('Draft saved');paint();
 }
