@@ -95,8 +95,8 @@ function leadCard(l) {
     <p class="lead__loc">${esc(l.loc)}</p>
     <div class="lead__foot">
       <strong class="lead__budget">${rupees(l.value)}</strong>
-      <span class="lead__source">${esc(l.src)}</span>
-      <span class="lead__age">${l.days}d</span>
+      <span class="src">${esc(l.src)}</span>
+      <span class="lead__days">${l.days}d</span>
     </div>
     <small style="display:block;margin-top:8px;opacity:.65">${esc(l.leadNo)}</small>
   </article>`;
@@ -104,15 +104,15 @@ function leadCard(l) {
 
 function column(stage, rows) {
   const total = rows.reduce((s,l)=>s+l.value,0);
-  return `<section class="column" data-stage="${stage.id}">
-    <header class="column__head">
-      <span class="column__dot" style="background:${stage.color}"></span>
-      <h2 class="column__title">${esc(stage.name)}</h2>
-      <span class="column__count">${rows.length}</span>
-      <small class="column__value">${total ? rupees(total) : '—'}</small>
+  return `<section class="col" data-stage="${stage.id}">
+    <header class="col__head">
+      <span class="col__dot" style="background:${stage.color}"></span>
+      <h2 class="col__name">${esc(stage.name)}</h2>
+      <span class="col__count">${rows.length}</span>
+      <small class="col__value">${total ? rupees(total) : '—'}</small>
     </header>
-    <div class="column__body" data-drop="${stage.id}">
-      ${rows.map(leadCard).join('') || '<div class="column__empty">No leads</div>'}
+    <div class="col__body" data-drop="${stage.id}">
+      ${rows.map(leadCard).join('') || '<div class="col__empty">No leads</div>'}
     </div>
   </section>`;
 }
@@ -165,6 +165,7 @@ function render() {
   renderBoard(rows);
   renderList(rows);
   if ($('#fCount')) $('#fCount').textContent = `${rows.length} of ${LEADS.length} leads`;
+  $('#fClear')?.classList.toggle('on', !!(filters.q || filters.source || filters.budget || filters.prio));
   wireDnD();
 }
 
@@ -187,15 +188,15 @@ function wireDnD() {
     card.addEventListener('dragstart', e => {
       e.dataTransfer.setData('text/plain', card.dataset.id);
       e.dataTransfer.effectAllowed = 'move';
-      card.classList.add('is-dragging');
+      card.classList.add('dragging');
     });
-    card.addEventListener('dragend', () => card.classList.remove('is-dragging'));
+    card.addEventListener('dragend', () => card.classList.remove('dragging'));
   });
   $$('[data-drop]').forEach(zone => {
-    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('is-over'); });
-    zone.addEventListener('dragleave', () => zone.classList.remove('is-over'));
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.closest('.col')?.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.closest('.col')?.classList.remove('drag-over'));
     zone.addEventListener('drop', async e => {
-      e.preventDefault(); zone.classList.remove('is-over');
+      e.preventDefault(); zone.closest('.col')?.classList.remove('drag-over');
       const id = e.dataTransfer.getData('text/plain');
       if (id) await moveLead(id, zone.dataset.drop);
     });
@@ -269,6 +270,16 @@ $('#confirmLost')?.addEventListener('click', async () => {
 });
 
 document.addEventListener('click', async e => {
+  const kebab = e.target.closest('.lead__kebab');
+  if (kebab && !e.target.closest('[data-move],[data-open]')) {
+    e.preventDefault();
+    e.stopPropagation();
+    const menu = kebab.querySelector('.menu');
+    $('.lead .menu').forEach(m => { if (m !== menu) m.style.display='none'; });
+    if (menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    return;
+  }
+
   const move = e.target.closest('[data-move]');
   if (move) {
     e.preventDefault();
@@ -297,14 +308,14 @@ $('#fClear')?.addEventListener('click', () => {
 });
 
 $('#viewKanban')?.addEventListener('click', () => {
-  $('#boardView')?.classList.remove('is-hidden');
-  $('#listView')?.classList.remove('is-on');
+  $('#boardView')?.classList.remove('off');
+  $('#listView')?.classList.remove('on');
   $('#viewKanban')?.classList.add('is-on');
   $('#viewList')?.classList.remove('is-on');
 });
 $('#viewList')?.addEventListener('click', () => {
-  $('#boardView')?.classList.add('is-hidden');
-  $('#listView')?.classList.add('is-on');
+  $('#boardView')?.classList.add('off');
+  $('#listView')?.classList.add('on');
   $('#viewList')?.classList.add('is-on');
   $('#viewKanban')?.classList.remove('is-on');
 });
