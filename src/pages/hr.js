@@ -33,7 +33,7 @@ async function load(){
     const a=await Promise.all([
       scopeToUnit(supabase.from('employees').select('*')).in('status',['active','on_leave']).order('full_name'),
       supabase.from('attendance').select('*').eq('on_date',d),
-      supabase.from('leave_requests').select('*').eq('status','submitted').order('from_date'),
+      supabase.from('leave_requests').select('*').in('status',['submitted','approved']).gte('to_date',today()).order('from_date'),
       scopeToUnit(supabase.from('leave_types').select('*')).eq('active',true).order('name'),
       scopeToUnit(supabase.from('payroll_runs').select('*')).order('period_month',{ascending:false}).limit(12),
       supabase.from('payroll_inputs').select('*').eq('period_month',monthStart()).neq('status','cancelled').order('created_at',{ascending:false}),
@@ -92,8 +92,9 @@ function renderTeam(){
 }
 
 function renderLeaves(){
-  $('#leaveCount').textContent=String(LEAVES.length);
-  $('#leaveBody').innerHTML=LEAVES.length?LEAVES.map(l=>{
+  const pending=LEAVES.filter(l=>l.status==='submitted');
+  $('#leaveCount').textContent=String(pending.length);
+  $('#leaveBody').innerHTML=pending.length?pending.map(l=>{
     const lt=byId(LTYPES,l.leave_type_id);
     const acts=canHr?'<button class="po-btn primary" data-leave-approve="'+l.id+'">Approve</button><button class="po-btn danger" data-leave-reject="'+l.id+'">Reject</button>':'';
     return '<tr><td>'+esc(empName(l.employee_id))+'</td><td>'+esc(lt?.name||'Leave')+'</td><td>'+fmtDate(l.from_date)+(l.to_date!==l.from_date?' → '+fmtDate(l.to_date):'')+'</td><td>'+Number(l.days)+'</td><td>'+esc(l.reason||'—')+'</td><td><div class="po-inline">'+acts+'</div></td></tr>';
