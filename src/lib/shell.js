@@ -165,6 +165,10 @@ export async function mountShell({ route, title }) {
 
   await mountUnitPicker();
 
+  /* prototype storage quota was fictional; hide it until live bucket usage is measured */
+  const storagePrototype = document.querySelector('.sidebar__foot .storage');
+  if (storagePrototype) storagePrototype.hidden = true;
+
   /* live nav counters straight off the database */
   paintCounts();
 
