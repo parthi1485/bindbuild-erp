@@ -14,7 +14,7 @@ const money=v=>{
   return '₹'+Math.round(n).toLocaleString('en-IN');
 };
 
-let P=null,CLIENT=null,PROPOSAL=null,PROFORMAS=[],INVOICES=[],RECEIPTS=[],TASKS=[],PRECON=[],CONSTRUCTION=[],REQS=[],POS=[],STOCK=[],VBILLS=[];
+let P=null,CLIENT=null,PROPOSAL=null,PROFORMAS=[],INVOICES=[],RECEIPTS=[],TASKS=[],PRECON=[],CONSTRUCTION=[],REQS=[],POS=[],STOCK=[],VBILLS=[],ALLOC=[],EMPLOYEES=[];
 
 async function load(){
   try{
@@ -23,7 +23,7 @@ async function load(){
     if(pRes.error)throw pRes.error;if(!pRes.data)throw new Error('Project not found');
     P=pRes.data;
 
-    const [cRes,propRes,piRes,invRes,recRes,tRes,preRes,conRes,reqRes,poRes,stockRes,vbRes]=await Promise.all([
+    const [cRes,propRes,piRes,invRes,recRes,tRes,preRes,conRes,reqRes,poRes,stockRes,vbRes,allocRes,empRes]=await Promise.all([
       P.client_id?supabase.from('clients').select('*').eq('id',P.client_id).maybeSingle():Promise.resolve({data:null}),
       P.proposal_id?supabase.from('proposals').select('*').eq('id',P.proposal_id).maybeSingle():Promise.resolve({data:null}),
       supabase.from('proforma_invoices').select('*').eq('project_id',projectId).is('deleted_at',null).order('created_at',{ascending:false}),
@@ -35,10 +35,12 @@ async function load(){
       supabase.from('material_requisitions').select('*').eq('project_id',projectId).order('created_at',{ascending:false}),
       supabase.from('purchase_orders').select('*').eq('project_id',projectId).order('created_at',{ascending:false}),
       supabase.from('stock_balances').select('*').eq('project_id',projectId),
-      supabase.from('vendor_bills').select('*').eq('project_id',projectId).order('bill_date',{ascending:false})
+      supabase.from('vendor_bills').select('*').eq('project_id',projectId).order('bill_date',{ascending:false}),
+      supabase.from('project_allocations').select('*').eq('project_id',projectId).in('status',['active','planned']).order('start_date',{ascending:false}),
+      supabase.from('employees').select('id,employee_no,full_name,designation,status').in('status',['active','on_leave']).order('full_name')
     ]);
-    [cRes,propRes,piRes,invRes,recRes,tRes,preRes,conRes,reqRes,poRes,stockRes,vbRes].forEach(r=>{if(r.error)throw r.error;});
-    CLIENT=cRes.data;PROPOSAL=propRes.data;PROFORMAS=piRes.data||[];INVOICES=invRes.data||[];RECEIPTS=recRes.data||[];TASKS=tRes.data||[];PRECON=preRes.data||[];CONSTRUCTION=conRes.data||[];REQS=reqRes.data||[];POS=poRes.data||[];STOCK=stockRes.data||[];VBILLS=vbRes.data||[];
+    [cRes,propRes,piRes,invRes,recRes,tRes,preRes,conRes,reqRes,poRes,stockRes,vbRes,allocRes,empRes].forEach(r=>{if(r.error)throw r.error;});
+    CLIENT=cRes.data;PROPOSAL=propRes.data;PROFORMAS=piRes.data||[];INVOICES=invRes.data||[];RECEIPTS=recRes.data||[];TASKS=tRes.data||[];PRECON=preRes.data||[];CONSTRUCTION=conRes.data||[];REQS=reqRes.data||[];POS=poRes.data||[];STOCK=stockRes.data||[];VBILLS=vbRes.data||[];ALLOC=allocRes.data||[];EMPLOYEES=empRes.data||[];
     paint();
   }catch(e){fail(e);}
 }
@@ -58,6 +60,8 @@ function paint(){
   const committed=POS.filter(x=>!['cancelled'].includes(x.status)).reduce((a,x)=>a+Number(x.total||0),0);
   const stockValue=STOCK.reduce((a,x)=>a+Number(x.value||0),0);
   const vendorPayable=VBILLS.filter(x=>['approved','part_paid'].includes(x.status)).reduce((a,x)=>a+Math.max(0,Number(x.total)-Number(x.amount_paid)),0);
+  const activeTeam=ALLOC.filter(x=>x.status==='active');
+  const allocatedCapacity=activeTeam.reduce((a,x)=>a+Number(x.allocation_pct||0),0);
 
   const content=$('#content');
   content.innerHTML=`
@@ -152,6 +156,13 @@ function paint(){
           <button class="btn-ghost" id="supplyRailBtn" style="width:100%;margin-top:12px">Open procurement</button>
           <button class="btn-ghost" id="inventoryRailBtn" style="width:100%;margin-top:8px">Open site stock</button>
         </section>
+        <section class="card card__pad">
+          <div class="card__title">Project team</div>
+          <div class="kv"><span class="kv__k">Active people</span><span class="kv__v">${activeTeam.length}</span></div>
+          <div class="kv"><span class="kv__k">Allocated capacity</span><span class="kv__v">${allocatedCapacity}%</span></div>
+          <div style="margin-top:8px">${activeTeam.slice(0,5).map(a=>{const e=EMPLOYEES.find(x=>x.id===a.employee_id);return '<div style="padding:6px 0;border-bottom:1px solid var(--hairline);font-size:11px"><b>'+esc(e?.full_name||'Employee')+'</b><br><small>'+esc(a.role_on_project||e?.designation||'Team')+' · '+Number(a.allocation_pct)+'%</small></div>'}).join('')||'<small style="color:var(--text-3)">No active team allocation.</small>'}</div>
+          <button class="btn-ghost" id="peopleRailBtn" style="width:100%;margin-top:12px">Manage manpower</button>
+        </section>
       </aside>
     </div>`;
 
@@ -164,6 +175,7 @@ function paint(){
   $('#procurementBtn')?.addEventListener('click',()=>location.href='/procurement.html?project='+P.id);
   $('#supplyRailBtn')?.addEventListener('click',()=>location.href='/procurement.html?project='+P.id);
   $('#inventoryRailBtn')?.addEventListener('click',()=>location.href='/inventory.html?project='+P.id);
+  $('#peopleRailBtn')?.addEventListener('click',()=>location.href='/people.html?project='+P.id);
   $('#newPiBtn')?.addEventListener('click',()=>location.href='/proforma.html?project='+P.id);
   document.querySelectorAll('[data-pi]').forEach(b=>b.addEventListener('click',()=>location.href='/proforma.html?id='+b.dataset.pi));
   document.querySelectorAll('[data-inv]').forEach(b=>b.addEventListener('click',()=>location.href='/invoice.html?id='+b.dataset.inv));
