@@ -49,7 +49,7 @@ async function load(){
       pids.length?supabase.from('construction_stages').select('*').in('project_id',pids).order('sort_order'):Promise.resolve({data:[]}),
       supabase.from('invoices').select('*').eq('client_id',CLIENT.id).is('deleted_at',null).not('invoice_no','is',null).order('issue_date',{ascending:false}),
       supabase.from('proforma_invoices').select('*').eq('client_id',CLIENT.id).is('deleted_at',null).not('proforma_no','is',null).order('issue_date',{ascending:false}),
-      supabase.from('receipts').select('*').eq('client_id',CLIENT.id).order('receipt_date',{ascending:false}),
+      supabase.from('receipts').select('*').eq('client_id',CLIENT.id).eq('status','issued').order('receipt_date',{ascending:false}),
       pids.length?supabase.from('project_documents').select('*').in('project_id',pids).eq('client_visible',true).eq('status','approved').order('updated_at',{ascending:false}):Promise.resolve({data:[]}),
       pids.length?supabase.from('approvals').select('*').in('project_id',pids).order('created_at',{ascending:false}):Promise.resolve({data:[]}),
       supabase.from('portal_messages').select('*').eq('client_id',CLIENT.id).order('created_at')
