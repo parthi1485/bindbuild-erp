@@ -5,7 +5,7 @@ import { supabase } from './supabase.js';
 
 /* Routes that have a real page. Everything else in the nav is still a
    prototype — add the slug here as each page gets converted. */
-const BUILT = new Set(['dashboard', 'crm', 'sales', 'clients', 'projects', 'design', 'construction', 'site-visits', 'procurement', 'inventory', 'finance', 'hr', 'people', 'settings']);
+const BUILT = new Set(['dashboard','analytics','crm','sales','clients','projects','design','construction','site-visits','procurement','inventory','finance','hr','people','documents','meetings','client-portal','vendor-portal','backup','settings']);
 
 /* ---------------------------------------------------------------
    business unit
@@ -171,8 +171,62 @@ export async function mountShell({ route, title }) {
 
   /* live nav counters straight off the database */
   paintCounts();
+  await mountNotifications(user);
 
   return user;
+}
+
+async function mountNotifications(user) {
+  const btn=document.getElementById('notifBtn');
+  if(!btn)return;
+
+  if(!document.getElementById('erpNotifStyles')){
+    const s=document.createElement('style');s.id='erpNotifStyles';
+    s.textContent=`
+      .erp-notif{position:fixed;right:18px;top:72px;width:min(390px,calc(100vw - 28px));max-height:70vh;z-index:90;background:var(--elevated);border:1px solid var(--hairline-strong);border-radius:16px;box-shadow:var(--shadow-2);display:none;overflow:hidden}
+      .erp-notif.open{display:block}.erp-notif__head{display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-bottom:1px solid var(--hairline)}.erp-notif__title{font:650 13px var(--font-display)}.erp-notif__body{max-height:54vh;overflow:auto}.erp-notif__row{display:flex;gap:10px;width:100%;text-align:left;padding:11px 14px;border-bottom:1px solid var(--hairline)}.erp-notif__row:hover{background:var(--surface-2)}.erp-notif__dot{width:8px;height:8px;border-radius:50%;background:var(--accent);margin-top:5px;flex:none}.erp-notif__dot.warning{background:var(--warning)}.erp-notif__dot.critical{background:var(--danger)}.erp-notif__main{flex:1;min-width:0}.erp-notif__t{font-size:11.5px;font-weight:650}.erp-notif__m{font-size:10px;color:var(--text-3);margin-top:2px;line-height:1.35}.erp-notif__foot{display:flex;justify-content:flex-end;padding:10px 12px}.erp-notif__empty{padding:22px;text-align:center;color:var(--text-3);font-size:11px}
+    `;
+    document.head.appendChild(s);
+  }
+
+  let drawer=document.getElementById('erpNotifDrawer');
+  if(!drawer){
+    drawer=document.createElement('aside');drawer.id='erpNotifDrawer';drawer.className='erp-notif';
+    drawer.innerHTML='<div class="erp-notif__head"><div class="erp-notif__title">Notifications</div><button class="icon-btn" id="erpNotifClose" aria-label="Close">×</button></div><div class="erp-notif__body" id="erpNotifBody"></div><div class="erp-notif__foot"><button class="btn-ghost" id="erpNotifReadAll">Mark all read</button></div>';
+    document.body.appendChild(drawer);
+  }
+
+  let rows=[];
+  async function refresh(){
+    let q=supabase.from('erp_notifications').select('*').neq('status','dismissed').order('created_at',{ascending:false}).limit(40);
+    const unit=activeUnit();if(unit)q=q.or(`business_unit_id.eq.${unit},business_unit_id.is.null`);
+    const {data,error}=await q;
+    if(error){btn.querySelector('#notifCount')?.setAttribute('hidden','');return;}
+    rows=data||[];
+    const unread=rows.filter(x=>x.status==='unread').length;
+    const badge=document.getElementById('notifCount');
+    if(badge){badge.textContent=unread?String(unread):'';badge.hidden=!unread;}
+    const body=document.getElementById('erpNotifBody');
+    body.innerHTML=rows.length?rows.map(n=>`<button class="erp-notif__row" data-notif="${n.id}" data-kind="${esc(n.entity_type||'')}" data-entity="${esc(n.entity_id||'')}"><span class="erp-notif__dot ${esc(n.severity)}"></span><span class="erp-notif__main"><span class="erp-notif__t">${esc(n.title)}</span><span class="erp-notif__m">${esc(n.body||'')}${n.status==='unread'?' · New':''}</span></span></button>`).join(''):'<div class="erp-notif__empty">No operational alerts.</div>';
+  }
+  await refresh();
+
+  btn.setAttribute('aria-label','Notifications');
+  btn.addEventListener('click',e=>{e.stopPropagation();drawer.classList.toggle('open');});
+  document.getElementById('erpNotifClose')?.addEventListener('click',()=>drawer.classList.remove('open'));
+  document.getElementById('erpNotifReadAll')?.addEventListener('click',async()=>{
+    const ids=rows.filter(x=>x.status==='unread').map(x=>x.id);if(!ids.length)return;
+    const {error}=await supabase.from('erp_notifications').update({status:'read',read_at:new Date().toISOString()}).in('id',ids);
+    if(error)return toast(error.message||String(error),'err');await refresh();
+  });
+  document.getElementById('erpNotifBody')?.addEventListener('click',async e=>{
+    const b=e.target.closest('[data-notif]');if(!b)return;
+    const row=rows.find(x=>x.id===b.dataset.notif);
+    if(row?.status==='unread')await supabase.from('erp_notifications').update({status:'read',read_at:new Date().toISOString()}).eq('id',row.id);
+    drawer.classList.remove('open');await refresh();
+    const map={invoice:'/finance.html',vendor_bill:'/finance.html',approval:'/projects.html',material:'/inventory.html',task:'/projects.html'};
+    if(map[b.dataset.kind])location.href=map[b.dataset.kind];
+  });
 }
 
 /* The prototype hardcoded nav counts (Projects 12, Procurement 3). A number
@@ -181,10 +235,10 @@ async function paintCounts() {
   const head = { count: 'exact', head: true };
 
   const [leads, projects, pos, reqs] = await Promise.all([
-    supabase.from('leads').select('id', head).is('deleted_at', null).not('stage', 'in', '("won","lost")'),
-    supabase.from('projects').select('id', head).is('deleted_at', null).not('status', 'in', '("completed","cancelled")'),
-    supabase.from('purchase_orders').select('id', head).eq('status', 'approval'),
-    supabase.from('material_requisitions').select('id', head).eq('status', 'submitted')
+    scopeToUnit(supabase.from('leads').select('id', head)).is('deleted_at', null).not('stage', 'in', '("won","lost")'),
+    scopeToUnit(supabase.from('projects').select('id', head)).is('deleted_at', null).not('status', 'in', '("completed","cancelled")'),
+    scopeToUnit(supabase.from('purchase_orders').select('id', head)).eq('status', 'approval'),
+    scopeToUnit(supabase.from('material_requisitions').select('id', head)).eq('status', 'submitted')
   ]);
 
   const set = (route, res) => {
