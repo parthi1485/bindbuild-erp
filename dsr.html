@@ -29,14 +29,9 @@
       <!-- context header -->
       <div class="ctx reveal">
         <div class="ctx__main">
-          <div class="ctx__eyebrow">PRJ-018 · Daily site report</div>
-          <h1 class="ctx__title">Adyar Courtyard Residence
-            <span class="badge badge--draft" id="statusBadge"><span class="badge__dot"></span>Draft</span>
-          </h1>
-          <div class="ctx__sub">
-            <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Monday, 20 July 2026</span>
-            <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 3h9l4 4v14H6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>Report DPR-142</span>
-          </div>
+          <div class="ctx__eyebrow" id="ctxEyebrow">Project · Daily site report</div>
+          <h1 class="ctx__title"><span id="ctxProjectName">Project</span> <span class="badge badge--draft" id="statusBadge"><span class="badge__dot"></span>Draft</span></h1>
+          <div class="ctx__sub"><span id="ctxDate">—</span><span id="ctxReportNo">Draft report</span></div>
         </div>
         <div class="ctx__actions">
           <button class="btn-ghost" data-toast="Print / PDF|Report exported as PDF for the day file.">
@@ -53,18 +48,12 @@
           <div class="sheet__masthead">
             <div class="mast__l">
               <h2>Daily Progress Report</h2>
-              <p>Adyar Courtyard Residence · Residential G+1 · 3,240 sqft</p>
+              <p id="mastProject">Project site record</p>
             </div>
             <div class="mast__no">
-              <b>DPR-142</b>
-              <span>Day 187 of 320</span>
+              <b id="mastReportNo">DRAFT DSR</b><span id="mastDay">Construction site record</span>
             </div>
-            <div class="mast__meta">
-              <div class="mmi"><span class="mmi__k">Date</span><span class="mmi__v">20 Jul 2026</span></div>
-              <div class="mmi"><span class="mmi__k">Weather</span><span class="mmi__v">33°C · Partly cloudy</span></div>
-              <div class="mmi"><span class="mmi__k">Workable hrs</span><span class="mmi__v">8.5 hrs</span></div>
-              <div class="mmi"><span class="mmi__k">Supervisor</span><span class="mmi__v">Ramesh M</span></div>
-            </div>
+            <div class="mast__meta"><div class="mmi"><span class="mmi__k">Date</span><span class="mmi__v" id="mastDate">—</span></div><div class="mmi"><span class="mmi__k">Weather</span><span class="mmi__v" id="mastWeather">—</span></div><div class="mmi"><span class="mmi__k">Workable hrs</span><span class="mmi__v" id="mastHours">—</span></div><div class="mmi"><span class="mmi__k">Prepared by</span><span class="mmi__v" id="mastPreparedBy">—</span></div></div>
           </div>
 
           <!-- site conditions -->
@@ -73,20 +62,14 @@
               <span class="block__ic i-sky"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="8" r="3.5" stroke="currentColor" stroke-width="1.7"/><path d="M11 16a3.5 3.5 0 013.4-3.5A4 4 0 0122 14a3 3 0 01-.4 6H11a2.5 2.5 0 010-5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span>
               <span class="block__title">Site conditions</span>
             </div>
-            <div class="cond">
-              <div class="cbox"><div class="cbox__k">Morning</div><div class="cbox__v">Clear · 29°C</div></div>
-              <div class="cbox"><div class="cbox__k">Afternoon</div><div class="cbox__v">Partly cloudy · 33°C</div></div>
-              <div class="cbox"><div class="cbox__k">Ground</div><div class="cbox__v">Dry · workable</div></div>
-              <div class="cbox"><div class="cbox__k">Rain / stoppage</div><div class="cbox__v">None today</div></div>
-            </div>
+            <div class="cond"><div class="cbox"><div class="cbox__k">Weather</div><input class="cbox__v" id="weatherInput" placeholder="Clear / cloudy / rain"/></div><div class="cbox"><div class="cbox__k">Ground</div><input class="cbox__v" id="groundInput" placeholder="Dry / wet / workable"/></div><div class="cbox"><div class="cbox__k">Start</div><input class="cbox__v" id="startTimeInput" type="time"/></div><div class="cbox"><div class="cbox__k">Close</div><input class="cbox__v" id="closeTimeInput" type="time"/></div></div>
           </div>
 
           <!-- manpower -->
           <div class="block">
             <div class="block__head">
               <span class="block__ic i-blue"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 19a5.5 5.5 0 0111 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
-              <span class="block__title">Manpower deployed</span>
-            </div>
+              <span class="block__title">Manpower deployed</span><span class="block__act"><button class="mini-add" data-add="labour">+ Add labour</button></span></div>
             <table class="tbl">
               <thead><tr><th>Trade / agency</th><th class="num">Planned</th><th class="num">Present</th><th>Remarks</th></tr></thead>
               <tbody id="mpBody"></tbody>
@@ -99,7 +82,7 @@
             <div class="block__head">
               <span class="block__ic i-green"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
               <span class="block__title">Work executed today</span>
-              <span class="block__act"><button class="mini-add" data-add="activity"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Add activity</button></span>
+              <span class="block__act"><button class="mini-add" data-add="activities"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Add activity</button></span>
             </div>
             <div class="acts" id="actList"></div>
           </div>
@@ -109,7 +92,7 @@
             <div class="block__head">
               <span class="block__ic i-amber"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 6h16l-1.5 9H6L4 6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="9" cy="20" r="1.4" fill="currentColor"/><circle cx="17" cy="20" r="1.4" fill="currentColor"/></svg></span>
               <span class="block__title">Materials received</span>
-              <span class="block__act"><button class="mini-add" data-add="material"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Add material</button></span>
+              <span class="block__act"><button class="mini-add" data-add="materials"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Add material</button></span>
             </div>
             <table class="tbl">
               <thead><tr><th>Material</th><th class="num">Qty</th><th>Supplier</th><th>DC / Invoice</th></tr></thead>
@@ -121,8 +104,7 @@
           <div class="block">
             <div class="block__head">
               <span class="block__ic i-violet"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 8a4 4 0 100 8 4 4 0 000-8z" stroke="currentColor" stroke-width="1.6"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
-              <span class="block__title">Equipment on site</span>
-            </div>
+              <span class="block__title">Equipment on site</span><span class="block__act"><button class="mini-add" data-add="equipment">+ Add equipment</button></span></div>
             <div class="eq" id="eqList"></div>
           </div>
 
@@ -130,8 +112,7 @@
           <div class="block">
             <div class="block__head">
               <span class="block__ic i-amber"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3l9 16H3L12 3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 10v4M12 17h.01" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
-              <span class="block__title">Issues, delays & observations</span>
-            </div>
+              <span class="block__title">Issues, delays & observations</span><span class="block__act"><button class="mini-add" data-add="issues">+ Log issue</button></span></div>
             <div style="display:flex;flex-direction:column;gap:12px" id="issueList">
               <div class="issue">
                 <span class="issue__ic i-amber"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3l9 16H3L12 3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 10v4M12 17h.01" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
@@ -194,7 +175,7 @@
           <section class="card reveal">
             <div class="card__head"><div class="card__title">Recent reports</div></div>
             <div class="card__body" style="padding-top:8px">
-              <div class="recent">
+              <div class="recent" id="recentReports">
                 <div class="rrow"><span class="rrow__ic">141</span><div><div class="rrow__t">DPR-141</div><div class="rrow__d">Sat · 19 Jul</div></div><span class="rrow__b tag--done">Submitted</span></div>
                 <div class="rrow"><span class="rrow__ic">140</span><div><div class="rrow__t">DPR-140</div><div class="rrow__d">Fri · 18 Jul</div></div><span class="rrow__b tag--hold">Rain</span></div>
                 <div class="rrow"><span class="rrow__ic">139</span><div><div class="rrow__t">DPR-139</div><div class="rrow__d">Thu · 17 Jul</div></div><span class="rrow__b tag--done">Submitted</span></div>
