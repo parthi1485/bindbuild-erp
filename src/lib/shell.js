@@ -198,16 +198,24 @@ async function mountNotifications(user) {
 
   let rows=[];
   async function refresh(){
-    let q=supabase.from('erp_notifications').select('*').neq('status','dismissed').order('created_at',{ascending:false}).limit(40);
+    let q=supabase.from('erp_notifications').select('*').order('created_at',{ascending:false}).limit(40);
     const unit=activeUnit();if(unit)q=q.or(`business_unit_id.eq.${unit},business_unit_id.is.null`);
     const {data,error}=await q;
-    if(error){btn.querySelector('#notifCount')?.setAttribute('hidden','');return;}
+    if(error){const badge=document.getElementById('notifCount');if(badge)badge.hidden=true;return;}
     rows=data||[];
-    const unread=rows.filter(x=>x.status==='unread').length;
+    const ids=rows.map(x=>x.id);
+    let readMap=new Map();
+    if(ids.length){
+      const rr=await supabase.from('erp_notification_reads').select('notification_id,status,read_at').eq('user_id',user.id).in('notification_id',ids);
+      if(!rr.error)readMap=new Map((rr.data||[]).map(x=>[x.notification_id,x]));
+    }
+    rows=rows.map(x=>({...x,user_status:readMap.get(x.id)?.status||'unread',user_read_at:readMap.get(x.id)?.read_at||null}));
+    const unread=rows.filter(x=>x.user_status==='unread').length;
     const badge=document.getElementById('notifCount');
     if(badge){badge.textContent=unread?String(unread):'';badge.hidden=!unread;}
+    const visible=rows.filter(x=>x.user_status!=='dismissed');
     const body=document.getElementById('erpNotifBody');
-    body.innerHTML=rows.length?rows.map(n=>`<button class="erp-notif__row" data-notif="${n.id}" data-kind="${esc(n.entity_type||'')}" data-entity="${esc(n.entity_id||'')}"><span class="erp-notif__dot ${esc(n.severity)}"></span><span class="erp-notif__main"><span class="erp-notif__t">${esc(n.title)}</span><span class="erp-notif__m">${esc(n.body||'')}${n.status==='unread'?' · New':''}</span></span></button>`).join(''):'<div class="erp-notif__empty">No operational alerts.</div>';
+    body.innerHTML=visible.length?visible.map(n=>`<button class="erp-notif__row" data-notif="${n.id}" data-kind="${esc(n.entity_type||'')}" data-entity="${esc(n.entity_id||'')}"><span class="erp-notif__dot ${esc(n.severity)}"></span><span class="erp-notif__main"><span class="erp-notif__t">${esc(n.title)}</span><span class="erp-notif__m">${esc(n.body||'')}${n.user_status==='unread'?' · New':''}</span></span></button>`).join(''):'<div class="erp-notif__empty">No operational alerts.</div>';
   }
   await refresh();
 
@@ -215,14 +223,16 @@ async function mountNotifications(user) {
   btn.addEventListener('click',e=>{e.stopPropagation();drawer.classList.toggle('open');});
   document.getElementById('erpNotifClose')?.addEventListener('click',()=>drawer.classList.remove('open'));
   document.getElementById('erpNotifReadAll')?.addEventListener('click',async()=>{
-    const ids=rows.filter(x=>x.status==='unread').map(x=>x.id);if(!ids.length)return;
-    const {error}=await supabase.from('erp_notifications').update({status:'read',read_at:new Date().toISOString()}).in('id',ids);
+    const ids=rows.filter(x=>x.user_status==='unread').map(x=>x.id);if(!ids.length)return;
+    const at=new Date().toISOString();
+    const payload=ids.map(id=>({notification_id:id,user_id:user.id,status:'read',read_at:at}));
+    const {error}=await supabase.from('erp_notification_reads').upsert(payload,{onConflict:'notification_id,user_id'});
     if(error)return toast(error.message||String(error),'err');await refresh();
   });
   document.getElementById('erpNotifBody')?.addEventListener('click',async e=>{
     const b=e.target.closest('[data-notif]');if(!b)return;
     const row=rows.find(x=>x.id===b.dataset.notif);
-    if(row?.status==='unread')await supabase.from('erp_notifications').update({status:'read',read_at:new Date().toISOString()}).eq('id',row.id);
+    if(row?.user_status==='unread')await supabase.from('erp_notification_reads').upsert({notification_id:row.id,user_id:user.id,status:'read',read_at:new Date().toISOString()},{onConflict:'notification_id,user_id'});
     drawer.classList.remove('open');await refresh();
     const map={invoice:'/finance.html',vendor_bill:'/finance.html',approval:'/projects.html',material:'/inventory.html',task:'/projects.html'};
     if(map[b.dataset.kind])location.href=map[b.dataset.kind];
