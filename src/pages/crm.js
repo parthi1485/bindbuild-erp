@@ -224,7 +224,12 @@ $('#saveLead')?.addEventListener('click', async () => {
   if (rawPhone && rawPhone.length < 10) return toast('Enter a valid mobile number', 'err');
 
   const budgetLakhs = Number(val('nlBudget') || 0);
-  const leadNo = await nextErpNumber('lead');
+  let leadNo;
+  try {
+    leadNo = await nextErpNumber('lead');
+  } catch (error) {
+    return fail(error);
+  }
 
   const payload = {
     business_unit_id: activeUnit(),
