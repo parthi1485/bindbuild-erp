@@ -1,3 +1,38 @@
+async function newBill(poId){
+  const po=byId(POS,poId);if(!po)return;
+  const related=GRNS.filter(g=>g.po_id===poId&&g.status==='accepted');
+  if(!related.length)return toast('Post a GRN before capturing the vendor bill','err');
+
+  const gi=await supabase.from('goods_receipt_items').select('*').in('grn_id',related.map(g=>g.id));
+  if(gi.error)return fail(gi.error);
+  const acceptedValue=(gi.data||[]).reduce((a,x)=>{
+    const item=byId(POITEMS,x.po_item_id);
+    return a+Number(x.accepted_qty||0)*Number(item?.rate||x.rate||0)*(1+Number(item?.gst_rate||0)/100);
+  },0);
+  const prior=BILLS.filter(b=>b.po_id===poId&&!['cancelled','disputed'].includes(b.status)).reduce((a,b)=>a+Number(b.total||0),0);
+  const available=Math.max(acceptedValue-prior,0);
+  if(available<=0.01)return toast('No unbilled accepted GRN value remains','err');
+
+  const billNo=prompt('Vendor invoice / bill number');if(!billNo)return;
+  const totalRaw=prompt('Bill total\nMaximum matched to accepted GRN: '+money(available),String(Math.round(available*100)/100));
+  if(totalRaw===null)return;
+  const total=Number(totalRaw);if(!Number.isFinite(total)||total<=0||total>available+0.01)return toast('Bill exceeds accepted GRN value','err');
+
+  const ratio=Number(po.total)>0?Math.max(0,Math.min(1,Number(po.subtotal||0)/Number(po.total))):1;
+  const defSubtotal=Math.round(total*ratio*100)/100;
+  const subtotal=Number(prompt('Taxable amount',String(defSubtotal)));if(!Number.isFinite(subtotal)||subtotal<0)return toast('Invalid taxable amount','err');
+  const tax=Number(prompt('GST / tax amount',String(Math.round((total-subtotal)*100)/100)));if(!Number.isFinite(tax)||tax<0)return toast('Invalid tax amount','err');
+  if(Math.abs((subtotal+tax)-total)>0.02)return toast('Taxable + tax must equal bill total','err');
+
+  const due=prompt('Due date (YYYY-MM-DD)',po.expected_date||today())||null;
+  const grn=related.at(-1);
+  const r=await supabase.from('vendor_bills').insert({
+    business_unit_id:po.business_unit_id,vendor_id:po.vendor_id,project_id:po.project_id,
+    po_id:po.id,grn_id:grn?.id||null,bill_no:billNo.trim(),bill_date:today(),due_date:due,
+    subtotal,tax_amount:tax,total,status:'draft'
+  }).select('*').single();
+  if(r.error)return fail(r.error);toast('Vendor bill captured');await load();
+}
 import { supabase } from '../lib/supabase.js';
 import { mountShell, scopeToUnit, activeUnit } from '../lib/shell.js';
 import { toast, fail, esc, fmtDate } from '../lib/ui.js';
