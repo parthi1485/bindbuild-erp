@@ -14,7 +14,7 @@ const money=v=>{
   return '₹'+Math.round(n).toLocaleString('en-IN');
 };
 
-let P=null,CLIENT=null,PROPOSAL=null,PROFORMAS=[],INVOICES=[],RECEIPTS=[],TASKS=[],PRECON=[],CONSTRUCTION=[];
+let P=null,CLIENT=null,PROPOSAL=null,PROFORMAS=[],INVOICES=[],RECEIPTS=[],TASKS=[],PRECON=[],CONSTRUCTION=[],REQS=[],POS=[],STOCK=[],VBILLS=[];
 
 async function load(){
   try{
@@ -23,7 +23,7 @@ async function load(){
     if(pRes.error)throw pRes.error;if(!pRes.data)throw new Error('Project not found');
     P=pRes.data;
 
-    const [cRes,propRes,piRes,invRes,recRes,tRes,preRes,conRes]=await Promise.all([
+    const [cRes,propRes,piRes,invRes,recRes,tRes,preRes,conRes,reqRes,poRes,stockRes,vbRes]=await Promise.all([
       P.client_id?supabase.from('clients').select('*').eq('id',P.client_id).maybeSingle():Promise.resolve({data:null}),
       P.proposal_id?supabase.from('proposals').select('*').eq('id',P.proposal_id).maybeSingle():Promise.resolve({data:null}),
       supabase.from('proforma_invoices').select('*').eq('project_id',projectId).is('deleted_at',null).order('created_at',{ascending:false}),
@@ -31,10 +31,14 @@ async function load(){
       supabase.from('receipts').select('*').eq('project_id',projectId).eq('status','issued').order('receipt_date',{ascending:false}),
       supabase.from('tasks').select('*').eq('project_id',projectId).order('due_at',{ascending:true}),
       supabase.from('preconstruction_steps').select('*').eq('project_id',projectId).order('step_order'),
-      supabase.from('construction_stages').select('*').eq('project_id',projectId).order('sort_order')
+      supabase.from('construction_stages').select('*').eq('project_id',projectId).order('sort_order'),
+      supabase.from('material_requisitions').select('*').eq('project_id',projectId).order('created_at',{ascending:false}),
+      supabase.from('purchase_orders').select('*').eq('project_id',projectId).order('created_at',{ascending:false}),
+      supabase.from('stock_balances').select('*').eq('project_id',projectId),
+      supabase.from('vendor_bills').select('*').eq('project_id',projectId).order('bill_date',{ascending:false})
     ]);
-    [cRes,propRes,piRes,invRes,recRes,tRes,preRes,conRes].forEach(r=>{if(r.error)throw r.error;});
-    CLIENT=cRes.data;PROPOSAL=propRes.data;PROFORMAS=piRes.data||[];INVOICES=invRes.data||[];RECEIPTS=recRes.data||[];TASKS=tRes.data||[];PRECON=preRes.data||[];CONSTRUCTION=conRes.data||[];
+    [cRes,propRes,piRes,invRes,recRes,tRes,preRes,conRes,reqRes,poRes,stockRes,vbRes].forEach(r=>{if(r.error)throw r.error;});
+    CLIENT=cRes.data;PROPOSAL=propRes.data;PROFORMAS=piRes.data||[];INVOICES=invRes.data||[];RECEIPTS=recRes.data||[];TASKS=tRes.data||[];PRECON=preRes.data||[];CONSTRUCTION=conRes.data||[];REQS=reqRes.data||[];POS=poRes.data||[];STOCK=stockRes.data||[];VBILLS=vbRes.data||[];
     paint();
   }catch(e){fail(e);}
 }
@@ -50,6 +54,10 @@ function paint(){
   const prePct=preRequired.length?Math.round(preDone/preRequired.length*100):0;
   const preCurrent=PRECON.find(x=>!['completed','skipped'].includes(x.status));
   const constructionCurrent=CONSTRUCTION.find(x=>x.status!=='completed');
+  const openReq=REQS.filter(x=>!['closed','cancelled','rejected'].includes(x.status)).length;
+  const committed=POS.filter(x=>!['cancelled'].includes(x.status)).reduce((a,x)=>a+Number(x.total||0),0);
+  const stockValue=STOCK.reduce((a,x)=>a+Number(x.value||0),0);
+  const vendorPayable=VBILLS.filter(x=>['approved','part_paid'].includes(x.status)).reduce((a,x)=>a+Math.max(0,Number(x.total)-Number(x.amount_paid)),0);
 
   const content=$('#content');
   content.innerHTML=`
@@ -135,6 +143,14 @@ function paint(){
           <div class="kv"><span class="kv__k">Current stage</span><span class="kv__v">${esc(constructionCurrent?.title||(P.status==='active'?'Stage plan loading':'Not released'))}</span></div>
           <button class="btn-ghost" id="constructionRailBtn" style="width:100%;margin-top:12px">Open site operations</button>
         </section>
+        <section class="card card__pad">
+          <div class="card__title">Supply & procurement</div>
+          <div class="kv"><span class="kv__k">Open requisitions</span><span class="kv__v">${openReq}</span></div>
+          <div class="kv"><span class="kv__k">PO committed</span><span class="kv__v">${money(committed)}</span></div>
+          <div class="kv"><span class="kv__k">Site stock</span><span class="kv__v">${money(stockValue)}</span></div>
+          <div class="kv"><span class="kv__k">Vendor payable</span><span class="kv__v">${money(vendorPayable)}</span></div>
+          <button class="btn-ghost" id="supplyRailBtn" style="width:100%;margin-top:12px">Open procurement</button>
+        </section>
       </aside>
     </div>`;
 
@@ -145,6 +161,7 @@ function paint(){
   $('#constructionBtn')?.addEventListener('click',()=>P.status==='active'?location.href='/progress.html?project='+P.id:toast('Construction opens after Bhoomi Pooja release','err'));
   $('#constructionRailBtn')?.addEventListener('click',()=>P.status==='active'?location.href='/progress.html?project='+P.id:toast('Construction opens after Bhoomi Pooja release','err'));
   $('#procurementBtn')?.addEventListener('click',()=>location.href='/procurement.html?project='+P.id);
+  $('#supplyRailBtn')?.addEventListener('click',()=>location.href='/procurement.html?project='+P.id);
   $('#newPiBtn')?.addEventListener('click',()=>location.href='/proforma.html?project='+P.id);
   document.querySelectorAll('[data-pi]').forEach(b=>b.addEventListener('click',()=>location.href='/proforma.html?id='+b.dataset.pi));
   document.querySelectorAll('[data-inv]').forEach(b=>b.addEventListener('click',()=>location.href='/invoice.html?id='+b.dataset.inv));
