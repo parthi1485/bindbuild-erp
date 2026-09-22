@@ -89,7 +89,7 @@ async function mark(empId,status){
 }
 
 async function markAll(){
-  const rows=EMP.filter(e=>effectiveStatus(e.id)==='unmarked');
+  const rows=EMP.filter(e=>effectiveStatus(e.id)==='unmarked'&&(!['project_manager','site_engineer'].includes(user.role)||allocation(e.id)));
   if(!rows.length)return;
   if(!confirm('Mark '+rows.length+' unmarked employees present? Approved leave is excluded.'))return;
   for(const e of rows){
