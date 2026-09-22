@@ -113,7 +113,7 @@ function renderReqs(){
     let actions='';
     if(r.status==='draft'&&canSite)actions='<button class="s-btn primary" data-submit-req="'+r.id+'">Submit</button>';
     if(r.status==='submitted'&&canManager)actions='<button class="s-btn primary" data-approve-req="'+r.id+'">Approve</button><button class="s-btn" data-reject-req="'+r.id+'">Reject</button>';
-    if(['approved','sourcing'].includes(r.status)&&canProc)actions='<button class="s-btn primary" data-add-quote="'+r.id+'">Add quote</button>';
+    if(['approved','sourcing'].includes(r.status)&&canProc)actions='<button class="s-btn primary" data-rfq="'+r.id+'">Send RFQ</button><button class="s-btn" data-add-quote="'+r.id+'">Record quote</button>';
     return '<tr><td><div class="s-doc">'+esc(r.requisition_no||'DRAFT MR')+'</div><div class="s-meta">'+esc(r.priority||'normal')+' · '+esc(r.purpose||'No purpose')+'</div></td><td>'+esc(project?.name||'—')+'</td><td>'+(r.required_by?fmtDate(r.required_by):'—')+'</td><td>'+items.length+' item'+(items.length===1?'':'s')+'<div class="s-meta">'+money(estimate)+'</div></td><td><span class="s-status '+esc(r.status)+'">'+esc(r.status)+'</span></td><td><div class="s-actions-inline">'+actions+'</div></td></tr>';
   }).join(''):'<tr><td colspan="6"><div class="s-empty">No material requisitions yet.</div></td></tr>';
 }
@@ -175,7 +175,7 @@ function renderVendors(){
   const rows=[...spend.entries()].sort((a,b)=>b[1]-a[1]).slice(0,7);
   const top=Math.max(1,...rows.map(x=>x[1]));
   $('#vendorList').innerHTML=rows.length?rows.map(([id,val])=>{
-    const v=byId(VENDORS,id);return '<div class="s-list-row"><div class="s-list-body"><div class="s-list-title">'+esc(v?.name||'Vendor')+'</div><div class="s-list-meta">'+money(val)+'</div><div class="s-vbar"><span style="width:'+Math.round(val/top*100)+'%"></span></div></div></div>';
+    const v=byId(VENDORS,id);return '<div class="s-list-row"><div class="s-list-body"><div class="s-list-title">'+esc(v?.name||'Vendor')+'</div><div class="s-list-meta">'+money(val)+'</div><div class="s-vbar"><span style="width:'+Math.round(val/top*100)+'%"></span></div></div>'+(['founder','admin','procurement'].includes(user.role)?'<button class="s-btn" data-vendor-portal="'+id+'">Portal</button>':'')+'</div>';
   }).join(''):'<div class="s-empty">Vendor ranking begins with purchase orders.</div>';
 }
 
@@ -224,6 +224,32 @@ async function newRequisition(){
 
 async function submitReq(id){const r=await supabase.rpc('submit_material_requisition',{p_requisition_id:id});if(r.error)return fail(r.error);toast(r.data.requisition_no+' submitted');await load();}
 async function reviewReq(id,approve){const reason=approve?null:prompt('Reason for rejection');if(!approve&&!reason)return;const r=await supabase.rpc('review_material_requisition',{p_requisition_id:id,p_approve:approve,p_reason:reason});if(r.error)return fail(r.error);toast(approve?'Requisition approved':'Requisition rejected');await load();}
+
+async function sendRfq(reqId){
+  const req=byId(REQS,reqId);if(!req)return;
+  const vendor=promptChoice('Choose vendor for RFQ',VENDORS,v=>v.name+(v.email?' · '+v.email:' · no email'));if(!vendor)return;
+  let email=vendor.email||'';
+  if(!email){email=(prompt('Vendor email required for portal access')||'').trim();if(!email)return toast('Vendor email is required','err');const u=await supabase.from('vendors').update({email,updated_at:new Date().toISOString()}).eq('id',vendor.id);if(u.error)return fail(u.error);vendor.email=email;}
+  const due=prompt('Quotation due date (YYYY-MM-DD)',req.required_by||today())||null;
+  const note=prompt('RFQ note (optional)',req.purpose||'')||null;
+  const access=await supabase.rpc('invite_portal_member',{p_portal_type:'vendor',p_entity_id:vendor.id,p_email:email,p_display_name:vendor.contact_person||vendor.name});
+  if(access.error)return fail(access.error);
+  const r=await supabase.rpc('invite_vendor_rfq',{p_requisition_id:reqId,p_vendor_id:vendor.id,p_due_date:due,p_note:note});
+  if(r.error)return fail(r.error);
+  const link=location.origin+'/vendor-portal.html';
+  try{await navigator.clipboard.writeText(link);toast('RFQ sent to portal · vendor link copied');}catch{toast('RFQ sent to vendor portal');}
+  await load();
+}
+
+async function inviteVendorPortal(vendorId){
+  const vendor=byId(VENDORS,vendorId);if(!vendor)return;
+  let email=(vendor.email||prompt('Vendor portal email')||'').trim();if(!email)return;
+  if(!vendor.email){const u=await supabase.from('vendors').update({email,updated_at:new Date().toISOString()}).eq('id',vendor.id);if(u.error)return fail(u.error);}
+  const r=await supabase.rpc('invite_portal_member',{p_portal_type:'vendor',p_entity_id:vendor.id,p_email:email,p_display_name:vendor.contact_person||vendor.name});
+  if(r.error)return fail(r.error);
+  const link=location.origin+'/vendor-portal.html';
+  try{await navigator.clipboard.writeText(link);toast('Vendor portal invited · link copied');}catch{toast('Vendor portal invited');}
+}
 
 async function addQuote(reqId){
   const req=byId(REQS,reqId),items=reqItems(reqId);if(!req||!items.length)return;
@@ -319,6 +345,8 @@ document.addEventListener('click',e=>{
     ['[data-submit-req]',b=>submitReq(b.dataset.submitReq)],
     ['[data-approve-req]',b=>reviewReq(b.dataset.approveReq,true)],
     ['[data-reject-req]',b=>reviewReq(b.dataset.rejectReq,false)],
+    ['[data-rfq]',b=>sendRfq(b.dataset.rfq)],
+    ['[data-vendor-portal]',b=>inviteVendorPortal(b.dataset.vendorPortal)],
     ['[data-add-quote]',b=>addQuote(b.dataset.addQuote)],
     ['[data-create-po]',b=>createPO(b.dataset.createPo)],
     ['[data-submit-po]',b=>submitPO(b.dataset.submitPo)],
