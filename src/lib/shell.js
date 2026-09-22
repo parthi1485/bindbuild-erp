@@ -5,13 +5,7 @@ import { supabase } from './supabase.js';
 
 /* Routes that have a real page. Everything else in the nav is still a
    prototype — add the slug here as each page gets converted. */
-const BUILT = new Set([
-  'dashboard', 'analytics', 'crm', 'clients', 'sales',
-  'projects', 'design', 'construction', 'site-visits',
-  'procurement', 'inventory', 'finance',
-  'hr', 'people', 'documents', 'calendar', 'meetings',
-  'client-portal', 'vendor-portal', 'settings'
-]);
+const BUILT = new Set(['dashboard']);
 
 /* ---------------------------------------------------------------
    business unit
@@ -35,13 +29,13 @@ export function scopeToUnit(query, column = 'business_unit_id') {
 
 async function mountUnitPicker() {
   const { data, error } = await supabase
-    .from('business_units').select('id,code,name,is_default')
-    .eq('status', 'active').order('name');
+    .from('business_units').select('id,code,name,active')
+    .eq('active', true).order('name');
   if (error || !data?.length) return;
 
   UNITS = data;
   if (!activeUnit()) {
-    const def = data.find(u => u.is_default) || data[0];
+    const def = data.find(u => u.code === 'BB') || data[0];
     localStorage.setItem(UNIT_KEY, def.id);
   }
 
@@ -183,9 +177,9 @@ async function paintCounts() {
   const head = { count: 'exact', head: true };
 
   const [leads, projects, pos] = await Promise.all([
-    supabase.from('leads').select('id', head).not('stage_key', 'in', '("won","lost")'),
-    supabase.from('projects').select('id', head).eq('status', 'active'),
-    supabase.from('purchase_orders').select('id', head).eq('status', 'quoted')
+    supabase.from('leads').select('id', head).is('deleted_at', null).not('stage', 'in', '("won","lost")'),
+    supabase.from('projects').select('id', head).is('deleted_at', null).not('status', 'in', '("completed","cancelled")'),
+    supabase.from('purchase_orders').select('id', head).eq('status', 'approval')
   ]);
 
   const set = (route, res) => {
