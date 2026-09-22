@@ -131,13 +131,23 @@ function paint(){
   $('#recordBtn').disabled=!PI.proforma_no||balance<=0;
   $('#issueBtn').hidden=!!PI.proforma_no;
   $('#receiptBtn').hidden=!latestReceipt;
-  $('#invoiceBtn').hidden=Number(PI.amount_paid||0)<=0;
+  $('#invoiceBtn').hidden=Number(PI.amount_paid||0)<=0||PI.status==='cancelled';
+  $('#recordBtn').disabled=!PI.proforma_no||balance<=0||PI.status==='cancelled';
+  $('#milestoneName').disabled=!!PI.proforma_no||PI.status==='cancelled';
+  $('#milestonePct').disabled=!!PI.proforma_no||PI.status==='cancelled';
   $('#metaStatus').textContent=PI.status||'draft';
+
+  const host=$('.ctx__actions');
+  if(host&&!$('#cancelPiBtn')&&PI.status!=='cancelled'&&Number(PI.amount_paid||0)<=0&&['founder','admin','finance'].includes(user.role)){
+    host.insertAdjacentHTML('beforeend','<button class="btn-ghost" id="cancelPiBtn">Cancel proforma</button>');
+    $('#cancelPiBtn').onclick=cancelProforma;
+  }
   $('#metaTax').textContent=rate+'%';
   $('#metaTaxMode').textContent=PI.is_interstate?'IGST':'CGST + SGST';
 }
 
 async function saveMilestone(){
+  if(PI.proforma_no||PI.status==='cancelled')return;
   const name=$('#milestoneName').value.trim()||'Milestone payment';
   const pct=Number($('#milestonePct').value||0);
   if(pct<=0||pct>100)return toast('Milestone percentage must be between 0 and 100','err');
@@ -213,5 +223,15 @@ $('#receiptBtn').addEventListener('click',()=>latestReceipt?.id&&(location.href=
 $('#invoiceBtn').addEventListener('click',createInvoice);
 $('#backBtn').addEventListener('click',()=>P?.id&&(location.href='/project.html?id='+P.id));
 $('#printBtn').addEventListener('click',()=>window.print());
+
+async function cancelProforma(){
+  const reason=prompt('Proforma cancellation reason');
+  if(!reason)return;
+  if(!confirm('Cancel '+(PI.proforma_no||'this draft proforma')+'?'))return;
+  const {error}=await supabase.rpc('cancel_proforma',{p_proforma_id:PI.id,p_reason:reason});
+  if(error)return fail(error);
+  toast('Proforma cancelled');
+  location.reload();
+}
 
 await load();
