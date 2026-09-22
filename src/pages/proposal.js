@@ -202,6 +202,7 @@ function paint(){
   $('#dArea').value=PROPOSAL.built_up_area||'';
   $('#dValid').value=PROPOSAL.valid_until||addDays(today,30);
   $('#dBy').value=user.name;
+  $('#dBy').readOnly=true;
   $('#terms').value=PROPOSAL.terms||'';
 
   const sub=Number(PROPOSAL.subtotal||0);
@@ -214,12 +215,27 @@ function paint(){
     back.textContent=LEAD?`← Back to lead · ${LEAD.name}`:'← Back to Sales';
   }
 
-  $('#trackViewed').innerHTML=PROPOSAL.sent_at
-    ? `<span class="tdot"></span>Sent <small>· ${fmtDate(PROPOSAL.sent_at)}</small>`
-    : '<span class="tdot"></span>Not sent';
-  $('#trackAccepted').innerHTML=PROPOSAL.accepted_at
-    ? `<span class="tdot"></span>Accepted <small>· ${fmtDate(PROPOSAL.accepted_at)}</small>`
-    : '<span class="tdot"></span>Awaiting acceptance';
+  const track=$('.track');
+  if(track){
+    const sent=!!PROPOSAL.sent_at;
+    const accepted=!!PROPOSAL.accepted_at;
+    track.innerHTML=`
+      <span class="track__step done"><span class="tdot"></span>Draft <small>· ${fmtDate(PROPOSAL.created_at)}</small></span>
+      <span class="track__arrow">→</span>
+      <span class="track__step ${sent?'done':''}"><span class="tdot"></span>Sent ${sent?'<small>· '+fmtDate(PROPOSAL.sent_at)+'</small>':''}</span>
+      <span class="track__arrow">→</span>
+      <span class="track__step ${accepted?'done now':sent?'now':''}"><span class="tdot"></span>${accepted?'Accepted':'Awaiting decision'} ${accepted?'<small>· '+fmtDate(PROPOSAL.accepted_at)+'</small>':''}</span>`;
+  }
+
+  const versionCard=[...$('.rail .card')].find(card=>card.querySelector('.rail__title')?.textContent.trim()==='Versions');
+  if(versionCard){
+    versionCard.innerHTML=`
+      <h2 class="rail__title">Document state</h2>
+      <div class="kv"><span class="kv__k">Number</span><span class="kv__v">${esc(PROPOSAL.proposal_no||'Draft — not issued')}</span></div>
+      <div class="kv"><span class="kv__k">Status</span><span class="kv__v">${esc(PROPOSAL.status||'draft')}</span></div>
+      <div class="kv"><span class="kv__k">Created</span><span class="kv__v">${fmtDate(PROPOSAL.created_at)}</span></div>
+      <div class="kv"><span class="kv__k">Estimate</span><span class="kv__v">${PROPOSAL.estimate_id?'Linked':'Direct proposal'}</span></div>`;
+  }
 
   renderItems();renderScope();renderSchedule();paintTimeline();
   document.title=(PROPOSAL.proposal_no||'Draft Proposal')+' · Bind Build ERP';
@@ -366,7 +382,11 @@ $('#schList').addEventListener('input',e=>{
   if(e.target.dataset.schpct!==undefined){
     SCHEDULE[Number(e.target.dataset.schpct)].pct=Number(e.target.value||0);
   }
-  renderSchedule();markDirty();
+  const sum=SCHEDULE.reduce((a,s)=>a+Number(s.pct||0),0);
+  $('#schBadge').textContent=sum+'%';
+  $('#schBadge').classList.toggle('ok',Math.round(sum)===100);
+  $('#schBadge').classList.toggle('bad',Math.round(sum)!==100);
+  calc();markDirty();
 });
 $('#schList').addEventListener('click',e=>{
   const rm=e.target.closest('[data-rmsch]');if(!rm)return;
