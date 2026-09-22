@@ -1,567 +1,401 @@
 import { supabase } from '../lib/supabase.js';
-import { mountShell } from '../lib/shell.js';
-import { toast, fail, esc, fmtDate, openModal, closeAllModals,
-         wireModalDismiss, val, setVal } from '../lib/ui.js';
+import { mountShell, activeUnit } from '../lib/shell.js';
+import { issueDocumentNumber } from '../lib/numbering.js';
+import { toast, fail, esc, fmtDate, openModal, closeAllModals, wireModalDismiss, val, setVal } from '../lib/ui.js';
 
-const $  = (s, c = document) => c.querySelector(s);
-const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+const $ = (s,c=document)=>c.querySelector(s);
+const $$ = (s,c=document)=>[...c.querySelectorAll(s)];
 
-const user = await mountShell({ route: 'sales', title: 'Proposal' });
-if (!user) throw new Error('redirecting');
+const user = await mountShell({route:'sales',title:'Proposal'});
+if(!user) throw new Error('redirecting');
 
-const qs         = new URLSearchParams(location.search);
-const proposalId = qs.get('id');
-const leadParam  = qs.get('lead');
+const qs=new URLSearchParams(location.search);
+const proposalId=qs.get('id');
+const leadParam=qs.get('lead');
 
-const inr    = v => '₹' + Math.round(Number(v) || 0).toLocaleString('en-IN');
-const moneyL = v => {
-  const n = Number(v) || 0;
-  if (Math.abs(n) >= 1e7) return '₹' + (n / 1e7).toFixed(2).replace(/\.00$/, '') + ' Cr';
-  if (Math.abs(n) >= 1e5) return '₹' + (n / 1e5).toFixed(2).replace(/\.00$/, '') + ' L';
+let PROPOSAL=null;
+let LEAD=null;
+let LEADS=[];
+let ITEMS=[];
+let SCOPE=[];
+let SCHEDULE=[];
+let dirty=false;
+let saveTimer=null;
+
+const today=new Date();
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x.toISOString().slice(0,10);};
+const inr=v=>'₹'+Math.round(Number(v)||0).toLocaleString('en-IN');
+const money=v=>{
+  const n=Number(v)||0;
+  if(Math.abs(n)>=1e7)return '₹'+(n/1e7).toFixed(2).replace(/\.00$/,'')+' Cr';
+  if(Math.abs(n)>=1e5)return '₹'+(n/1e5).toFixed(2).replace(/\.00$/,'')+' L';
   return inr(n);
 };
 
-let PROPOSAL = null, LEAD = null, ITEMS = [], SCOPE = [], SCHEDULE = [];
-let TEMPLATE = null, TEMPLATES = [], SECTIONS = {};
-let dirty = false, saveTimer = null;
-
-/* ---------------------------------------------------------------
-   load
---------------------------------------------------------------- */
-async function load() {
-  if (proposalId) {
-    const { data, error } = await supabase
-      .from('proposals').select('*').eq('id', proposalId).maybeSingle();
-    if (error) return fail(error);
-    if (!data)  return bail('That proposal no longer exists.');
-    PROPOSAL = data;
-  } else if (leadParam) {
-    return bail('Creating a proposal from scratch needs the Finance module. Open an existing proposal instead.');
-  } else {
-    /* no params — open the most recent proposal */
-    const { data } = await supabase.from('proposals')
-      .select('id').order('created_at', { ascending: false }).limit(1);
-    if (!data?.length) return bail('No proposals yet.');
-    return location.replace(`/proposal.html?id=${data[0].id}`);
-  }
-
-  if (PROPOSAL.lead_id) {
-    const { data } = await supabase.from('leads')
-      .select('*').eq('id', PROPOSAL.lead_id).maybeSingle();
-    LEAD = data;
-  }
-
-  const [{ data: items }, { data: tpls }] = await Promise.all([
-    supabase.from('proposal_items').select('*').eq('proposal_id', PROPOSAL.id).order('sort_order'),
-    supabase.from('proposal_templates').select('*').eq('status', 'active').order('name')
-  ]);
-
-  TEMPLATES = tpls ?? [];
-  TEMPLATE  = TEMPLATES.find(t => t.id === PROPOSAL.template_id)
-           || TEMPLATES.find(t => t.is_default)
-           || null;
-  SECTIONS  = PROPOSAL.sections_data && typeof PROPOSAL.sections_data === 'object'
-            ? { ...PROPOSAL.sections_data } : {};
-
-  /* fall back to the single service line the generator created */
-  ITEMS = (items ?? []).length
-    ? items.map(i => ({
-        id: i.id, d: i.description, s: i.sub_description || '',
-        q: Number(i.qty), u: i.unit || 'LS', r: Number(i.rate), sort: i.sort_order
-      }))
-    : [{
-        id: null,
-        d: PROPOSAL.service || 'Professional fee',
-        s: PROPOSAL.sqft ? `${Number(PROPOSAL.sqft).toLocaleString('en-IN')} sq ft @ ₹${PROPOSAL.rate}/sq ft` : '',
-        q: Number(PROPOSAL.sqft) || 1,
-        u: PROPOSAL.sqft ? 'sq ft' : 'LS',
-        r: Number(PROPOSAL.rate) || Number(PROPOSAL.total) || 0,
-        sort: 0
-      }];
-
-  SCOPE = (PROPOSAL.scope || '')
-    .split(/[\n;]+/).map(s => s.trim()).filter(Boolean);
-
-  SCHEDULE = Array.isArray(PROPOSAL.stages) ? PROPOSAL.stages : [];
-
-  paintMeta();
-  renderTemplatePicker();
-  renderItems();
-  renderScope();
-  renderSchedule();
-  renderTemplateSections();
-  calc();
-  await paintTracking();
+function totals(){
+  const sub=ITEMS.reduce((a,it)=>a+Number(it.q||0)*Number(it.r||0),0);
+  const discountPct=Number($('#tDiscIn')?.value||0);
+  const discount=sub*discountPct/100;
+  const taxable=Math.max(sub-discount,0);
+  const taxRate=Number(PROPOSAL?.tax_rate ?? 18);
+  const gst=taxable*taxRate/100;
+  return {sub,discountPct,discount,taxable,taxRate,gst,grand:taxable+gst};
 }
 
-function bail(msg) {
-  toast(msg, 'err');
-  const body = $('#feeBody');
-  if (body) body.innerHTML = `<tr><td colspan="6" class="t-empty">${esc(msg)}</td></tr>`;
-}
-
-function paintMeta() {
-  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  set('dClient', LEAD?.name || 'Unassigned');
-  set('dTitle',  PROPOSAL.no || '—');
-  set('dArea',   LEAD?.area || '—');
-  set('dBy',     user.name);
-  set('dValid',  PROPOSAL.valid_until ? fmtDate(PROPOSAL.valid_until) : '30 days from issue');
-
-  const chip = $('#statusChip');
-  if (chip) {
-    chip.textContent = (PROPOSAL.status || 'draft').replace('_', ' ');
-    chip.dataset.status = PROPOSAL.status || 'draft';
-  }
-
-  const rate = $('#tRate');
-  if (rate) rate.textContent = LEAD?.area || '—';
-
-  const terms = $('#terms');
-  if (terms && PROPOSAL.terms) terms.value = PROPOSAL.terms;
-
-  document.title = `${PROPOSAL.no || 'Proposal'} · Bind Build ERP`;
-}
-
-/* ---------------------------------------------------------------
-   line items
---------------------------------------------------------------- */
-function renderItems() {
-  const body = $('#feeBody');
-  if (!body) return;
-
-  body.innerHTML = ITEMS.map((it, i) =>
-    '<tr>' +
-      `<td><input class="in in--desc" value="${esc(it.d)}" data-f="d" data-i="${i}" aria-label="Item description" />` +
-        `<div class="sub"><input class="in" value="${esc(it.s)}" data-f="s" data-i="${i}" aria-label="Item detail" /></div></td>` +
-      `<td class="r"><input class="in in--num" type="number" min="0" value="${it.q}" data-f="q" data-i="${i}" aria-label="Quantity" /></td>` +
-      `<td><input class="in" value="${esc(it.u)}" data-f="u" data-i="${i}" aria-label="Unit" /></td>` +
-      `<td class="r"><input class="in in--num" type="number" min="0" value="${it.r}" data-f="r" data-i="${i}" aria-label="Rate in rupees" /></td>` +
-      `<td class="r"><span class="amt" data-amt="${i}">${inr(it.q * it.r)}</span></td>` +
-      `<td><button class="rm" data-rm="${i}" aria-label="Remove line item">` +
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>' +
-      '</button></td>' +
-    '</tr>').join('');
-
-  const count = $('#feeCount');
-  if (count) count.textContent = ITEMS.length + ' item' + (ITEMS.length === 1 ? '' : 's');
-}
-
-$('#feeBody')?.addEventListener('input', e => {
-  const f = e.target.dataset.f, i = +e.target.dataset.i;
-  if (f === undefined) return;
-  ITEMS[i][f] = (f === 'q' || f === 'r') ? (parseFloat(e.target.value) || 0) : e.target.value;
-  const amt = $(`[data-amt="${i}"]`);
-  if (amt) amt.textContent = inr(ITEMS[i].q * ITEMS[i].r);
-  calc(); markDirty();
-});
-
-$('#feeBody')?.addEventListener('click', e => {
-  const rm = e.target.closest('[data-rm]');
-  if (!rm) return;
-  ITEMS.splice(+rm.dataset.rm, 1);
-  renderItems(); calc(); markDirty();
-  toast('Line removed');
-});
-
-$('#addItem')?.addEventListener('click', () => {
-  ITEMS.push({ id: null, d: 'New line item', s: 'Add detail…', q: 1, u: 'LS', r: 0, sort: ITEMS.length });
-  renderItems(); calc(); markDirty();
-  const rows = $$('#feeBody tr');
-  const inp = rows[rows.length - 1]?.querySelector('.in--desc');
-  if (inp) { inp.focus(); inp.select(); }
-});
-
-/* ---------------------------------------------------------------
-   scope + schedule
---------------------------------------------------------------- */
-function renderScope() {
-  const el = $('#scopeList');
-  if (!el) return;
-  el.innerHTML = SCOPE.length
-    ? SCOPE.map((s, i) => `
-        <li class="scope-item">
-          <input class="in" value="${esc(s)}" data-scope="${i}" aria-label="Scope line" />
-          <button class="rm" data-rmscope="${i}" aria-label="Remove scope line">×</button>
-        </li>`).join('')
-    : `<li class="scope-item"><span class="t-empty">No scope lines yet.</span></li>`;
-}
-
-$('#addScope')?.addEventListener('click', () => {
-  SCOPE.push('New scope line');
-  renderScope(); markDirty();
-});
-
-document.addEventListener('input', e => {
-  const s = e.target.dataset.scope;
-  if (s === undefined) return;
-  SCOPE[+s] = e.target.value;
-  markDirty();
-});
-
-document.addEventListener('click', e => {
-  const rm = e.target.closest('[data-rmscope]');
-  if (!rm) return;
-  SCOPE.splice(+rm.dataset.rmscope, 1);
-  renderScope(); markDirty();
-});
-
-function renderSchedule() {
-  const el = $('#schList');
-  if (el) {
-    el.innerHTML = SCHEDULE.length
-      ? SCHEDULE.map(s => `
-          <li class="sch">
-            <span class="sch__name">${esc(s.n)}</span>
-            <span class="sch__pct">${s.p}%</span>
-            <span class="sch__amt" data-schamt="${s.p}">—</span>
-          </li>`).join('')
-      : `<li class="sch"><span class="sch__name">No payment schedule defined</span></li>`;
-  }
-  const badge = $('#schBadge');
-  if (badge) {
-    const sum = SCHEDULE.reduce((a, s) => a + Number(s.p || 0), 0);
-    badge.textContent = sum + '%';
-    badge.dataset.ok = String(sum === 100);
-  }
-}
-
-/* ---------------------------------------------------------------
-   template
---------------------------------------------------------------- */
-const MODEL_LABEL = {
-  lump_sum:'Lump sum', per_sqft:'Per sq ft', per_unit:'Per unit', hourly:'Hourly',
-  stage_wise:'Stage-wise', room_wise:'Room-wise', percentage_of_cost:'% of cost'
-};
-
-function renderTemplatePicker() {
-  const host = $('#tplPicker') || $('#dTitle')?.closest('.meta, .doc-meta, .head')
-            || $('.doc__meta') || $('#feeCount')?.parentElement;
-  if (!host || !TEMPLATES.length) return;
-
-  if (!document.getElementById('tplSel')) {
-    host.insertAdjacentHTML('beforeend',
-      `<label class="tpl-pick"><span>Proposal type</span>
-         <select id="tplSel" aria-label="Proposal type"></select>
-       </label>`);
-  }
-  const sel = document.getElementById('tplSel');
-  sel.innerHTML = TEMPLATES.map(t =>
-    `<option value="${t.id}"${t.id === TEMPLATE?.id ? ' selected' : ''}>${esc(t.name)}</option>`).join('');
-
-  const model = $('#tplModel');
-  if (model && TEMPLATE) model.textContent = MODEL_LABEL[TEMPLATE.pricing_model] || TEMPLATE.pricing_model;
-}
-
-document.addEventListener('change', async e => {
-  if (e.target.id !== 'tplSel') return;
-  const next = TEMPLATES.find(t => t.id === e.target.value);
-  if (!next) return;
-
-  if (!confirm(`Switch to "${next.name}"?\n\nSections change to match. Content you have already written is kept.`)) {
-    e.target.value = TEMPLATE?.id ?? '';
-    return;
-  }
-
-  TEMPLATE = next;
-  PROPOSAL.template_id = next.id;
-
-  /* fill only what is still empty — never overwrite the user's words */
-  if (!SCOPE.length && next.default_scope) {
-    SCOPE = next.default_scope.split(/[\n;]+/).map(x => x.trim()).filter(Boolean);
-  }
-  if (!SCHEDULE.length && Array.isArray(next.default_schedule)) {
-    SCHEDULE = next.default_schedule;
-  }
-  const terms = $('#terms');
-  if (terms && !terms.value.trim()) terms.value = next.default_terms || '';
-
-  renderScope();
-  renderSchedule();
-  renderTemplateSections();
-  calc();
-  markDirty();
-});
-
-/* ---------------------------------------------------------------
-   sections the template defines
-   list     -> editable lines
-   table    -> editable grid
-   schedule -> handled by the existing payment schedule block
---------------------------------------------------------------- */
-const BUILT_IN = new Set(['scope', 'schedule', 'fee', 'items']);
-
-function sectionHost() {
-  let host = document.getElementById('tplSections');
-  if (host) return host;
-  const anchor = $('#scopeList')?.closest('section, .panel, .card')
-              || $('#schList')?.closest('section, .panel, .card');
-  if (!anchor) return null;
-  anchor.insertAdjacentHTML('afterend', '<div id="tplSections"></div>');
-  return document.getElementById('tplSections');
-}
-
-function renderTemplateSections() {
-  const host = sectionHost();
-  if (!host) return;
-
-  const defs = Array.isArray(TEMPLATE?.sections) ? TEMPLATE.sections : [];
-  const extra = defs.filter(d => !BUILT_IN.has(d.key));
-
-  if (!extra.length) { host.innerHTML = ''; return; }
-
-  host.innerHTML = extra.map(d => {
-    const rows = SECTIONS[d.key];
-    if (d.type === 'table') {
-      const grid = Array.isArray(rows) && rows.length ? rows : [{ c: ['', ''] }];
-      return `<section class="panel tpl-sec" data-sec="${esc(d.key)}">
-        <h3 class="sec-title">${esc(d.label)}</h3>
-        <table class="tpl-tbl"><tbody>
-          ${grid.map((r, i) => `<tr>
-            ${(r.c || ['','']).map((cell, ci) =>
-              `<td><input class="in" value="${esc(cell)}" data-sec="${esc(d.key)}" data-r="${i}" data-c="${ci}" /></td>`).join('')}
-            <td><button class="rm" data-secrm="${esc(d.key)}:${i}" aria-label="Remove row">×</button></td>
-          </tr>`).join('')}
-        </tbody></table>
-        <button class="btn btn--sm" data-secadd="${esc(d.key)}:table">Add row</button>
-      </section>`;
-    }
-    const lines = Array.isArray(rows) && rows.length ? rows : [''];
-    return `<section class="panel tpl-sec" data-sec="${esc(d.key)}">
-      <h3 class="sec-title">${esc(d.label)}</h3>
-      <ul class="tpl-list">
-        ${lines.map((line, i) => `<li>
-          <input class="in" value="${esc(line)}" data-sec="${esc(d.key)}" data-r="${i}" />
-          <button class="rm" data-secrm="${esc(d.key)}:${i}" aria-label="Remove line">×</button>
-        </li>`).join('')}
-      </ul>
-      <button class="btn btn--sm" data-secadd="${esc(d.key)}:list">Add line</button>
-    </section>`;
-  }).join('');
-}
-
-document.addEventListener('input', e => {
-  const key = e.target.dataset?.sec;
-  if (key === undefined || e.target.tagName !== 'INPUT') return;
-  const r = Number(e.target.dataset.r);
-  const c = e.target.dataset.c;
-
-  if (c === undefined) {
-    const arr = Array.isArray(SECTIONS[key]) ? SECTIONS[key] : [];
-    arr[r] = e.target.value;
-    SECTIONS[key] = arr;
-  } else {
-    const arr = Array.isArray(SECTIONS[key]) ? SECTIONS[key] : [];
-    arr[r] = arr[r] || { c: [] };
-    arr[r].c[Number(c)] = e.target.value;
-    SECTIONS[key] = arr;
-  }
-  markDirty();
-});
-
-document.addEventListener('click', e => {
-  const add = e.target.closest('[data-secadd]');
-  if (add) {
-    const [key, kind] = add.dataset.secadd.split(':');
-    const arr = Array.isArray(SECTIONS[key]) ? SECTIONS[key] : [];
-    arr.push(kind === 'table' ? { c: ['', ''] } : '');
-    SECTIONS[key] = arr;
-    renderTemplateSections();
-    markDirty();
-    return;
-  }
-  const rm = e.target.closest('[data-secrm]');
-  if (rm) {
-    const [key, i] = rm.dataset.secrm.split(':');
-    if (Array.isArray(SECTIONS[key])) SECTIONS[key].splice(Number(i), 1);
-    renderTemplateSections();
-    markDirty();
-  }
-});
-
-/* ---------------------------------------------------------------
-   totals — GST aware
---------------------------------------------------------------- */
-function totals() {
-  const sub     = ITEMS.reduce((a, it) => a + it.q * it.r, 0);
-  const dPct    = parseFloat($('#tDiscIn')?.value) || 0;
-  const disc    = sub * dPct / 100;
-  const taxable = sub - disc;
-  const rate    = Number(PROPOSAL?.tax_rate ?? 18);
-  const gst     = taxable * rate / 100;
-  return { sub, disc, taxable, gst, grand: taxable + gst, rate };
-}
-
-function calc() {
-  const t = totals();
-  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  set('tSub',     moneyL(t.sub));
-  set('tDisc',    '− ' + moneyL(t.disc));
-  set('tTaxable', moneyL(t.taxable));
-  set('tGst',     moneyL(t.gst));
-  set('tGrand',   moneyL(t.grand));
-
-  $$('[data-schamt]').forEach(el => {
-    el.textContent = moneyL(t.grand * Number(el.dataset.schamt) / 100);
+function calc(){
+  const t=totals();
+  $('#tSub').textContent=money(t.sub);
+  $('#tDisc').textContent='− '+money(t.discount);
+  $('#tTaxable').textContent=money(t.taxable);
+  $('#tGst').textContent=money(t.gst);
+  $('#tGrand').textContent=money(t.grand);
+  $('#tRate').textContent=LEAD?.area||LEAD?.city||'';
+  $$('[data-amt]').forEach(el=>{
+    const i=Number(el.dataset.amt);
+    el.textContent=inr((ITEMS[i]?.q||0)*(ITEMS[i]?.r||0));
+  });
+  $$('[data-schamt]').forEach(el=>{
+    const pct=Number(el.dataset.schamt||0);
+    el.textContent=money(t.grand*pct/100);
   });
 }
 
-$('#tDiscIn')?.addEventListener('input', () => { calc(); markDirty(); });
-$('#terms')?.addEventListener('input', markDirty);
+function renderItems(){
+  const body=$('#feeBody');
+  body.innerHTML=ITEMS.map((it,i)=>`<tr>
+    <td><input class="in in--desc" value="${esc(it.d||'')}" data-f="d" data-i="${i}" />
+      <div class="sub"><input class="in" value="${esc(it.category||'')}" data-f="category" data-i="${i}" placeholder="Category / detail" /></div></td>
+    <td class="r"><input class="in in--num" type="number" min="0" step="0.001" value="${it.q}" data-f="q" data-i="${i}" /></td>
+    <td><input class="in" value="${esc(it.u||'LS')}" data-f="u" data-i="${i}" /></td>
+    <td class="r"><input class="in in--num" type="number" min="0" step="0.01" value="${it.r}" data-f="r" data-i="${i}" /></td>
+    <td class="r"><span class="amt" data-amt="${i}">${inr(it.q*it.r)}</span></td>
+    <td><button class="rm" data-rm="${i}" aria-label="Remove item">×</button></td>
+  </tr>`).join('');
+  $('#feeCount').textContent=ITEMS.length+' item'+(ITEMS.length===1?'':'s');
+  calc();
+}
 
-/* ---------------------------------------------------------------
-   save
---------------------------------------------------------------- */
-function markDirty() {
-  dirty = true;
-  const txt = $('#autosaveTxt');
-  if (txt) txt.textContent = 'Unsaved changes';
-  $('#autosave')?.setAttribute('data-state', 'dirty');
+function renderScope(){
+  const host=$('#scopeList');
+  host.innerHTML=SCOPE.length?SCOPE.map((s,i)=>`
+    <div class="scope">
+      <span>✓</span>
+      <input value="${esc(s)}" data-scope="${i}" />
+      <button class="scope__x" data-rmscope="${i}" aria-label="Remove">×</button>
+    </div>`).join(''):'<div class="scope"><span>—</span><input value="" placeholder="Add scope item" data-scope="0" /></div>';
+}
+
+function renderSchedule(){
+  const host=$('#schList');
+  if(!SCHEDULE.length)SCHEDULE=[
+    {name:'Design / mobilisation advance',pct:10},
+    {name:'Agreement / pre-construction',pct:10},
+    {name:'Construction milestones',pct:75},
+    {name:'Handover / close-out',pct:5}
+  ];
+  host.innerHTML=SCHEDULE.map((s,i)=>`
+    <div class="sch">
+      <input type="text" value="${esc(s.name||'')}" data-schname="${i}" />
+      <span class="pct"><input type="number" min="0" max="100" step="1" value="${Number(s.pct||0)}" data-schpct="${i}" /></span>
+      <span class="val" data-schamt="${Number(s.pct||0)}">—</span>
+      <button class="rm" data-rmsch="${i}" aria-label="Remove">×</button>
+    </div>`).join('');
+  const sum=SCHEDULE.reduce((a,s)=>a+Number(s.pct||0),0);
+  $('#schBadge').textContent=sum+'%';
+  $('#schBadge').classList.toggle('ok',Math.round(sum)===100);
+  $('#schBadge').classList.toggle('bad',Math.round(sum)!==100);
+  calc();
+}
+
+function markDirty(){
+  dirty=true;
+  $('#autosaveTxt').textContent='Unsaved changes';
+  $('#autosave')?.classList.add('saving');
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(save, 1500);
+  saveTimer=setTimeout(save,900);
 }
 
-async function save() {
-  if (!dirty || !PROPOSAL) return;
-  const t = totals();
-
-  const txt = $('#autosaveTxt');
-  if (txt) txt.textContent = 'Saving…';
-
-  const { error: pErr } = await supabase.from('proposals').update({
-    template_id:   PROPOSAL.template_id ?? null,
-    sections_data: SECTIONS,
-    scope:       SCOPE.join('\n'),
-    stages:      SCHEDULE,
-    terms:       $('#terms')?.value ?? PROPOSAL.terms,
-    subtotal:    t.sub,
-    tax_amount:  t.gst,
-    grand_total: t.grand,
-    total:       Math.round(t.grand),
-    updated_at:  new Date().toISOString()
-  }).eq('id', PROPOSAL.id);
-
-  if (pErr) { if (txt) txt.textContent = 'Save failed'; return fail(pErr); }
-
-  /* replace line items wholesale — simplest correct approach at this size */
-  await supabase.from('proposal_items').delete().eq('proposal_id', PROPOSAL.id);
-  if (ITEMS.length) {
-    const { error: iErr } = await supabase.from('proposal_items').insert(
-      ITEMS.map((it, i) => ({
-        proposal_id: PROPOSAL.id,
-        description: it.d, sub_description: it.s,
-        qty: it.q, unit: it.u, rate: it.r, sort_order: i
-      }))
-    );
-    if (iErr) { if (txt) txt.textContent = 'Save failed'; return fail(iErr); }
-  }
-
-  dirty = false;
-  if (txt) txt.textContent = 'All changes saved';
-  $('#autosave')?.setAttribute('data-state', 'saved');
+async function loadLeads(){
+  const {data,error}=await supabase.from('leads')
+    .select('id,lead_no,name,phone,email,area,city,service,expected_value,business_unit_id')
+    .is('deleted_at',null).order('updated_at',{ascending:false});
+  if(error)throw error;
+  LEADS=data||[];
+  $('#dClient').innerHTML='<option value="">Select lead</option>'+LEADS.map(l=>`
+    <option value="${l.id}">${esc(l.lead_no||'')} · ${esc(l.name)}</option>`).join('');
 }
 
-/* ---------------------------------------------------------------
-   tracking + send
---------------------------------------------------------------- */
-async function paintTracking() {
-  const { data: views } = await supabase
-    .from('proposal_views')
-    .select('device,seconds,viewed_at')
-    .eq('proposal_id', PROPOSAL.id)
-    .order('viewed_at', { ascending: false });
-
-  const v = views ?? [];
-  const set = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
-
-  set('trackViewed', v.length ? `${v.length} view${v.length > 1 ? 's' : ''} · last ${fmtDate(v[0].viewed_at)}` : 'Not opened yet');
-  set('trackAccepted', PROPOSAL.accepted_at ? `Accepted ${fmtDate(PROPOSAL.accepted_at)}` : 'Awaiting decision');
-
-  const tl = $('#miniTl');
-  if (tl) {
-    const events = [
-      { t: PROPOSAL.created_at, txt: 'Proposal created' },
-      ...v.map(x => ({ t: x.viewed_at, txt: `Opened by client · ${x.device || 'unknown device'}` })),
-      PROPOSAL.accepted_at ? { t: PROPOSAL.accepted_at, txt: 'Accepted by client' } : null
-    ].filter(Boolean).sort((a, b) => new Date(b.t) - new Date(a.t));
-
-    tl.innerHTML = events.map(e => `
-      <li class="mtl">
-        <span class="mtl__txt">${esc(e.txt)}</span>
-        <span class="mtl__time">${fmtDate(e.t)}</span>
-      </li>`).join('');
-  }
-}
-
-async function send() {
-  await save();
-  const { error } = await supabase.from('proposals')
-    .update({ status: 'sent' }).eq('id', PROPOSAL.id);
-  if (error) return fail(error);
-
-  PROPOSAL.status = 'sent';
-  paintMeta();
-
-  if (PROPOSAL.lead_id) {
-    await supabase.from('leads')
-      .update({ stage_key: 'proposal', last_contact_at: new Date().toISOString() })
-      .eq('id', PROPOSAL.lead_id);
-    await supabase.from('activities').insert({
-      lead_id: PROPOSAL.lead_id, user_id: user.id, kind: 'proposal',
-      detail: `Proposal ${PROPOSAL.no} sent`
+async function createDraftFromLead(leadId){
+  LEAD=LEADS.find(l=>l.id===leadId)||null;
+  if(!LEAD)throw new Error('Lead not found');
+  const {data,error}=await supabase.from('proposals').insert({
+    business_unit_id:LEAD.business_unit_id||activeUnit(),
+    lead_id:LEAD.id,
+    title:`Project Proposal · ${LEAD.name}`,
+    service:LEAD.service||null,
+    status:'draft',
+    subtotal:Number(LEAD.expected_value||0),
+    discount:0,tax_rate:18,
+    tax_amount:Number(LEAD.expected_value||0)*0.18,
+    grand_total:Number(LEAD.expected_value||0)*1.18,
+    valid_until:addDays(today,30),
+    scope:LEAD.service||null,
+    terms:'Proposal subject to final drawings, specifications, statutory approvals, site conditions and signed construction agreement.',
+    payment_schedule:[
+      {name:'Design / mobilisation advance',pct:10},
+      {name:'Agreement / pre-construction',pct:10},
+      {name:'Construction milestones',pct:75},
+      {name:'Handover / close-out',pct:5}
+    ]
+  }).select('*').single();
+  if(error)throw error;
+  PROPOSAL=data;
+  ITEMS=[{category:'',d:LEAD.service||'Professional / construction scope',q:1,u:'LS',r:Number(LEAD.expected_value||0)}];
+  if(ITEMS[0].r>0){
+    const {error:iErr}=await supabase.from('proposal_items').insert({
+      proposal_id:PROPOSAL.id,sort_order:0,description:ITEMS[0].d,qty:1,unit:'LS',rate:ITEMS[0].r
     });
+    if(iErr)throw iErr;
+  }
+  history.replaceState(null,'',`/proposal.html?id=${PROPOSAL.id}`);
+}
+
+async function load(){
+  try{
+    await loadLeads();
+    if(proposalId){
+      const {data,error}=await supabase.from('proposals').select('*').eq('id',proposalId).is('deleted_at',null).maybeSingle();
+      if(error)throw error;
+      if(!data)throw new Error('Proposal not found');
+      PROPOSAL=data;
+    }else if(leadParam){
+      await createDraftFromLead(leadParam);
+    }else{
+      const {data}=await supabase.from('proposals').select('id').is('deleted_at',null).order('created_at',{ascending:false}).limit(1);
+      if(data?.length)return location.replace('/proposal.html?id='+data[0].id);
+      throw new Error('Create a proposal from a lead or estimate.');
+    }
+
+    LEAD=LEADS.find(l=>l.id===PROPOSAL.lead_id)||null;
+    const {data:items,error:iErr}=await supabase.from('proposal_items').select('*').eq('proposal_id',PROPOSAL.id).order('sort_order');
+    if(iErr)throw iErr;
+    ITEMS=(items||[]).map(x=>({id:x.id,category:x.category||'',d:x.description,q:Number(x.qty),u:x.unit,r:Number(x.rate)}));
+    if(!ITEMS.length)ITEMS=[{category:'',d:PROPOSAL.service||'Proposal item',q:1,u:'LS',r:Number(PROPOSAL.subtotal||0)}];
+
+    SCOPE=(PROPOSAL.scope||'').split(/\n+/).map(x=>x.trim()).filter(Boolean);
+    SCHEDULE=Array.isArray(PROPOSAL.payment_schedule)?PROPOSAL.payment_schedule:[];
+    paint();
+  }catch(e){fail(e);}
+}
+
+function paint(){
+  const title=PROPOSAL.title||'Project Proposal';
+  $('.prop-head__title').textContent=title;
+  const verChip=$('.chip--ver');
+  if(verChip)verChip.textContent=PROPOSAL.proposal_no||'DRAFT';
+  const clientChip=$('.chip--client');
+  if(clientChip)clientChip.textContent=LEAD?.name||'Unassigned';
+  $('#statusChip').textContent=(PROPOSAL.status||'draft').toUpperCase();
+
+  $('#dClient').value=PROPOSAL.lead_id||'';
+  $('#dTitle').value=title;
+  $('#dArea').value=PROPOSAL.built_up_area||'';
+  $('#dValid').value=PROPOSAL.valid_until||addDays(today,30);
+  $('#dBy').value=user.name;
+  $('#terms').value=PROPOSAL.terms||'';
+
+  const sub=Number(PROPOSAL.subtotal||0);
+  const disc=Number(PROPOSAL.discount||0);
+  $('#tDiscIn').value=sub>0?Math.round((disc/sub)*10000)/100:0;
+
+  const back=$('.back');
+  if(back){
+    back.href=LEAD?`/lead.html?id=${LEAD.id}`:'/sales.html';
+    back.textContent=LEAD?`← Back to lead · ${LEAD.name}`:'← Back to Sales';
   }
 
-  const link = `${location.origin}/proposal.html?id=${PROPOSAL.id}`;
-  try { await navigator.clipboard.writeText(link); toast('Sent — link copied to clipboard'); }
-  catch { toast('Marked as sent'); }
+  $('#trackViewed').innerHTML=PROPOSAL.sent_at
+    ? `<span class="tdot"></span>Sent <small>· ${fmtDate(PROPOSAL.sent_at)}</small>`
+    : '<span class="tdot"></span>Not sent';
+  $('#trackAccepted').innerHTML=PROPOSAL.accepted_at
+    ? `<span class="tdot"></span>Accepted <small>· ${fmtDate(PROPOSAL.accepted_at)}</small>`
+    : '<span class="tdot"></span>Awaiting acceptance';
+
+  renderItems();renderScope();renderSchedule();paintTimeline();
+  document.title=(PROPOSAL.proposal_no||'Draft Proposal')+' · Bind Build ERP';
+}
+
+function paintTimeline(){
+  const tl=$('#miniTl');
+  if(!tl)return;
+  const events=[
+    {t:PROPOSAL.created_at,txt:'Proposal draft created'},
+    PROPOSAL.sent_at?{t:PROPOSAL.sent_at,txt:'Proposal issued and sent'}:null,
+    PROPOSAL.accepted_at?{t:PROPOSAL.accepted_at,txt:'Proposal accepted'}:null
+  ].filter(Boolean).sort((a,b)=>new Date(b.t)-new Date(a.t));
+  tl.innerHTML=events.map(e=>`<p><b>${esc(e.txt)}</b><small>${fmtDate(e.t)}</small></p>`).join('');
+}
+
+async function save(){
+  if(!dirty||!PROPOSAL)return;
+  const t=totals();
+  $('#autosaveTxt').textContent='Saving…';
+  const sum=SCHEDULE.reduce((a,s)=>a+Number(s.pct||0),0);
+  if(Math.round(sum)!==100){
+    $('#autosaveTxt').textContent='Payment schedule must total 100%';
+    return toast('Payment schedule must total 100%','err');
+  }
+
+  const leadId=$('#dClient').value||null;
+  const lead=LEADS.find(l=>l.id===leadId)||null;
+  const payload={
+    lead_id:leadId,
+    business_unit_id:lead?.business_unit_id||PROPOSAL.business_unit_id||activeUnit(),
+    title:$('#dTitle').value.trim()||'Project Proposal',
+    service:lead?.service||PROPOSAL.service||null,
+    built_up_area:Number($('#dArea').value||0)||null,
+    valid_until:$('#dValid').value||null,
+    scope:SCOPE.join('\n')||null,
+    terms:$('#terms').value.trim()||null,
+    payment_schedule:SCHEDULE,
+    subtotal:t.sub,discount:t.discount,tax_rate:t.taxRate,tax_amount:t.gst,grand_total:t.grand
+  };
+  const {error}=await supabase.from('proposals').update(payload).eq('id',PROPOSAL.id);
+  if(error)return fail(error);
+
+  const del=await supabase.from('proposal_items').delete().eq('proposal_id',PROPOSAL.id);
+  if(del.error)return fail(del.error);
+  if(ITEMS.length){
+    const {error:iErr}=await supabase.from('proposal_items').insert(ITEMS.map((it,i)=>({
+      proposal_id:PROPOSAL.id,sort_order:i,category:it.category||null,
+      description:it.d||'Proposal item',qty:Number(it.q||0),unit:it.u||'LS',rate:Number(it.r||0)
+    })));
+    if(iErr)return fail(iErr);
+  }
+
+  PROPOSAL={...PROPOSAL,...payload};
+  LEAD=lead;
+  dirty=false;
+  $('#autosaveTxt').textContent='All changes saved';
+  $('#autosave')?.classList.remove('saving');
+  paint();
+}
+
+async function issueAndSend(){
+  if(dirty)await save();
+  const t=totals();
+  if(!PROPOSAL.proposal_no){
+    let no;
+    try{
+      no=await issueDocumentNumber('proposal',{
+        issueDate:today,leadId:PROPOSAL.lead_id,clientId:PROPOSAL.client_id,
+        amount:t.grand,status:'sent',metadata:{proposal_id:PROPOSAL.id,title:PROPOSAL.title}
+      });
+    }catch(e){return fail(e);}
+    PROPOSAL.proposal_no=no;
+  }
+
+  const sentAt=new Date().toISOString();
+  const {error}=await supabase.from('proposals').update({
+    proposal_no:PROPOSAL.proposal_no,status:'sent',sent_at:sentAt
+  }).eq('id',PROPOSAL.id);
+  if(error)return fail(error);
+
+  PROPOSAL.status='sent';PROPOSAL.sent_at=sentAt;
+  if(PROPOSAL.lead_id)await supabase.from('leads').update({stage:'proposal'}).eq('id',PROPOSAL.lead_id);
+  paint();
+  toast(`Proposal ${PROPOSAL.proposal_no} issued`);
+}
+
+function buildPreview(){
+  const t=totals();
+  const paper=$('#paper');
+  if(!paper)return;
+  paper.innerHTML=`
+    <div class="paper__mast">
+      <div class="paper__logo">BIND BUILDS<small>ARCHITECT-LED CONSTRUCTION</small></div>
+      <div class="paper__no">${esc(PROPOSAL.proposal_no||'DRAFT')}<br>${new Date().toLocaleDateString('en-IN')}</div>
+    </div>
+    <h3>${esc(PROPOSAL.title||'Project Proposal')}</h3>
+    <p><b>Client:</b> ${esc(LEAD?.name||'—')}<br><b>Location:</b> ${esc(LEAD?.area||LEAD?.city||'—')}</p>
+    <h3>Scope</h3>
+    <ul>${SCOPE.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>
+    <h3>Commercials</h3>
+    <table><thead><tr><th>Item</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead>
+    <tbody>${ITEMS.map(it=>`<tr><td>${esc(it.d)}</td><td class="r">${it.q} ${esc(it.u)}</td><td class="r">${inr(it.r)}</td><td class="r">${inr(it.q*it.r)}</td></tr>`).join('')}
+    <tr class="grand"><td colspan="3" class="r">Grand total</td><td class="r">${money(t.grand)}</td></tr></tbody></table>
+    <h3>Payment schedule</h3>
+    <ul>${SCHEDULE.map(s=>`<li>${esc(s.name)} — ${Number(s.pct)}%</li>`).join('')}</ul>
+    <h3>Terms</h3><p>${esc($('#terms').value).replaceAll('\n','<br>')}</p>`;
+}
+
+function openSend(){
+  setVal('sendMsg',`Hello ${LEAD?.name||'there'},\n\nPlease find our proposal ${PROPOSAL.proposal_no||''}. Happy to walk you through the scope, commercials and payment milestones.\n\n${user.name}\nBind Builds`);
+  if(!openModal('sendModal'))issueAndSend();
 }
 
 wireModalDismiss();
 
-function openSend() {
-  setVal('sendMsg',
-    `Hello ${LEAD?.name || 'there'},\n\nPlease find our proposal ${PROPOSAL?.no || ''} attached. ` +
-    `Happy to walk you through it whenever suits.\n\n${user.name}\nStudio Bind Architects`);
-  if (!openModal('sendModal')) send();
-}
+$('#feeBody').addEventListener('input',e=>{
+  const i=Number(e.target.dataset.i),f=e.target.dataset.f;
+  if(!Number.isFinite(i)||!f)return;
+  ITEMS[i][f]=['q','r'].includes(f)?Number(e.target.value||0):e.target.value;
+  calc();markDirty();
+});
+$('#feeBody').addEventListener('click',e=>{
+  const rm=e.target.closest('[data-rm]');if(!rm)return;
+  ITEMS.splice(Number(rm.dataset.rm),1);renderItems();markDirty();
+});
+$('#addItem').addEventListener('click',()=>{
+  ITEMS.push({category:'',d:'New line item',q:1,u:'LS',r:0});renderItems();markDirty();
+});
+$('#scopeList').addEventListener('input',e=>{
+  const i=Number(e.target.dataset.scope);if(!Number.isFinite(i))return;
+  SCOPE[i]=e.target.value;markDirty();
+});
+$('#scopeList').addEventListener('click',e=>{
+  const rm=e.target.closest('[data-rmscope]');if(!rm)return;
+  SCOPE.splice(Number(rm.dataset.rmscope),1);renderScope();markDirty();
+});
+$('#addScope').addEventListener('click',()=>{SCOPE.push('New scope item');renderScope();markDirty();});
 
-$('#sendBtn') ?.addEventListener('click', openSend);
-$('#sendBtn2')?.addEventListener('click', openSend);
+$('#schList').addEventListener('input',e=>{
+  if(e.target.dataset.schname!==undefined){
+    SCHEDULE[Number(e.target.dataset.schname)].name=e.target.value;
+  }
+  if(e.target.dataset.schpct!==undefined){
+    SCHEDULE[Number(e.target.dataset.schpct)].pct=Number(e.target.value||0);
+  }
+  renderSchedule();markDirty();
+});
+$('#schList').addEventListener('click',e=>{
+  const rm=e.target.closest('[data-rmsch]');if(!rm)return;
+  SCHEDULE.splice(Number(rm.dataset.rmsch),1);renderSchedule();markDirty();
+});
 
-$('#confirmSend')?.addEventListener('click', async () => {
-  const byEmail = document.getElementById('chEmail')?.checked;
-  const byWa    = document.getElementById('chWa')?.checked;
-  if (!byEmail && !byWa) return toast('Pick at least one channel', 'err');
+['dClient','dTitle','dArea','dValid','terms','tDiscIn'].forEach(id=>$('#'+id)?.addEventListener('input',()=>{calc();markDirty();}));
 
-  await send();
+$('#sendBtn')?.addEventListener('click',openSend);
+$('#sendBtn2')?.addEventListener('click',openSend);
+$('#confirmSend')?.addEventListener('click',async()=>{
+  const byEmail=$('#chEmail')?.checked;
+  const byWa=$('#chWa')?.checked;
+  if(!byEmail&&!byWa)return toast('Pick at least one channel','err');
+  await issueAndSend();
   closeAllModals();
-
-  const link = `${location.origin}/proposal.html?id=${PROPOSAL.id}`;
-  const msg  = val('sendMsg');
-
-  /* no mail server is configured, so hand off to the client's own apps
-     rather than silently pretending something was sent */
-  if (byWa && LEAD?.phone) {
-    window.open(`https://wa.me/91${String(LEAD.phone).replace(/\D/g,'').slice(-10)}`
-      + `?text=${encodeURIComponent(msg + '\n\n' + link)}`, '_blank');
-  }
-  if (byEmail && LEAD?.email) {
-    window.location.href = `mailto:${LEAD.email}`
-      + `?subject=${encodeURIComponent('Proposal ' + (PROPOSAL.no || ''))}`
-      + `&body=${encodeURIComponent(msg + '\n\n' + link)}`;
-  }
-  if (byEmail && !LEAD?.email) toast('No email address on this lead', 'err');
+  const link=`${location.origin}/proposal.html?id=${PROPOSAL.id}`;
+  const msg=val('sendMsg');
+  if(byWa&&LEAD?.phone){
+    const phone=String(LEAD.phone).replace(/\D/g,'').slice(-10);
+    window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg+'\n\n'+link)}`,'_blank');
+  }else if(byWa)toast('No mobile number on this lead','err');
+  if(byEmail&&LEAD?.email){
+    location.href=`mailto:${LEAD.email}?subject=${encodeURIComponent('Proposal '+PROPOSAL.proposal_no)}&body=${encodeURIComponent(msg+'\n\n'+link)}`;
+  }else if(byEmail)toast('No email address on this lead','err');
 });
-
-$('#pdfBtn')  ?.addEventListener('click', () => window.print());
-$('#pdfBtn2') ?.addEventListener('click', () => window.print());
-$('#previewBtn')?.addEventListener('click', () => {
-  if (!openModal('prevModal')) window.open(`/proposal.html?id=${PROPOSAL.id}`, '_blank');
-});
-
-window.addEventListener('beforeunload', e => {
-  if (dirty) { e.preventDefault(); e.returnValue = ''; }
-});
+$('#previewBtn')?.addEventListener('click',()=>{buildPreview();openModal('prevModal');});
+$('#pdfBtn')?.addEventListener('click',()=>{buildPreview();window.print();});
+$('#pdfBtn2')?.addEventListener('click',()=>{buildPreview();window.print();});
+window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
 
 await load();
