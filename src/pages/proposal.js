@@ -294,7 +294,9 @@ async function save(){
   dirty=false;
   $('#autosaveTxt').textContent='All changes saved';
   $('#autosave')?.classList.remove('saving');
-  paint();
+  $('.prop-head__title').textContent = PROPOSAL.title || 'Project Proposal';
+  const clientChip=$('.chip--client');
+  if(clientChip)clientChip.textContent=LEAD?.name||'Unassigned';
 }
 
 async function issueAndSend(){
