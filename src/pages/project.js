@@ -150,6 +150,7 @@ function paint(){
           <div class="kv"><span class="kv__k">Site stock</span><span class="kv__v">${money(stockValue)}</span></div>
           <div class="kv"><span class="kv__k">Vendor payable</span><span class="kv__v">${money(vendorPayable)}</span></div>
           <button class="btn-ghost" id="supplyRailBtn" style="width:100%;margin-top:12px">Open procurement</button>
+          <button class="btn-ghost" id="inventoryRailBtn" style="width:100%;margin-top:8px">Open site stock</button>
         </section>
       </aside>
     </div>`;
@@ -162,6 +163,7 @@ function paint(){
   $('#constructionRailBtn')?.addEventListener('click',()=>P.status==='active'?location.href='/progress.html?project='+P.id:toast('Construction opens after Bhoomi Pooja release','err'));
   $('#procurementBtn')?.addEventListener('click',()=>location.href='/procurement.html?project='+P.id);
   $('#supplyRailBtn')?.addEventListener('click',()=>location.href='/procurement.html?project='+P.id);
+  $('#inventoryRailBtn')?.addEventListener('click',()=>location.href='/inventory.html?project='+P.id);
   $('#newPiBtn')?.addEventListener('click',()=>location.href='/proforma.html?project='+P.id);
   document.querySelectorAll('[data-pi]').forEach(b=>b.addEventListener('click',()=>location.href='/proforma.html?id='+b.dataset.pi));
   document.querySelectorAll('[data-inv]').forEach(b=>b.addEventListener('click',()=>location.href='/invoice.html?id='+b.dataset.inv));
