@@ -40,6 +40,11 @@ async function load(){
     ]);
     a.forEach(r=>{if(r.error)throw r.error;});
     [EMP,PROJECTS,ALLOC,CYCLES,GOALS,REVIEWS,KUDOS]=a.map(r=>r.data||[]);
+    const empIds=new Set(EMP.map(e=>e.id));
+    ALLOC=ALLOC.filter(x=>empIds.has(x.employee_id));
+    GOALS=GOALS.filter(x=>empIds.has(x.employee_id));
+    REVIEWS=REVIEWS.filter(x=>empIds.has(x.employee_id));
+    KUDOS=KUDOS.filter(x=>empIds.has(x.from_employee_id)||empIds.has(x.to_employee_id));
     SELF_EMP=EMP.find(e=>e.profile_id===user.id)||null;
     render();
   }catch(e){fail(e);}
