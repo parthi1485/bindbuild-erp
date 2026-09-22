@@ -258,8 +258,6 @@ try {
   if(stageHint)stageHint.textContent=data.projects.filter(p=>isOpenProject(p.status)).length+' active projects';
 } catch (error) {
   fail(error);
-} catch (error) {
-  fail(error);
 }
 
 $('#notifDrawer')?.setAttribute('hidden','');
