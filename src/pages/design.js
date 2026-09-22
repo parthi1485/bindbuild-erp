@@ -87,7 +87,8 @@ function editor(){
   if(!s){$('#stepEditor').innerHTML='<div class="empty">Select a step.</div>';return;}
   $('#stepTitle').textContent=s.step_order+'. '+s.title;
   $('#stepPhase').textContent=s.phase+(s.required?' · Required':' · Optional');
-  const statuses=Object.entries(labels).map(x=>'<option value="'+x[0]+'"'+(s.status===x[0]?' selected':'')+'>'+esc(x[1])+'</option>').join('');
+  const managerGate=['final_design_signoff','construction_agreement','bhoomi_pooja'].includes(s.step_key)&&!canApprove;
+  const statuses=Object.entries(labels).filter(x=>!managerGate||x[0]!=='completed'||s.status==='completed').map(x=>'<option value="'+x[0]+'"'+(s.status===x[0]?' selected':'')+'>'+esc(x[1])+'</option>').join('');
   $('#stepEditor').innerHTML='<div class="form-grid">'+
     '<div class="form-field full"><label>Required output</label><div class="output-box">'+esc(s.output_label||'—')+'</div></div>'+
     '<div class="form-field"><label>Status</label><select class="field-select" id="stepStatus" '+(canEdit?'':'disabled')+'>'+statuses+'</select></div>'+
@@ -99,7 +100,7 @@ function editor(){
     (s.completed_at?'<div class="confirmation">Completed '+fmtDate(s.completed_at)+'</div>':'')+
     '<div class="action-row">'+
       (canEdit?'<button class="btn-primary" id="saveStepBtn">Save step</button>':'')+
-      (canEdit&&s.status!=='completed'?'<button class="btn-ghost" id="completeStepBtn">Mark complete</button>':'')+
+      (canEdit&&!managerGate&&s.status!=='completed'?'<button class="btn-ghost" id="completeStepBtn">Mark complete</button>':'')+
       (canEdit&&!s.required&&!['skipped','completed'].includes(s.status)?'<button class="btn-ghost" id="skipStepBtn">Mark N.A.</button>':'')+
       (canEdit?'<button class="btn-ghost" id="taskStepBtn">Create task</button>':'')+
       (canApprove?'<button class="btn-ghost" id="approvalStepBtn">Request approval</button>':'')+
