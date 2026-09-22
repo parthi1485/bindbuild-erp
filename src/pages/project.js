@@ -64,6 +64,7 @@ function paint(){
             <span class="health ${esc(P.health||'ontrack')}"><span class="hd"></span>${esc(P.health||'ontrack')}</span>
             <button class="btn-ghost" id="clientBtn">Client</button>
             <button class="btn-ghost" id="proposalBtn">Proposal</button>
+            <button class="btn-ghost" id="designBtn">Design & Pre-construction</button>
             <button class="btn-new" id="newPiBtn">Create proforma</button>
           </div>
         </div>
@@ -119,6 +120,7 @@ function paint(){
 
   $('#clientBtn')?.addEventListener('click',()=>CLIENT?.id?location.href='/client.html?id='+CLIENT.id:toast('No client linked','err'));
   $('#proposalBtn')?.addEventListener('click',()=>P.proposal_id?location.href='/proposal.html?id='+P.proposal_id:toast('No proposal linked','err'));
+  $('#designBtn')?.addEventListener('click',()=>location.href='/design.html?project='+P.id);
   $('#newPiBtn')?.addEventListener('click',()=>location.href='/proforma.html?project='+P.id);
   document.querySelectorAll('[data-pi]').forEach(b=>b.addEventListener('click',()=>location.href='/proforma.html?id='+b.dataset.pi));
   document.querySelectorAll('[data-inv]').forEach(b=>b.addEventListener('click',()=>location.href='/invoice.html?id='+b.dataset.inv));
