@@ -11,6 +11,7 @@ const canIssue=['founder','admin','procurement','project_manager','site_engineer
 const money=v=>'₹'+Math.round(Number(v)||0).toLocaleString('en-IN');
 const qty=v=>Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:3});
 const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
+const projectHint=new URLSearchParams(location.search).get('project');
 
 let BAL=[],STORES=[],MATERIALS=[],MOVES=[],PROJECTS=[];
 let fStore='',fCat='',fStatus='',search='';
@@ -40,6 +41,7 @@ function fillFilters(){
 }
 
 function pass(b){
+  if(projectHint&&b.project_id!==projectHint)return false;
   if(fStore&&b.store_id!==fStore)return false;
   if(fCat&&b.category!==fCat)return false;
   if(fStatus&&b.stock_status!==fStatus)return false;
