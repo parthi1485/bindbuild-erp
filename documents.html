@@ -1,75 +1,52 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Documents · Bind Build ERP</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/src/styles/app.css" />
-<link rel="stylesheet" href="/src/styles/documents.css" />
-
-<script>
-  (function(){
-    var s=localStorage.getItem('bindbuild.theme');
-    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
-    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
-  })();
-</script>
+<link rel="stylesheet" href="/src/styles/app.css"/>
+<link rel="stylesheet" href="/src/styles/workspace-ops.css"/>
+<script>(function(){var s=localStorage.getItem('bindbuild.theme');var l=matchMedia('(prefers-color-scheme: light)').matches;document.documentElement.setAttribute('data-theme',s||(l?'light':'dark'));})();</script>
 </head>
-<body>
-<div class="app" id="app">
-  <!-- sidebar injected by shell.js -->
-  <div class="scrim" id="scrim"></div>
-  <div class="main" id="main">
-    <!-- topbar injected by shell.js -->
-    <main class="content" id="content">
+<body><div class="app" id="app"><div class="scrim" id="scrim"></div><div class="main" id="main">
+<main class="content" id="content">
+<section class="ws-head">
+  <div><div class="ws-eyebrow">WORKSPACE · CONTROLLED DOCUMENTS</div><h1>Documents</h1><p>Project document register, revisions, approvals and controlled issue history</p></div>
+  <div class="ws-actions"><button class="btn-ghost" id="meetingsBtn">Meetings</button><button class="btn-ghost" id="uploadBtn">Upload revision</button><button class="btn-new" id="newDocBtn">New document</button></div>
+</section>
 
-      <div class="ctx reveal">
-        <div class="ctx__main"><div class="ctx__eyebrow">Workspace · Documents</div><h1 class="ctx__title">Documents</h1><div class="ctx__sub">Contracts, drawings, permits and files across all projects</div></div>
-        <div class="ctx__actions"><button class="btn-ghost" data-toast="New folder|Create a folder to organise files."><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 7a2 2 0 012-2h4l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H6a2 2 0 01-2-2z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 11v4M10 13h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>New folder</button><button class="btn-new" id="uploadBtn" data-toast="Upload|Select files to upload to this project."><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 16V4M7 9l5-5 5 5" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20h16" stroke="#fff" stroke-width="1.9" stroke-linecap="round"/></svg>Upload</button></div>
-      </div>
-      <section class="kstrip">
-        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-blue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M6 3h9l4 4v14H6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12h6M9 16h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>Total documents</div><div class="kbox__val" data-count="209">0</div><div class="kbox__note">across 6 folders</div></div>
-        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-violet"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M3 8l9-4 9 4-9 4-9-4z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M3 8v8l9 4 9-4V8" stroke="currentColor" stroke-width="1.7"/></svg></span>Storage used</div><div class="kbox__val">18.4<small> GB</small></div><div class="kbox__note">of 50 GB plan</div></div>
-        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-sky"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="6" cy="12" r="2.5" stroke="currentColor" stroke-width="1.7"/><circle cx="18" cy="6" r="2.5" stroke="currentColor" stroke-width="1.7"/><circle cx="18" cy="18" r="2.5" stroke="currentColor" stroke-width="1.7"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6" stroke="currentColor" stroke-width="1.6"/></svg></span>Shared</div><div class="kbox__val" data-count="14">0</div><div class="kbox__note">with clients</div></div>
-        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-amber"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 20l4-1 9.5-9.5a2 2 0 000-3l-.5-.5a2 2 0 00-3 0L4.5 15.5 4 20z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span>Pending sign</div><div class="kbox__val" data-count="3">0</div><div class="kbox__note">awaiting approval</div></div>
-        <div class="kbox reveal"><div class="kbox__top"><span class="kbox__ic i-green"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 16V4M7 9l5-5 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>Added · week</div><div class="kbox__val" data-count="11">0</div><div class="kbox__note">new uploads</div></div>
-      </section>
-      <div class="grid">
-        <div class="stack">
-          <section class="card reveal"><div class="card__head"><div class="card__title">Folders</div><span class="card__tag" id="folderTag">All files</span></div><div class="folders" id="folders"></div></section>
-          <section class="card reveal">
-            <div class="tbar">
-              <div class="seg" id="typeSeg"><button class="on" data-t="all">All</button><button data-t="pdf">PDF</button><button data-t="dwg">DWG</button><button data-t="xls">Sheets</button></div>
-              <div class="mini-search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-3.2-3.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><input type="text" id="fileSearch" placeholder="Filter files…" aria-label="Filter files" /></div>
-            </div>
-            <div class="flist" id="flist"></div>
-          </section>
-        </div>
-        <aside class="rail">
-          <section class="card reveal"><div class="card__head"><div class="card__title">Storage</div></div><div class="card__body">
-            <div class="stor"><div class="ring" style="--p:37"><div class="ring__in"><div class="ring__pct">37%</div><div class="ring__lb">used</div></div></div><div class="stor__t"><b>18.4 GB</b> of 50 GB</div></div>
-            <div class="bd">
-              <div class="bdr"><span class="bdr__dot" style="background:var(--violet)"></span>Drawings (DWG/PDF)<span class="bdr__v">9.1 GB</span></div>
-              <div class="bdr"><span class="bdr__dot" style="background:var(--accent)"></span>Photos<span class="bdr__v">6.2 GB</span></div>
-              <div class="bdr"><span class="bdr__dot" style="background:var(--success)"></span>Documents<span class="bdr__v">2.4 GB</span></div>
-              <div class="bdr"><span class="bdr__dot" style="background:var(--warning)"></span>Other<span class="bdr__v">0.7 GB</span></div>
-            </div>
-          </div></section>
-          <section class="card reveal"><div class="card__head"><div class="card__title">Awaiting signature</div><span class="card__tag" id="signCount">3</span></div><div class="card__body"><div class="sgn" id="sgn"></div></div></section>
-          <section class="card reveal"><div class="card__head"><div class="card__title">Recent activity</div></div><div class="card__body"><div class="act" id="act"></div></div></section>
-        </aside>
-      </div>
-      <footer class="footer"><span>© 2026 Studio Bind Architects · Chennai</span><span class="footer__v">Bind Build ERP v0.9.0 · build 2026.07</span></footer>
-    
-    </main>
+<section class="ws-kpis">
+  <article><span>Documents</span><b id="kDocs">0</b><small>Controlled register</small></article>
+  <article><span>Approved</span><b id="kApproved">0</b><small>Current approved docs</small></article>
+  <article><span>Under review</span><b id="kReview">0</b><small>Awaiting decision</small></article>
+  <article><span>Client-visible</span><b id="kClient">0</b><small>Visibility flag only</small></article>
+  <article><span>Revisions</span><b id="kRev">0</b><small>Total uploaded versions</small></article>
+</section>
 
+<section class="ws-grid">
+  <div class="ws-stack">
+    <article class="ws-card">
+      <div class="ws-card__head"><div><div class="ws-card__title">Document register</div><div class="ws-card__sub">One document number; revision history stays underneath it</div></div><span class="ws-tag" id="docCount">0</span></div>
+      <div class="ws-search">
+        <input id="docSearch" placeholder="Search number, title, discipline…"/>
+        <select id="projectFilter"><option value="">All projects</option></select>
+        <select id="typeFilter"><option value="">All types</option><option value="drawing">Drawing</option><option value="specification">Specification</option><option value="contract">Contract</option><option value="approval">Approval</option><option value="report">Report</option><option value="boq">BOQ</option><option value="schedule">Schedule</option><option value="photo">Photo</option><option value="vendor">Vendor</option><option value="other">Other</option></select>
+        <select id="statusFilter"><option value="">Any status</option><option value="draft">Draft</option><option value="under_review">Under review</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="archived">Archived</option></select>
+      </div>
+      <div class="ws-table"><table><thead><tr><th>Document</th><th>Project</th><th>Type / Discipline</th><th>Revision</th><th>Status</th><th>Visibility</th><th></th></tr></thead><tbody id="docBody"></tbody></table></div>
+    </article>
+
+    <article class="ws-card">
+      <div class="ws-card__head"><div><div class="ws-card__title">Revision history</div><div class="ws-card__sub" id="revSubtitle">Select a document</div></div><span class="ws-tag" id="revCount">0</span></div>
+      <div class="ws-table"><table><thead><tr><th>Revision</th><th>File</th><th>Purpose</th><th>Uploaded</th><th>Status</th><th></th></tr></thead><tbody id="revBody"></tbody></table></div>
+    </article>
   </div>
-</div>
 
-<div class="toast-region" aria-live="polite"></div>
-<script type="module" src="/src/pages/documents.js"></script>
-</body>
-</html>
+  <aside class="ws-rail">
+    <article class="ws-card"><div class="ws-card__head"><div class="ws-card__title">Approval queue</div><span class="ws-tag" id="approvalCount">0</span></div><div class="ws-card__body ws-list" id="approvalList"></div></article>
+    <article class="ws-card"><div class="ws-card__head"><div class="ws-card__title">Project breakdown</div><span class="ws-tag">documents</span></div><div class="ws-card__body ws-list" id="projectList"></div></article>
+    <article class="ws-card"><div class="ws-card__head"><div class="ws-card__title">Control rules</div></div><div class="ws-card__body"><div class="ws-list-row"><div class="ws-list-body"><div class="ws-list-title">Private storage</div><div class="ws-list-meta">Files are opened through short-lived signed URLs.</div></div></div><div class="ws-list-row"><div class="ws-list-body"><div class="ws-list-title">Issued revisions lock</div><div class="ws-list-meta">Replace by new revision; do not overwrite history.</div></div></div><div class="ws-list-row"><div class="ws-list-body"><div class="ws-list-title">Approval updates current revision</div><div class="ws-list-meta">Prior approved revision becomes superseded automatically.</div></div></div></div></article>
+  </aside>
+</section>
+</main>
+<footer class="footer"><span>© 2026 Studio Bind Architects · Chennai</span><span>Bind Build ERP</span></footer>
+</div></div><div class="toast-region" aria-live="polite"></div><script type="module" src="/src/pages/documents.js"></script></body></html>
