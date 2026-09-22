@@ -60,6 +60,10 @@ function paint(){
   const committed=POS.filter(x=>!['cancelled'].includes(x.status)).reduce((a,x)=>a+Number(x.total||0),0);
   const stockValue=STOCK.reduce((a,x)=>a+Number(x.value||0),0);
   const vendorPayable=VBILLS.filter(x=>['approved','part_paid'].includes(x.status)).reduce((a,x)=>a+Math.max(0,Number(x.total)-Number(x.amount_paid)),0);
+  const docsApproved=DOCS.filter(x=>x.status==='approved').length;
+  const docsReview=DOCS.filter(x=>x.status==='under_review').length;
+  const openActions=MACTIONS.filter(x=>!['done','cancelled'].includes(x.status)).length;
+  const activePeople=ALLOC.filter(x=>x.status==='active').length;
   const activeTeam=ALLOC.filter(x=>x.status==='active');
   const allocatedCapacity=activeTeam.reduce((a,x)=>a+Number(x.allocation_pct||0),0);
 
@@ -85,6 +89,7 @@ function paint(){
             <button class="btn-ghost" id="proposalBtn">Proposal</button>
             <button class="btn-ghost" id="designBtn">Design & Pre-construction</button>
             <button class="btn-ghost" id="constructionBtn">Construction</button><button class="btn-ghost" id="procurementBtn">Procurement</button>
+            <button class="btn-ghost" id="documentsBtn">Documents</button><button class="btn-ghost" id="meetingsBtn">Meetings</button>
             <button class="btn-new" id="newPiBtn">Create proforma</button>
           </div>
         </div>
@@ -157,6 +162,16 @@ function paint(){
           <button class="btn-ghost" id="inventoryRailBtn" style="width:100%;margin-top:8px">Open site stock</button>
         </section>
         <section class="card card__pad">
+          <div class="card__title">Workspace & team</div>
+          <div class="kv"><span class="kv__k">Documents</span><span class="kv__v">${DOCS.length}</span></div>
+          <div class="kv"><span class="kv__k">Approved / review</span><span class="kv__v">${docsApproved} / ${docsReview}</span></div>
+          <div class="kv"><span class="kv__k">Meetings</span><span class="kv__v">${MEETINGS.length}</span></div>
+          <div class="kv"><span class="kv__k">Open MOM actions</span><span class="kv__v">${openActions}</span></div>
+          <div class="kv"><span class="kv__k">Allocated people</span><span class="kv__v">${activePeople}</span></div>
+          <button class="btn-ghost" id="docsRailBtn" style="width:100%;margin-top:12px">Open documents</button>
+          <button class="btn-ghost" id="meetRailBtn" style="width:100%;margin-top:8px">Open meetings</button>
+        </section>
+        <section class="card card__pad">
           <div class="card__title">Project team</div>
           <div class="kv"><span class="kv__k">Active people</span><span class="kv__v">${activeTeam.length}</span></div>
           <div class="kv"><span class="kv__k">Allocated capacity</span><span class="kv__v">${allocatedCapacity}%</span></div>
@@ -173,8 +188,12 @@ function paint(){
   $('#constructionBtn')?.addEventListener('click',()=>P.status==='active'?location.href='/progress.html?project='+P.id:toast('Construction opens after Bhoomi Pooja release','err'));
   $('#constructionRailBtn')?.addEventListener('click',()=>P.status==='active'?location.href='/progress.html?project='+P.id:toast('Construction opens after Bhoomi Pooja release','err'));
   $('#procurementBtn')?.addEventListener('click',()=>location.href='/procurement.html?project='+P.id);
+  $('#documentsBtn')?.addEventListener('click',()=>location.href='/documents.html?project='+P.id);
+  $('#meetingsBtn')?.addEventListener('click',()=>location.href='/meetings.html?project='+P.id);
   $('#supplyRailBtn')?.addEventListener('click',()=>location.href='/procurement.html?project='+P.id);
   $('#inventoryRailBtn')?.addEventListener('click',()=>location.href='/inventory.html?project='+P.id);
+  $('#docsRailBtn')?.addEventListener('click',()=>location.href='/documents.html?project='+P.id);
+  $('#meetRailBtn')?.addEventListener('click',()=>location.href='/meetings.html?project='+P.id);
   $('#peopleRailBtn')?.addEventListener('click',()=>location.href='/people.html?project='+P.id);
   $('#newPiBtn')?.addEventListener('click',()=>location.href='/proforma.html?project='+P.id);
   document.querySelectorAll('[data-pi]').forEach(b=>b.addEventListener('click',()=>location.href='/proforma.html?id='+b.dataset.pi));
