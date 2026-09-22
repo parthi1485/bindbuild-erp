@@ -186,6 +186,7 @@ async function newVendor(){
   const phone=prompt('Mobile number')||null;
   const email=prompt('Email')||null;
   const gstin=(prompt('GSTIN (optional)')||'').trim().toUpperCase()||null;
+  if(gstin&&!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(gstin))return toast('GSTIN format looks invalid','err');
   const terms=prompt('Default payment terms','30 days')||null;
   const r=await supabase.from('vendors').insert({business_unit_id:activeUnit(),name:name.trim(),category,contact_person:contact,phone,email,gstin,payment_terms:terms,status:'active'}).select('*').single();
   if(r.error)return fail(r.error);toast('Vendor added');await load();
@@ -234,9 +235,14 @@ async function addQuote(reqId){
   let subtotal=0,tax=0,lines=[];
   for(const item of items){
     let materialId=item.material_id;
-    if(!materialId&&MATERIALS.length){
+    if(!materialId){
+      if(!MATERIALS.length){
+        toast('Add the required item to Inventory material master before recording a vendor quote','err');
+        return;
+      }
       const material=promptChoice('Map "'+item.description+'" to material master',MATERIALS,m=>m.name+' · '+m.unit);
-      materialId=material?.id||null;
+      if(!material)return toast('Vendor quote cancelled — every item must map to material master','err');
+      materialId=material.id;
     }
     const rate=Number(prompt(item.description+' — vendor rate per '+item.unit,String(item.estimated_rate||0))||0);
     const mat=materialId?byId(MATERIALS,materialId):null;
