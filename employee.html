@@ -1,223 +1,58 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Employee · Bind Build ERP</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/src/styles/app.css" />
-<link rel="stylesheet" href="/src/styles/employee.css" />
-
-<script>
-  (function(){
-    var s=localStorage.getItem('bindbuild.theme');
-    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
-    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
-  })();
-</script>
+<link rel="stylesheet" href="/src/styles/app.css"/>
+<link rel="stylesheet" href="/src/styles/people-ops.css"/>
+<script>(function(){var s=localStorage.getItem('bindbuild.theme');var l=matchMedia('(prefers-color-scheme: light)').matches;document.documentElement.setAttribute('data-theme',s||(l?'light':'dark'));})();</script>
 </head>
-<body>
-<div class="app" id="app">
-  <!-- sidebar injected by shell.js -->
-  <div class="scrim" id="scrim"></div>
-  <div class="main" id="main">
-    <!-- topbar injected by shell.js -->
-    <main class="content" id="content">
+<body><div class="app" id="app"><div class="scrim" id="scrim"></div><div class="main" id="main">
+<main class="content" id="content">
+  <section class="po-profile">
+    <div class="po-profile__top">
+      <div class="po-profile__avatar" id="empAvatar">—</div>
+      <div style="flex:1"><h1 id="empName">Employee</h1><div class="po-profile__meta" id="empMeta">—</div><div class="po-profile__facts" id="empFacts"></div></div>
+      <div class="po-actions"><button class="btn-ghost" id="backHrBtn">HR</button><button class="btn-ghost" id="editEmpBtn">Edit</button><button class="btn-ghost" id="compBtn">Compensation</button><button class="btn-new" id="leaveBtn">Request leave</button></div>
+    </div>
+  </section>
 
-      <!-- profile header -->
-      <section class="phead reveal">
-        <div class="phead__cover"></div>
-        <div class="phead__body">
-          <div class="phead__av">AK</div>
-          <div class="phead__id">
-            <div class="phead__name">Arun Kumar <span class="badge b-active"><span class="d"></span>Active</span></div>
-            <div class="phead__role">Site Engineer · Site / Execution</div>
-            <div class="phead__facts">
-              <span class="pfact"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.7"/><path d="M8 4v16" stroke="currentColor" stroke-width="1.7"/></svg>SB-EMP-014</span>
-              <span class="pfact"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.5-7-9a7 7 0 0114 0c0 4.5-7 9-7 9z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.4" stroke="currentColor" stroke-width="1.7"/></svg>Adyar Courtyard site</span>
-              <span class="pfact"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 7h16v13H4z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 4v5M16 4v5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Joined Aug 2022 · 3.9 yrs</span>
-            </div>
-          </div>
-          <div class="phead__acts">
-            <button class="btn-ghost" data-toast="Message|Opening chat with Arun Kumar.">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v11H8l-4 4z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>Message</button>
-            <button class="btn-new" data-toast="Edit profile|Employee edit form ready.">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 20h4L18 10l-4-4L4 16v4z" stroke="#fff" stroke-width="1.7" stroke-linejoin="round"/></svg>Edit profile</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- tabs -->
-      <div class="tabs reveal" role="tablist">
-        <button class="tab on" data-tab="overview" role="tab">Overview</button>
-        <button class="tab" data-tab="attendance" role="tab">Attendance</button>
-        <button class="tab" data-tab="documents" role="tab">Documents</button>
-        <button class="tab" data-tab="payroll" role="tab">Payroll</button>
-      </div>
-
-      <div class="layout">
-        <div class="stack">
-
-          <!-- OVERVIEW -->
-          <section class="panel on" data-panel="overview">
-            <div class="stack">
-              <div class="card reveal">
-                <div class="card__head"><div class="card__title">Job details</div></div>
-                <div class="card__body">
-                  <div class="dl">
-                    <div class="di"><div class="di__k">Designation</div><div class="di__v">Site Engineer</div></div>
-                    <div class="di"><div class="di__k">Department</div><div class="di__v">Site / Execution</div></div>
-                    <div class="di"><div class="di__k">Reports to</div><div class="di__v">Parthiban · Principal Architect</div></div>
-                    <div class="di"><div class="di__k">Employment type</div><div class="di__v">Full-time · permanent</div></div>
-                    <div class="di"><div class="di__k">Date of joining</div><div class="di__v">08 Aug 2022</div></div>
-                    <div class="di"><div class="di__k">Employee ID</div><div class="di__v mono">SB-EMP-014</div></div>
-                    <div class="di"><div class="di__k">Current project</div><div class="di__v"><a href="09-project-details.html" style="color:var(--accent)">Adyar Courtyard Residence</a></div></div>
-                    <div class="di"><div class="di__k">Work location</div><div class="di__v">Adyar site + Kasturba Nagar studio</div></div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="card reveal">
-                <div class="card__head"><div class="card__title">Personal details</div></div>
-                <div class="card__body">
-                  <div class="dl">
-                    <div class="di"><div class="di__k">Date of birth</div><div class="di__v">14 Feb 1994 · 32 yrs</div></div>
-                    <div class="di"><div class="di__k">Blood group</div><div class="di__v">O+</div></div>
-                    <div class="di"><div class="di__k">Work email</div><div class="di__v mono">arun.k@studiobind.in</div></div>
-                    <div class="di"><div class="di__k">Phone</div><div class="di__v mono">+91 98407 21134</div></div>
-                    <div class="di di--full"><div class="di__k">Address</div><div class="di__v">14, 3rd Cross St, Velachery, Chennai 600042</div></div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="card reveal">
-                <div class="card__head"><div class="card__title">Skills &amp; certifications</div></div>
-                <div class="card__body">
-                  <div class="chips">
-                    <span class="chip">RCC &amp; structural supervision</span>
-                    <span class="chip">Site QA / QC</span>
-                    <span class="chip">AutoCAD</span>
-                    <span class="chip">Bar bending schedule</span>
-                    <span class="chip">Concrete testing</span>
-                    <span class="chip">B.E Civil Engineering</span>
-                    <span class="chip">Basic site safety</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <!-- ATTENDANCE -->
-          <section class="panel" data-panel="attendance">
-            <div class="card reveal">
-              <div class="card__head"><div class="card__title">Attendance · July 2026</div><span class="card__tag">18 working days</span></div>
-              <div class="card__body">
-                <div class="astat">
-                  <div class="ast ast--p"><div class="ast__v"><span class="cup" data-to="16">0</span></div><div class="ast__k">Present</div></div>
-                  <div class="ast ast--l"><div class="ast__v"><span class="cup" data-to="1">0</span></div><div class="ast__k">Leave</div></div>
-                  <div class="ast ast--a"><div class="ast__v"><span class="cup" data-to="0">0</span></div><div class="ast__k">Absent</div></div>
-                  <div class="ast ast--t"><div class="ast__v"><span class="cup" data-to="2">0</span></div><div class="ast__k">Late in</div></div>
-                </div>
-                <table class="log">
-                  <thead><tr><th>Date</th><th>In</th><th>Out</th><th>Hours</th><th>Status</th></tr></thead>
-                  <tbody>
-                    <tr><td>Fri · 18 Jul</td><td class="mono">08:42</td><td class="mono">18:30</td><td class="mono">9h 48m</td><td><span class="tag t-p"><span class="d"></span>Present</span></td></tr>
-                    <tr><td>Thu · 17 Jul</td><td class="mono">09:15</td><td class="mono">18:20</td><td class="mono">9h 05m</td><td><span class="tag t-late"><span class="d"></span>Late in</span></td></tr>
-                    <tr><td>Wed · 16 Jul</td><td class="mono">08:38</td><td class="mono">18:10</td><td class="mono">9h 32m</td><td><span class="tag t-p"><span class="d"></span>Present</span></td></tr>
-                    <tr><td>Tue · 15 Jul</td><td class="mono">08:40</td><td class="mono">18:45</td><td class="mono">10h 05m</td><td><span class="tag t-p"><span class="d"></span>Present</span></td></tr>
-                    <tr><td>Mon · 14 Jul</td><td class="mono">—</td><td class="mono">—</td><td class="mono">—</td><td><span class="tag t-l"><span class="d"></span>Casual leave</span></td></tr>
-                    <tr><td>Fri · 11 Jul</td><td class="mono">08:44</td><td class="mono">18:15</td><td class="mono">9h 31m</td><td><span class="tag t-p"><span class="d"></span>Present</span></td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-
-          <!-- DOCUMENTS -->
-          <section class="panel" data-panel="documents">
-            <div class="card reveal">
-              <div class="card__head"><div class="card__title">Documents</div><span class="card__tag">5 on file</span></div>
-              <div class="card__body">
-                <div class="docs" id="docs"></div>
-              </div>
-            </div>
-          </section>
-
-          <!-- PAYROLL -->
-          <section class="panel" data-panel="payroll">
-            <div class="stack">
-              <div class="card reveal">
-                <div class="card__head"><div class="card__title">Salary structure</div><span class="card__tag">monthly</span></div>
-                <div class="card__body">
-                  <div class="sal">
-                    <div class="sal__row"><span>Basic pay</span><b>₹30,000</b></div>
-                    <div class="sal__row"><span>House rent allowance</span><b>₹15,000</b></div>
-                    <div class="sal__row"><span>Site allowance</span><b>₹6,000</b></div>
-                    <div class="sal__row"><span>Conveyance</span><b>₹3,000</b></div>
-                    <div class="sal__row"><span>Special allowance</span><b>₹6,000</b></div>
-                    <div class="sal__row sub"><span>Gross earnings</span><b>₹60,000</b></div>
-                    <div class="sal__row ded"><span>Provident fund (PF)</span><b>− ₹3,600</b></div>
-                    <div class="sal__row ded"><span>Professional tax</span><b>− ₹200</b></div>
-                    <div class="sal__row net"><span>Net monthly pay</span><b>₹56,200</b></div>
-                  </div>
-                </div>
-              </div>
-              <div class="card reveal">
-                <div class="card__head"><div class="card__title">Recent payslips</div></div>
-                <div class="card__body">
-                  <div class="pslips">
-                    <div class="pslip"><div><div class="pslip__m">June 2026</div><div class="pslip__d">Paid 30 Jun · HDFC ••4471</div></div><span class="pslip__amt">₹56,200</span><button class="pslip__dl" data-toast="Payslip|June 2026 payslip downloaded (PDF)." aria-label="Download"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
-                    <div class="pslip"><div><div class="pslip__m">May 2026</div><div class="pslip__d">Paid 31 May · HDFC ••4471</div></div><span class="pslip__amt">₹56,200</span><button class="pslip__dl" data-toast="Payslip|May 2026 payslip downloaded (PDF)." aria-label="Download"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
-                    <div class="pslip"><div><div class="pslip__m">April 2026</div><div class="pslip__d">Paid 30 Apr · HDFC ••4471</div></div><span class="pslip__amt">₹54,600</span><button class="pslip__dl" data-toast="Payslip|April 2026 payslip downloaded (PDF)." aria-label="Download"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-        </div>
-
-        <!-- rail -->
-        <aside class="rail">
-          <section class="card reveal">
-            <div class="card__head"><div class="card__title">Status</div></div>
-            <div class="card__body">
-              <div class="qf">
-                <div class="qf__row"><span class="qf__ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 8v4l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/></svg></span><div><div class="qf__k">Tenure</div><div class="qf__v">3 years 11 months</div></div></div>
-                <div class="qf__row"><span class="qf__ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 16.5 7.1 18.2l.9-5.5-4-3.9 5.5-.8L12 3z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span><div><div class="qf__k">Next review</div><div class="qf__v">25 Jul 2026 · Annual</div></div></div>
-                <div class="qf__row"><span class="qf__ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M6 20a6 6 0 0112 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span><div><div class="qf__k">Reports to</div><div class="qf__v"><a href="33-user-profile.html">Parthiban</a></div></div></div>
-              </div>
-            </div>
-          </section>
-
-          <section class="card reveal">
-            <div class="card__head"><div class="card__title">Leave balance</div><span class="card__tag">2026</span></div>
-            <div class="card__body"><div class="lv" id="lvBal"></div></div>
-          </section>
-
-          <section class="card reveal">
-            <div class="card__head"><div class="card__title">Emergency contact</div></div>
-            <div class="card__body">
-              <div class="emg"><div class="emg__av">PA</div><div><div class="emg__nm">Priya Arun</div><div class="emg__m">Spouse</div></div></div>
-              <div class="emg__ph"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M5 4h4l2 5-3 2a12 12 0 005 5l2-3 5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z" stroke="var(--text-3)" stroke-width="1.6" stroke-linejoin="round"/></svg>+91 90031 88422</div>
-            </div>
-          </section>
-        </aside>
-      </div>
-
-      <footer class="footer">
-        <span>© 2026 Studio Bind Architects · Chennai</span>
-        <span class="footer__v">Bind Build ERP v0.9.0 · build 2026.07</span>
-      </footer>
-    
-    </main>
-
+  <div class="po-tabs" id="tabs">
+    <button class="on" data-tab="overview">Overview</button>
+    <button data-tab="attendance">Attendance</button>
+    <button data-tab="leave">Leave</button>
+    <button data-tab="payroll">Payroll</button>
+    <button data-tab="performance">Performance</button>
   </div>
-</div>
 
-<div class="toast-region" aria-live="polite"></div>
-<script type="module" src="/src/pages/employee.js"></script>
-</body>
-</html>
+  <section class="po-panel on" data-panel="overview">
+    <div class="po-grid">
+      <div class="po-stack">
+        <article class="po-card"><div class="po-card__head"><div class="po-card__title">Employment</div></div><div class="po-card__body po-dl" id="jobDetails"></div></article>
+        <article class="po-card"><div class="po-card__head"><div><div class="po-card__title">Project allocation</div><div class="po-card__sub">Current and planned workload</div></div></div><div class="po-card__body po-list" id="projectList"></div></article>
+      </div>
+      <aside class="po-rail">
+        <article class="po-card"><div class="po-card__head"><div class="po-card__title">Current status</div></div><div class="po-card__body" id="statusCard"></div></article>
+        <article class="po-card"><div class="po-card__head"><div class="po-card__title">Reimbursements</div><button class="po-btn" id="reimbBtn">+ Claim</button></div><div class="po-card__body po-list" id="reimbList"></div></article>
+      </aside>
+    </div>
+  </section>
+
+  <section class="po-panel" data-panel="attendance">
+    <article class="po-card"><div class="po-card__head"><div><div class="po-card__title">Recent attendance</div><div class="po-card__sub">Last 45 attendance records</div></div></div><div class="po-table"><table><thead><tr><th>Date</th><th>Status</th><th>In</th><th>Out</th><th>Project</th><th>Note</th></tr></thead><tbody id="attendanceBody"></tbody></table></div></article>
+  </section>
+
+  <section class="po-panel" data-panel="leave">
+    <div class="po-grid"><article class="po-card"><div class="po-card__head"><div class="po-card__title">Leave history</div></div><div class="po-table"><table><thead><tr><th>Type</th><th>Dates</th><th>Days</th><th>Status</th><th>Reason</th></tr></thead><tbody id="leaveBody"></tbody></table></div></article><aside class="po-rail"><article class="po-card"><div class="po-card__head"><div class="po-card__title">Leave balance</div></div><div class="po-card__body po-list" id="leaveBalance"></div></article></aside></div>
+  </section>
+
+  <section class="po-panel" data-panel="payroll">
+    <div class="po-grid"><div class="po-stack"><article class="po-card"><div class="po-card__head"><div><div class="po-card__title">Compensation</div><div class="po-card__sub">Visible only to authorised roles or the linked employee account</div></div></div><div class="po-card__body" id="compCard"></div></article><article class="po-card"><div class="po-card__head"><div class="po-card__title">Payroll history</div></div><div class="po-table"><table><thead><tr><th>Run</th><th>Period</th><th class="num">Fixed</th><th class="num">Variable</th><th class="num">Deductions</th><th class="num">Net</th><th>Status</th></tr></thead><tbody id="payBody"></tbody></table></div></article></div><aside class="po-rail"><article class="po-card"><div class="po-card__head"><div class="po-card__title">Payroll inputs</div></div><div class="po-card__body po-list" id="inputList"></div></article></aside></div>
+  </section>
+
+  <section class="po-panel" data-panel="performance">
+    <div class="po-grid"><article class="po-card"><div class="po-card__head"><div><div class="po-card__title">KPI / goals</div><div class="po-card__sub">Weighted goals for active review cycles</div></div></div><div class="po-card__body po-list" id="goalList"></div></article><aside class="po-rail"><article class="po-card"><div class="po-card__head"><div class="po-card__title">Reviews</div></div><div class="po-card__body po-list" id="reviewList"></div></article></aside></div>
+  </section>
+</main>
+<footer class="footer"><span>© 2026 Studio Bind Architects · Chennai</span><span>Bind Build ERP</span></footer>
+</div></div><div class="toast-region" aria-live="polite"></div><script type="module" src="/src/pages/employee.js"></script></body></html>
