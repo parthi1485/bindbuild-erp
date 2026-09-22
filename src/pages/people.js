@@ -9,6 +9,7 @@ if(!user)throw new Error('redirecting');
 const canPeople=['founder','admin','hr','project_manager'].includes(user.role);
 const canCycle=['founder','admin','hr'].includes(user.role);
 const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
+const projectHint=new URLSearchParams(location.search).get('project');
 const monthKey=()=>today().slice(0,7);
 
 let EMP=[],PROJECTS=[],ALLOC=[],CYCLES=[],GOALS=[],REVIEWS=[],KUDOS=[];
@@ -115,7 +116,7 @@ async function createCycle(){
 
 async function allocate(){
   const emp=choose('Choose employee',EMP,e=>e.full_name+' · '+(e.designation||''));if(!emp)return;
-  const project=choose('Choose project',PROJECTS,p=>(p.project_no||p.code)+' · '+p.name);if(!project)return;
+  const project=(projectHint&&PROJECTS.find(p=>p.id===projectHint))||choose('Choose project',PROJECTS,p=>(p.project_no||p.code)+' · '+p.name);if(!project)return;
   const pct=Number(prompt('Allocation %','100'));if(!Number.isFinite(pct)||pct<=0||pct>100)return;
   const role=prompt('Role on project',emp.designation||'Team member')||null;
   const start=prompt('Start date',today())||today();
