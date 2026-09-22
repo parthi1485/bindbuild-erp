@@ -37,6 +37,10 @@ async function load(){
     ]);
     a.forEach(r=>{if(r.error)throw r.error;});
     [MTG,ATT,NOTES,ACTIONS,PROJECTS,PROFILES]=a.map(r=>r.data||[]);
+    const meetingIds=new Set(MTG.map(m=>m.id));
+    ATT=ATT.filter(x=>meetingIds.has(x.meeting_id));
+    NOTES=NOTES.filter(x=>meetingIds.has(x.meeting_id));
+    ACTIONS=ACTIONS.filter(x=>meetingIds.has(x.meeting_id));
     if(!selected&&MTG.length)selected=MTG[0].id;
     render();
   }catch(e){fail(e);}
