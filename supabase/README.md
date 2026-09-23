@@ -34,8 +34,8 @@ That means:
   mirrored into this folder;
 - a consolidated live-schema baseline now exists at `supabase/baseline/current_schema.sql`;
 - the baseline inventory was audited on 23 Sep 2026 against the live project and
-  contains all 78 public tables, 114 public/private functions, 52 user triggers,
-  247 unique public/storage policies, and the `erp-documents` bucket;
+  contains all 78 public tables, 115 public/private functions, 67 user triggers,
+  261 public/storage policies, and the private `erp-documents` bucket;
 - this inventory audit verifies object coverage, but a destructive fresh-project
   execution test is still required before calling the baseline fully bootstrapped
   from zero.
