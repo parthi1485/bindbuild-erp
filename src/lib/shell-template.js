@@ -109,7 +109,15 @@ export const SIDEBAR_HTML = `
         </a>
         <a class="nav-item" href="/meetings.html" data-route="meetings" data-nav="Meetings">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 9h18"/></svg>
-          Calendar &amp; Meetings
+          Meetings
+        </a>
+        <a class="nav-item" href="/tasks.html" data-route="tasks" data-nav="Tasks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>
+          Tasks
+        </a>
+        <a class="nav-item" href="/calendar.html" data-route="calendar" data-nav="Calendar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 9h18"/></svg>
+          Calendar
         </a>
       </div>
 
