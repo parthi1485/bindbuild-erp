@@ -5,7 +5,7 @@ import { supabase } from './supabase.js';
 
 /* Routes that have a real page. Everything else in the nav is still a
    prototype — add the slug here as each page gets converted. */
-const BUILT = new Set(['dashboard','analytics','crm','sales','clients','projects','design','construction','site-visits','procurement','inventory','finance','hr','people','documents','meetings','tasks','calendar','client-portal','vendor-portal','backup','settings']);
+const BUILT = new Set(['dashboard','assistant','analytics','crm','sales','clients','projects','design','construction','site-visits','procurement','inventory','finance','hr','people','documents','meetings','tasks','calendar','client-portal','vendor-portal','backup','settings']);
 
 /* ---------------------------------------------------------------
    business unit
