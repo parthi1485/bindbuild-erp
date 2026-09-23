@@ -20,5 +20,11 @@
         }
       ]
     }
-  ]
+  ],
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": {
+    "deploymentEnabled": {
+      "feature/new-supabase-foundation": false
+    }
+  }
 }
