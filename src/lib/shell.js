@@ -142,23 +142,41 @@ export async function mountShell({ route, title }) {
   document.getElementById('signOutBtn')?.addEventListener('click', signOut);
   wireMenu('newBtn', 'newMenu');
   wireMenu('profileBtn', 'profileMenu');
-  /* quick-new-task-route */
+  /* Quick-create routes respect the ERP workflow instead of inventing bypasses. */
   document.getElementById('newMenu')?.addEventListener('click', e => {
     const item=e.target.closest('[data-new]');
     if(!item)return;
-    if(item.dataset.new==='Task'){
-      e.preventDefault();
-      location.href='/tasks.html?new=1';
-    }
+    e.preventDefault();
+    const routes={
+      'Lead':'/crm.html?new=1',
+      'Project':'/sales.html?new=project',
+      'Invoice':'/finance.html?new=invoice',
+      'Task':'/tasks.html?new=1',
+      'Site visit log':'/dsr.html?new=1'
+    };
+    const href=routes[item.dataset.new];
+    if(href)location.href=href;
   });
 
-  /* ⌘K / Ctrl-K focuses search */
+  /* Profile menu */
+  document.getElementById('profileMenu')?.addEventListener('click',e=>{
+    const item=e.target.closest('[data-nav]');
+    if(!item)return;
+    if(item.dataset.nav==='My profile'){e.preventDefault();location.href='/settings.html?tab=profile';}
+    if(item.dataset.nav==='Settings'){e.preventDefault();location.href='/settings.html';}
+  });
+
+  /* ⌘K / Ctrl-K focuses global search */
   document.addEventListener('keydown', e => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
       document.getElementById('searchInput')?.focus();
     }
-    if (e.key === 'Escape') document.body.classList.remove('nav-open');
+    if (e.key === 'Escape') {
+      document.body.classList.remove('nav-open');
+      document.getElementById('searchPop')?.classList.remove('open');
+      document.getElementById('searchInput')?.setAttribute('aria-expanded','false');
+    }
   });
 
   /* Pages not yet converted from the prototype would 404. Say so instead. */
@@ -173,6 +191,7 @@ export async function mountShell({ route, title }) {
   });
 
   await mountUnitPicker();
+  await mountGlobalSearch(user);
 
   /* prototype storage quota was fictional; hide it until live bucket usage is measured */
   const storagePrototype = document.querySelector('.sidebar__foot .storage');
@@ -278,4 +297,88 @@ async function paintCounts() {
   document.querySelectorAll('.nav-item .nav-item__count').forEach(b => {
     if (!b.textContent.trim()) b.hidden = true;
   });
+}
+
+
+async function mountGlobalSearch(user){
+  const input=document.getElementById('searchInput');
+  const pop=document.getElementById('searchPop');
+  if(!input||!pop)return;
+
+  if(!document.getElementById('erpSearchStyles')){
+    const s=document.createElement('style');s.id='erpSearchStyles';
+    s.textContent=`
+      .search__pop.open{display:block}.gs-empty{padding:18px;color:var(--text-3);font-size:11px;text-align:center}
+      .gs-group{padding:7px 8px 3px}.gs-group__label{padding:5px 7px;font:700 8.5px var(--font-mono);letter-spacing:.09em;color:var(--text-3);text-transform:uppercase}
+      .gs-row{display:flex;width:100%;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;text-align:left;color:var(--text)}
+      .gs-row:hover,.gs-row.is-active{background:var(--surface-2)}.gs-ico{width:28px;height:28px;border:1px solid var(--hairline);border-radius:8px;display:grid;place-items:center;color:var(--text-3);font:700 9px var(--font-mono);flex:none}
+      .gs-main{flex:1;min-width:0}.gs-title{display:block;font-size:11.5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gs-meta{display:block;font-size:9.5px;color:var(--text-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .gs-kbd{font:600 8px var(--font-mono);color:var(--text-3);border:1px solid var(--hairline);border-radius:5px;padding:2px 4px}
+    `;
+    document.head.appendChild(s);
+  }
+
+  const unit=()=>activeUnit();
+  let timer=null,seq=0,items=[],active=-1;
+  const clean=v=>String(v||'').replace(/[^a-zA-Z0-9@._+\-\s/]/g,' ').replace(/\s+/g,' ').trim().slice(0,80);
+  const pattern=v=>'%'+clean(v).replace(/%/g,'')+'%';
+
+  function group(title,rows){
+    if(!rows.length)return '';
+    return '<div class="gs-group"><div class="gs-group__label">'+esc(title)+'</div>'+rows.map(r=>{
+      const idx=items.length;items.push(r);
+      return '<button class="gs-row" role="option" data-gs="'+idx+'"><span class="gs-ico">'+esc(r.code)+'</span><span class="gs-main"><span class="gs-title">'+esc(r.title)+'</span><span class="gs-meta">'+esc(r.meta||'')+'</span></span><span class="gs-kbd">↵</span></button>';
+    }).join('')+'</div>';
+  }
+
+  function unitScope(q,col='business_unit_id'){
+    const id=unit();return id?q.or(`${col}.eq.${id},${col}.is.null`):q;
+  }
+
+  async function search(raw){
+    const q=clean(raw);const my=++seq;items=[];active=-1;
+    if(q.length<2){pop.innerHTML='<div class="gs-empty">Type at least 2 characters to search the ERP.</div>';pop.classList.add('open');input.setAttribute('aria-expanded','true');return;}
+    pop.innerHTML='<div class="gs-empty">Searching…</div>';pop.classList.add('open');input.setAttribute('aria-expanded','true');
+    const p=pattern(q);
+    try{
+      const [leads,clients,projects,invoices,docs,vendors,employees,tasks]=await Promise.all([
+        unitScope(supabase.from('leads').select('id,lead_no,name,phone,area,city,service').is('deleted_at',null)).or(`lead_no.ilike.${p},name.ilike.${p},phone.ilike.${p},area.ilike.${p},city.ilike.${p},service.ilike.${p}`).limit(6),
+        unitScope(supabase.from('clients').select('id,name,phone,email,city').is('deleted_at',null)).or(`name.ilike.${p},phone.ilike.${p},email.ilike.${p},city.ilike.${p}`).limit(6),
+        unitScope(supabase.from('projects').select('id,project_no,code,name,location,status').is('deleted_at',null)).or(`project_no.ilike.${p},code.ilike.${p},name.ilike.${p},location.ilike.${p}`).limit(6),
+        unitScope(supabase.from('invoices').select('id,invoice_no,project_id,milestone_name,total,status').is('deleted_at',null)).or(`invoice_no.ilike.${p},milestone_name.ilike.${p}`).limit(6),
+        unitScope(supabase.from('project_documents').select('id,document_no,title,document_type,project_id,status')).or(`document_no.ilike.${p},title.ilike.${p},discipline.ilike.${p}`).limit(6),
+        unitScope(supabase.from('vendors').select('id,code,name,contact_person,phone,email,status')).or(`code.ilike.${p},name.ilike.${p},contact_person.ilike.${p},phone.ilike.${p},email.ilike.${p}`).limit(6),
+        unitScope(supabase.from('employees').select('id,employee_no,full_name,designation,department,status')).or(`employee_no.ilike.${p},full_name.ilike.${p},designation.ilike.${p},department.ilike.${p}`).limit(6),
+        supabase.from('tasks').select('id,project_id,title,status,priority,due_at').ilike('title',p).limit(6)
+      ]);
+      if(my!==seq)return;
+      const ok=r=>r.error?[]:(r.data||[]);
+      const html=[
+        group('Leads',ok(leads).map(x=>({code:'LD',title:(x.lead_no||'Lead')+' · '+x.name,meta:[x.service,x.area||x.city,x.phone].filter(Boolean).join(' · '),href:'/lead.html?id='+x.id}))),
+        group('Clients',ok(clients).map(x=>({code:'CL',title:x.name,meta:[x.city,x.phone,x.email].filter(Boolean).join(' · '),href:'/client.html?id='+x.id}))),
+        group('Projects',ok(projects).map(x=>({code:'PR',title:(x.project_no||x.code||'Project')+' · '+x.name,meta:[x.location,x.status].filter(Boolean).join(' · '),href:'/project.html?id='+x.id}))),
+        group('Invoices',ok(invoices).map(x=>({code:'IN',title:x.invoice_no||'Invoice',meta:[x.milestone_name,x.status,'₹'+Math.round(Number(x.total||0)).toLocaleString('en-IN')].filter(Boolean).join(' · '),href:'/invoice.html?id='+x.id}))),
+        group('Documents',ok(docs).map(x=>({code:'DC',title:(x.document_no||'DOC')+' · '+x.title,meta:[x.document_type,x.status].filter(Boolean).join(' · '),href:'/documents.html'+(x.project_id?'?project='+x.project_id:'')}))),
+        group('Vendors',ok(vendors).map(x=>({code:'VN',title:(x.code?x.code+' · ':'')+x.name,meta:[x.contact_person,x.phone,x.status].filter(Boolean).join(' · '),href:'/procurement.html?vendor='+x.id}))),
+        group('Employees',ok(employees).map(x=>({code:'HR',title:(x.employee_no||'EMP')+' · '+x.full_name,meta:[x.designation,x.department,x.status].filter(Boolean).join(' · '),href:'/employee.html?id='+x.id}))),
+        group('Tasks',ok(tasks).map(x=>({code:'TS',title:x.title,meta:[x.priority,x.status,x.due_at?'Due '+new Date(x.due_at).toLocaleDateString('en-IN'):null].filter(Boolean).join(' · '),href:'/tasks.html?task='+x.id})))
+      ].join('');
+      pop.innerHTML=html||'<div class="gs-empty">No matching ERP records.</div>';
+    }catch(error){
+      if(my!==seq)return;pop.innerHTML='<div class="gs-empty">'+esc(error?.message||'Search failed')+'</div>';
+    }
+  }
+
+  input.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(()=>search(input.value),180);});
+  input.addEventListener('focus',()=>{if(input.value.trim())search(input.value);});
+  input.addEventListener('keydown',e=>{
+    const rows=[...pop.querySelectorAll('[data-gs]')];
+    if(e.key==='ArrowDown'){e.preventDefault();active=Math.min(rows.length-1,active+1);}
+    else if(e.key==='ArrowUp'){e.preventDefault();active=Math.max(0,active-1);}
+    else if(e.key==='Enter'&&active>=0){e.preventDefault();const item=items[active];if(item)location.href=item.href;}
+    else return;
+    rows.forEach((r,i)=>r.classList.toggle('is-active',i===active));rows[active]?.scrollIntoView({block:'nearest'});
+  });
+  pop.addEventListener('click',e=>{const b=e.target.closest('[data-gs]');if(!b)return;const item=items[Number(b.dataset.gs)];if(item)location.href=item.href;});
+  document.addEventListener('click',e=>{if(!e.target.closest('#search')){pop.classList.remove('open');input.setAttribute('aria-expanded','false');}});
 }
