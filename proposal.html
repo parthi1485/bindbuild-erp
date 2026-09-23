@@ -28,17 +28,17 @@
 
       <a class="back" href="04-lead-details.html">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        Back to lead · Suresh Venkat
+        Back to lead
       </a>
 
       <!-- Proposal header -->
       <section class="prop-head" data-skel>
         <div>
-          <h1 class="prop-head__title">Proposal · Beach House, ECR Uthandi</h1>
+          <h1 class="prop-head__title">Proposal</h1>
           <div class="prop-head__meta">
             <span class="chip chip--ver">SB-P-2026-034 · v2</span>
             <span class="chip chip--viewed" id="statusChip"><span class="dot"></span>Viewed by client</span>
-            <span class="chip chip--client">Suresh Venkat</span>
+            <span class="chip chip--client">Unassigned</span>
           </div>
           <p class="autosave" id="autosave"><span class="dot"></span><span id="autosaveTxt">All changes saved</span></p>
         </div>
@@ -187,12 +187,12 @@
             </div>
           </article>
 
-          <article class="card" data-skel>
-            <h2 class="rail__title">Client</h2>
-            <div class="kv"><span class="kv__k">Name</span><span class="kv__v">Suresh Venkat</span></div>
-            <div class="kv"><span class="kv__k">Phone</span><span class="kv__v">+91 98401 77889</span></div>
-            <div class="kv"><span class="kv__k">Email</span><span class="kv__v">suresh.venkat@gmail.com</span></div>
-            <div class="kv"><span class="kv__k">Stage</span><span class="kv__v">Proposal · hot lead</span></div>
+          <article class="card" id="clientCard" data-skel>
+            <h2 class="rail__title">Client / lead</h2>
+            <div class="kv"><span class="kv__k">Name</span><span class="kv__v">—</span></div>
+            <div class="kv"><span class="kv__k">Phone</span><span class="kv__v">—</span></div>
+            <div class="kv"><span class="kv__k">Email</span><span class="kv__v">—</span></div>
+            <div class="kv"><span class="kv__k">Stage</span><span class="kv__v">—</span></div>
           </article>
 
           <article class="card" data-skel>
@@ -220,8 +220,8 @@
   <div class="modal__card">
     <div class="modal__head">
       <div>
-        <h2 class="modal__title" id="sendTitle">Send proposal v2</h2>
-        <p class="modal__sub">Suresh gets a tracked link — you'll see every open.</p>
+        <h2 class="modal__title" id="sendTitle">Send proposal</h2>
+        <p class="modal__sub" id="sendRecipientSub">Choose how to send this proposal.</p>
       </div>
       <button class="icon-btn" data-close aria-label="Close">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -230,15 +230,15 @@
     <div class="modal__body">
       <label class="check"><input type="checkbox" id="chEmail" checked />
         <span class="check__box"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
-        <span>Email · suresh.venkat@gmail.com</span>
+        <span id="sendEmailLabel">Email · not available</span>
       </label>
       <label class="check"><input type="checkbox" id="chWa" checked />
         <span class="check__box"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
-        <span>WhatsApp · +91 98401 77889</span>
+        <span id="sendWaLabel">WhatsApp · not available</span>
       </label>
       <div class="field" style="margin-top:var(--s-4)">
         <label for="sendMsg">Message</label>
-        <textarea class="textarea" id="sendMsg" style="min-height:84px">Hi Suresh — sharing the revised proposal with the phased-construction option we discussed. Valid until 16 Aug. Happy to walk you through it on Monday's call.</textarea>
+        <textarea class="textarea" id="sendMsg" style="min-height:84px"></textarea>
       </div>
     </div>
     <div class="modal__foot">
