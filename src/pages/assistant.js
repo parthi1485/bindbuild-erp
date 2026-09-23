@@ -3,6 +3,7 @@ import { mountShell, scopeToUnit, activeUnit } from '../lib/shell.js';
 import { toast, fail, esc } from '../lib/ui.js';
 
 const $=(s,c=document)=>c.querySelector(s);
+const welcome=$('#welcome');
 const user=await mountShell({route:'assistant',title:'Bind AI'});
 if(!user)throw new Error('redirecting');
 
@@ -201,7 +202,7 @@ input.addEventListener('input',()=>{sendBtn.disabled=!input.value.trim();input.s
 function send(){const q=input.value.trim();if(!q)return;input.value='';input.style.height='auto';sendBtn.disabled=true;ask(q);}
 sendBtn.addEventListener('click',send);
 input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
-$('#newChat').addEventListener('click',()=>{$('#threadIn').innerHTML='';$('#threadIn').appendChild($('#welcome'));$('#welcome').removeAttribute('hidden');renderRecent();});
+$('#newChat').addEventListener('click',()=>{const host=$('#threadIn');host.innerHTML='';host.appendChild(welcome);welcome.removeAttribute('hidden');renderRecent();input.focus();});
 document.addEventListener('click',async e=>{
   const a=e.target.closest('[data-ask]');if(a)return ask(a.dataset.ask);
   const c=e.target.closest('[data-copy-answer]');if(c){const raw=c.closest('.msg')?.dataset.raw||'';try{await navigator.clipboard.writeText(raw);toast('Copied');}catch{toast('Copy failed','err');}}
