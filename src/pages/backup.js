@@ -38,7 +38,7 @@ function paint(backups,runs,alerts){
   $('#kBackup').textContent=last?fmtDate(last.created_at):'None';
   $('#kRun').textContent=run?fmtDate(run.started_at):'None';
   $('#exportBackupBtn').disabled=!can;$('#runAutomationBtn').disabled=!can;
-  $('#storageBackupBtn').disabled=!can;$('#storageExportBtn').disabled=!can;
+  $('#storageBackupBtn').disabled=!can;$('#storageExportBtn').disabled=!can;$('#storageAuditBtn').disabled=!can;$('#storageAuditRunBtn').disabled=!can;
   $('#backupBody').innerHTML=backups.length?backups.map(x=>'<tr><td>'+fmtDate(x.created_at)+'</td><td>'+esc(x.operation)+'</td><td>'+Number(x.row_count||0).toLocaleString('en-IN')+'</td><td>'+bytes(x.byte_estimate)+'</td><td><span class="sys-status '+esc(x.status)+'">'+esc(x.status)+'</span></td></tr>').join(''):'<tr><td colspan="5">No backup operations yet.</td></tr>';
   $('#runList').innerHTML=runs.length?runs.map(x=>'<div class="sys-row"><div class="sys-row__body"><div class="sys-row__title">'+esc(x.job_name)+'</div><div class="sys-row__meta">'+fmtDate(x.started_at)+(x.result?.notifications_created!==undefined?' · '+x.result.notifications_created+' alerts created':'')+(x.error?' · '+esc(x.error):'')+'</div></div><span class="sys-status '+esc(x.status)+'">'+esc(x.status)+'</span></div>').join(''):'<div class="sys-row__meta">No automation runs recorded yet.</div>';
   $('#alertList').innerHTML=alerts.length?alerts.slice(0,10).map(x=>'<div class="sys-row"><div class="sys-row__body"><div class="sys-row__title">'+esc(x.title)+'</div><div class="sys-row__meta">'+esc(x.body||'')+' · '+fmtDate(x.created_at)+'</div></div><span class="sys-status '+(x.severity==='critical'?'failed':x.user_status==='unread'?'blocked':'ok')+'">'+esc(x.severity)+'</span></div>').join(''):'<div class="sys-row__meta">No operational alerts.</div>';
@@ -69,6 +69,50 @@ async function listStorageFiles(prefix=''){
   }
   await walk(prefix);
   return out;
+}
+
+async function auditStorageIntegrity(){
+  if(!can)return;
+  const buttons=[$('#storageAuditBtn'),$('#storageAuditRunBtn')].filter(Boolean);
+  buttons.forEach(b=>b.disabled=true);
+  const box=$('#storageAuditBox');
+  try{
+    box.innerHTML='<div class="sys-note">Scanning document revisions and private bucket…</div>';
+    const [files,revs]=await Promise.all([
+      listStorageFiles(),
+      supabase.from('document_revisions').select('id,document_id,revision_code,file_name,storage_path,size_bytes,status').order('created_at')
+    ]);
+    if(revs.error)throw revs.error;
+
+    const bucket=new Map(files.filter(x=>x.path!==STORAGE_MANIFEST).map(x=>[x.path,x]));
+    const rows=revs.data||[],refs=new Map(rows.map(x=>[x.storage_path,x]));
+    const missing=rows.filter(x=>x.storage_path&&!bucket.has(x.storage_path));
+    const orphan=[...bucket.values()].filter(x=>!refs.has(x.path));
+    const sizeMismatch=rows.filter(r=>{
+      const f=bucket.get(r.storage_path);
+      const actual=Number(f?.item?.metadata?.size||0),expected=Number(r.size_bytes||0);
+      return f&&actual&&expected&&actual!==expected;
+    });
+    const totalBytes=[...bucket.values()].reduce((n,x)=>n+Number(x.item.metadata?.size||0),0);
+    const clean=missing.length===0&&orphan.length===0&&sizeMismatch.length===0;
+
+    const sample=(title,items,label)=>items.length?
+      '<div class="sys-note '+(clean?'':'warn')+'"><b>'+esc(title)+'</b><br>'+items.slice(0,5).map(label).map(esc).join('<br>')+(items.length>5?'<br>+'+(items.length-5)+' more':'')+'</div>':'';
+
+    box.innerHTML=
+      '<div class="sys-kv"><span>DB revision references</span><b>'+rows.length.toLocaleString('en-IN')+'</b></div>'+
+      '<div class="sys-kv"><span>Bucket objects</span><b>'+bucket.size.toLocaleString('en-IN')+'</b></div>'+
+      '<div class="sys-kv"><span>Bucket size</span><b>'+bytes(totalBytes)+'</b></div>'+
+      '<div class="sys-kv"><span>Missing files</span><b>'+missing.length+'</b></div>'+
+      '<div class="sys-kv"><span>Unreferenced files</span><b>'+orphan.length+'</b></div>'+
+      '<div class="sys-kv"><span>Size mismatches</span><b>'+sizeMismatch.length+'</b></div>'+
+      '<div class="sys-note '+(clean?'':'warn')+'"><b>'+(clean?'Storage integrity passed':'Storage integrity needs attention')+'</b><br>'+(clean?'Every document revision path maps cleanly to the private bucket.':'Review the exceptions below before release or restore.')+'</div>'+
+      sample('Missing from bucket',missing,x=>(x.revision_code||'Revision')+' · '+x.file_name+' · '+x.storage_path)+
+      sample('Unreferenced bucket objects',orphan,x=>x.path)+
+      sample('Size mismatch',sizeMismatch,x=>(x.revision_code||'Revision')+' · '+x.storage_path);
+    toast(clean?'Document Storage audit passed':'Document Storage audit found '+(missing.length+orphan.length+sizeMismatch.length)+' exception(s)',clean?'ok':'err');
+  }catch(e){box.innerHTML='<div class="sys-note warn">'+esc(e.message||String(e))+'</div>';fail(e);}
+  finally{buttons.forEach(b=>b.disabled=!can);}
 }
 
 async function exportStorageZip(){
@@ -213,6 +257,8 @@ $('#restoreBtn').addEventListener('click',async()=>{
   }catch(e){fail(e);}finally{$('#restoreBtn').disabled=!(can&&VALID?.restore_allowed);}
 });
 
+$('#storageAuditBtn').addEventListener('click',auditStorageIntegrity);
+$('#storageAuditRunBtn').addEventListener('click',auditStorageIntegrity);
 $('#storageBackupBtn').addEventListener('click',exportStorageZip);
 $('#storageExportBtn').addEventListener('click',exportStorageZip);
 $('#storageRestoreFile').addEventListener('change',async e=>{try{await validateStorageZip(e.target.files?.[0]);}catch(err){STORAGE_RESTORE=null;$('#storageRestoreBtn').disabled=true;$('#storageValidation').innerHTML='<div class="sys-note warn">'+esc(err.message||String(err))+'</div>';fail(err);}});
