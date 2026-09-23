@@ -15,6 +15,7 @@
       <div class="phead"><div class="phead__t">Settings</div><div class="phead__s">Legal, GST, banking and accounting controls for the active business unit</div></div>
       <div class="layout">
         <nav class="trail">
+          <button class="tab" data-tab="profile">My profile</button>
           <button class="tab on" data-tab="org">Organisation</button>
           <button class="tab" data-tab="accounting">Accounting controls</button>
           <button class="tab" data-tab="appearance">Appearance</button>
@@ -22,6 +23,24 @@
         </nav>
 
         <div>
+          <section class="panel" id="p-profile">
+            <div class="card">
+              <div class="card__head"><div><div class="card__title">My ERP identity</div><div class="card__sub">Authentication, role and employee linkage for this signed-in account</div></div><span class="chip on" id="profileStatus">Active</span></div>
+              <div class="card__body">
+                <div class="frow"><div class="f"><label>Full name</label><input id="myName" disabled/></div><div class="f"><label>Email</label><input id="myEmail" disabled/></div></div>
+                <div class="frow"><div class="f"><label>ERP role</label><input id="myRole" disabled/></div><div class="f"><label>Account ID</label><input id="myUserId" disabled/></div></div>
+                <div class="tog" id="employeeLinkRow"><div><div class="tog__t">Employee record</div><div class="tog__m" id="employeeLinkMeta">Checking HR linkage…</div></div><div class="tog__sp"><button class="btn btn-ghost" id="openEmployeeBtn" disabled>Open employee profile</button></div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card__head"><div><div class="card__title">Account security</div><div class="card__sub">ERP access is tied to your authenticated Supabase account</div></div></div>
+              <div class="card__body">
+                <div class="tog"><div><div class="tog__t">Session</div><div class="tog__m">Use Sign out from the profile menu when leaving a shared device.</div></div></div>
+                <div class="tog"><div><div class="tog__t">Role changes</div><div class="tog__m">Founder/Admin/HR manage ERP access roles; users cannot elevate their own role.</div></div></div>
+              </div>
+            </div>
+          </section>
+
           <section class="panel on" id="p-org">
             <div class="card">
               <div class="card__head"><div><div class="card__title">Organisation & GST profile</div><div class="card__sub">Used on proformas, receipts and GST invoices. No placeholder legal data is printed.</div></div><span class="chip off" id="orgStatus">Incomplete</span></div>
