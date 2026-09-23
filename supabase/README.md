@@ -56,7 +56,9 @@ intentionally excludes:
 - platform backup history
 
 The Storage ZIP is a separate file and should be retained beside the matching
-application JSON backup.
+application JSON backup. New Storage archives use format v2 with per-object CRC32
+checksums; restore is non-destructive and can safely resume when existing bucket
+objects are a checksum-matched subset of the same archive.
 
 Restore is guarded: it requires an operationally empty target and compatible
 Supabase Auth user IDs.
