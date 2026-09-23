@@ -176,3 +176,8 @@ if(exportBtn)exportBtn.addEventListener('click',()=>{
 });
 
 await load();
+const financeIntent=new URLSearchParams(location.search).get('new');
+if(financeIntent==='invoice'){
+  history.replaceState(null,'','/finance.html');
+  toast('GST Invoice is created from a paid Proforma. Open the related project / proforma to generate it.','info');
+}
