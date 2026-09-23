@@ -45,6 +45,8 @@ Use this checklist for the integration branch before production cutover.
 - [ ] Employee → Attendance → Leave → Payroll → Reimbursement.
 - [ ] Controlled Document R0/R1 issue + approval.
 - [ ] Meeting → Decision → Action → linked Project Task.
+- [ ] Task Board create/edit/drag status + deep link.
+- [ ] Calendar consolidates meetings, tasks, inspections, milestones and approved leave.
 - [ ] Client Portal isolation + shared document open + approval.
 - [ ] Vendor Portal isolation + RFQ quote + PO/bill visibility.
 - [ ] Analytics / Founder Dashboard.
