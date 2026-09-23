@@ -254,6 +254,10 @@ $('#saveLead')?.addEventListener('click', async () => {
   ['nlName','nlPhone','nlEmail','nlBudget','nlLoc'].forEach(id => { const e=$('#'+id); if(e) e.value=''; });
   toast(`Lead ${leadNo} created`);
   await load();
+if(new URLSearchParams(location.search).get('new')==='1'){
+  history.replaceState(null,'','/crm.html');
+  openModal('addModal');
+}
 });
 
 $('#confirmLost')?.addEventListener('click', async () => {
