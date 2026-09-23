@@ -1,120 +1,190 @@
 import { supabase } from '../lib/supabase.js';
-import { mountShell } from '../lib/shell.js';
-import { toast, fail, esc, fmtDate, daysAgo } from '../lib/ui.js';
-const $ = (s,c=document)=>c.querySelector(s), $$=(s,c=document)=>[...c.querySelectorAll(s)];
+import { mountShell, scopeToUnit, activeUnit } from '../lib/shell.js';
+import { toast, fail, esc, fmtDate } from '../lib/ui.js';
 
-const user = await mountShell({ route: 'documents', title: 'Documents' });
-if (!user) throw new Error('redirecting');
+const $=(s,c=document)=>c.querySelector(s);
+const user=await mountShell({route:'documents',title:'Documents'});
+if(!user)throw new Error('redirecting');
 
-let FOLDERS = [], FILES = [], SIGN = [];
-let fFolder = '', fType = '', q = '';
-const sizeOf = b => !b ? '—' : b > 1048576 ? (b/1048576).toFixed(1)+' MB' : Math.round(b/1024)+' KB';
-const extOf  = n => (n.split('.').pop() || '').toLowerCase();
+const canWrite=['founder','admin','project_manager','designer','site_engineer','procurement'].includes(user.role);
+const canApprove=['founder','admin','project_manager'].includes(user.role);
+const projectHint=new URLSearchParams(location.search).get('project');
+let DOCS=[],REVS=[],APPROVALS=[],PROJECTS=[],selected=null;
+let q='',projectFilter=projectHint||'',typeFilter='',statusFilter='';
 
-async function load() {
-  const [fo, fi, sg] = await Promise.all([
-    supabase.from('document_folders').select('*').order('sort_order'),
-    supabase.from('documents').select('*, projects(code)').order('created_at', { ascending: false }),
-    supabase.from('document_signatures').select('*, documents(name)').neq('status','signed').order('created_at')
-  ]);
-  if (fi.error) return fail(fi.error);
-  FOLDERS = fo.data ?? []; FILES = fi.data ?? []; SIGN = sg.data ?? [];
-  render();
+const byId=(rows,id)=>rows.find(x=>x.id===id);
+const docRevs=id=>REVS.filter(r=>r.document_id===id).sort((a,b)=>b.revision_no-a.revision_no);
+const latestDraft=id=>docRevs(id).find(r=>r.status==='draft');
+const latestIssued=id=>docRevs(id).find(r=>r.status==='issued');
+const currentRev=d=>d.current_revision_id?byId(REVS,d.current_revision_id):docRevs(d.id)[0];
+const status=s=>'<span class="ws-status '+esc(s||'draft')+'">'+esc(String(s||'draft').replaceAll('_',' '))+'</span>';
+
+function choose(title,rows,label){
+  if(!rows.length){toast('No options available','err');return null;}
+  const raw=prompt(title+'\n\n'+rows.map((x,i)=>(i+1)+'. '+label(x)).join('\n')+'\n\nEnter number');
+  if(raw===null)return null;const n=Number(raw);
+  return Number.isInteger(n)&&n>0&&n<=rows.length?rows[n-1]:null;
 }
 
-const passes = f =>
-  (!fFolder || f.folder_id === fFolder) &&
-  (!fType || extOf(f.name) === fType) &&
-  (!q || f.name.toLowerCase().includes(q));
-
-function render() {
-  const fl = $('#folders');
-  if (fl) {
-    fl.innerHTML = `<li class="fo${fFolder ? '' : ' is-on'}" data-folder="">All documents<span>${FILES.length}</span></li>` +
-      FOLDERS.map(f => `<li class="fo${fFolder===f.id?' is-on':''}" data-folder="${f.id}">${esc(f.name)}
-        <span>${FILES.filter(x=>x.folder_id===f.id).length}</span></li>`).join('');
-  }
-  const tag = $('#folderTag');
-  if (tag) tag.textContent = FOLDERS.length ? `${FOLDERS.length} folders` : 'No folders';
-
-  const rows = FILES.filter(passes);
-  const el = $('#flist');
-  if (el) {
-    el.innerHTML = rows.length ? rows.map(f => `
-      <li class="fi" data-id="${f.id}" data-path="${esc(f.storage_path)}">
-        <span class="fi__ic ${esc(extOf(f.name))}">${esc(extOf(f.name).slice(0,3).toUpperCase())}</span>
-        <span class="fi__body">
-          <span class="fi__nm">${esc(f.name)}</span>
-          <span class="fi__meta">${sizeOf(f.size_bytes)} · v${f.version} · ${daysAgo(f.created_at)} ago${
-            f.projects ? ' · ' + esc(f.projects.code) : ''}</span>
-        </span>
-        <span class="fi__st st--${f.status}">${f.status}</span>
-        ${f.shared_with_client ? '<span class="fi__shared" title="Visible in the client portal">shared</span>' : ''}
-      </li>`).join('')
-    : `<li class="fi"><span class="fi__body"><span class="fi__nm">${
-        FILES.length ? 'Nothing matches these filters' : 'No documents yet — upload one'}</span></span></li>`;
-  }
-  const c = $('#fileCount');
-  if (c) c.textContent = `${rows.length} file${rows.length===1?'':'s'}`;
-
-  const sg = $('#sgn');
-  if (sg) {
-    sg.innerHTML = SIGN.length
-      ? SIGN.map(s => `<li class="sg">
-          <span class="sg__nm">${esc(s.documents?.name || '—')}</span>
-          <span class="sg__meta">${esc(s.signer_name)} · ${s.status}</span></li>`).join('')
-      : '<li class="sg">Nothing awaiting signature</li>';
-  }
-  const sc = $('#signCount');
-  if (sc) { sc.textContent = String(SIGN.length); sc.hidden = !SIGN.length; }
-
-  const act = $('#act');
-  if (act) {
-    act.innerHTML = FILES.slice(0,8).map(f => `<li class="ac">
-      <span class="ac__txt">${esc(f.name)} uploaded</span>
-      <span class="ac__when">${daysAgo(f.created_at)} ago</span></li>`).join('')
-      || '<li class="ac"><span class="ac__txt">No activity</span></li>';
-  }
+async function load(){
+  try{
+    const a=await Promise.all([
+      scopeToUnit(supabase.from('project_documents').select('*')).order('created_at',{ascending:false}),
+      supabase.from('document_revisions').select('*').order('revision_no',{ascending:false}),
+      supabase.from('document_approvals').select('*').eq('status','pending').order('requested_at',{ascending:true}),
+      scopeToUnit(supabase.from('projects').select('id,project_no,code,name').is('deleted_at',null)).order('name')
+    ]);
+    a.forEach(r=>{if(r.error)throw r.error;});
+    [DOCS,REVS,APPROVALS,PROJECTS]=a.map(r=>r.data||[]);
+    const docIds=new Set(DOCS.map(d=>d.id));
+    REVS=REVS.filter(r=>docIds.has(r.document_id));
+    APPROVALS=APPROVALS.filter(a=>docIds.has(a.document_id));
+    if(!selected&&DOCS.length)selected=DOCS[0].id;
+    render();
+  }catch(e){fail(e);}
 }
 
-/* upload */
-$('#uploadBtn')?.addEventListener('click', () => {
-  const inp = Object.assign(document.createElement('input'), { type: 'file', multiple: true });
-  inp.onchange = async () => {
-    for (const file of inp.files) {
-      const path = `${fFolder || 'unfiled'}/${Date.now()}-${file.name.replace(/[^\w.\-]/g,'_')}`;
-      const up = await supabase.storage.from('documents').upload(path, file);
-      if (up.error) { fail(up.error); continue; }
-      const { error } = await supabase.from('documents').insert({
-        folder_id: fFolder || null, name: file.name, storage_path: path,
-        mime_type: file.type, size_bytes: file.size, uploaded_by: user.id
-      });
-      if (error) fail(error);
-    }
-    toast('Upload complete');
-    await load();
-  };
-  inp.click();
-});
+function render(){
+  const rows=DOCS.filter(d=>{
+    if(projectFilter&&d.project_id!==projectFilter)return false;
+    if(typeFilter&&d.document_type!==typeFilter)return false;
+    if(statusFilter&&d.status!==statusFilter)return false;
+    if(q&&!String(d.document_no+' '+d.title+' '+(d.discipline||'')).toLowerCase().includes(q))return false;
+    return true;
+  });
+  $('#kDocs').textContent=String(DOCS.length);
+  $('#kApproved').textContent=String(DOCS.filter(d=>d.status==='approved').length);
+  $('#kReview').textContent=String(DOCS.filter(d=>d.status==='under_review').length);
+  $('#kClient').textContent=String(DOCS.filter(d=>d.client_visible).length);
+  $('#kRev').textContent=String(REVS.length);
+  $('#docCount').textContent=rows.length+' docs';
+  $('#newDocBtn').disabled=!canWrite;
+  $('#uploadBtn').disabled=!canWrite||!DOCS.length;
 
-document.addEventListener('click', async e => {
-  const fo = e.target.closest('[data-folder]');
-  if (fo) { fFolder = fo.dataset.folder; return render(); }
+  $('#projectFilter').innerHTML='<option value="">All projects</option>'+PROJECTS.map(p=>'<option value="'+p.id+'"'+(p.id===projectFilter?' selected':'')+'>'+esc((p.project_no||p.code)+' · '+p.name)+'</option>').join('');
+  $('#typeFilter').value=typeFilter;$('#statusFilter').value=statusFilter;
 
-  const fi = e.target.closest('.fi[data-path]');
-  if (fi) {
-    const { data, error } = await supabase.storage.from('documents').createSignedUrl(fi.dataset.path, 60);
-    if (error) return fail(error);
-    window.open(data.signedUrl, '_blank');
+  $('#docBody').innerHTML=rows.length?rows.map(d=>{
+    const p=byId(PROJECTS,d.project_id),r=currentRev(d),draft=latestDraft(d.id),issued=latestIssued(d.id);
+    let acts='<button class="ws-btn" data-select="'+d.id+'">History</button>';
+    if(r?.storage_path)acts+='<button class="ws-btn" data-open-rev="'+r.id+'">Open</button>';
+    if(canWrite)acts+='<button class="ws-btn" data-upload="'+d.id+'">+ Rev</button>';
+    if(draft&&canWrite)acts+='<button class="ws-btn primary" data-issue="'+draft.id+'">Issue '+esc(draft.revision_code)+'</button>';
+    if(issued&&canApprove)acts+='<button class="ws-btn primary" data-approve="'+issued.id+'">Approve</button><button class="ws-btn danger" data-reject="'+issued.id+'">Reject</button>';
+    if(canApprove&&d.status==='approved')acts+='<button class="ws-btn" data-share="'+d.id+'">'+(d.client_visible?'Hide client':'Flag client')+'</button>';
+    return '<tr><td><div class="ws-doc">'+esc(d.document_no||'DOC')+'</div><div class="ws-meta">'+esc(d.title)+'</div></td><td>'+esc(p?.name||'General')+'</td><td>'+esc(d.document_type)+'<div class="ws-meta">'+esc(d.discipline||'—')+'</div></td><td>'+(r?'<b>'+esc(r.revision_code)+'</b><div class="ws-meta">'+esc(r.file_name)+'</div>':'—')+'</td><td>'+status(d.status)+'</td><td>'+(d.client_visible?'Client flagged':'Internal')+'</td><td><div class="ws-inline">'+acts+'</div></td></tr>';
+  }).join(''):'<tr><td colspan="7"><div class="ws-empty">No documents match this view.</div></td></tr>';
+
+  renderRevisions();renderApprovals();renderProjects();
+}
+
+function renderRevisions(){
+  const d=byId(DOCS,selected),rows=d?docRevs(d.id):[];
+  $('#revCount').textContent=String(rows.length);
+  $('#revSubtitle').textContent=d?(d.document_no+' · '+d.title):'Select a document';
+  $('#revBody').innerHTML=rows.length?rows.map(r=>'<tr><td><div class="ws-doc">'+esc(r.revision_code)+'</div></td><td>'+esc(r.file_name)+'<div class="ws-meta">'+(r.size_bytes?Math.round(r.size_bytes/1024)+' KB':'')+'</div></td><td>'+esc(r.issue_purpose.replaceAll('_',' '))+'</td><td>'+fmtDate(r.created_at)+'</td><td>'+status(r.status)+'</td><td><button class="ws-btn" data-open-rev="'+r.id+'">Open</button></td></tr>').join(''):'<tr><td colspan="6"><div class="ws-empty">No revisions yet.</div></td></tr>';
+}
+
+function renderApprovals(){
+  $('#approvalCount').textContent=String(APPROVALS.length);
+  $('#approvalList').innerHTML=APPROVALS.length?APPROVALS.map(a=>{
+    const r=byId(REVS,a.revision_id),d=byId(DOCS,a.document_id);
+    return '<div class="ws-list-row"><div class="ws-list-body"><div class="ws-list-title">'+esc(d?.document_no||'DOC')+' · '+esc(r?.revision_code||'')+'</div><div class="ws-list-meta">'+esc(d?.title||'Document')+'</div></div>'+(canApprove?'<button class="ws-btn primary" data-approve="'+a.revision_id+'">Review</button>':'')+'</div>';
+  }).join(''):'<div class="ws-empty">Nothing awaiting approval.</div>';
+}
+
+function renderProjects(){
+  const map=new Map();
+  DOCS.forEach(d=>map.set(d.project_id,(map.get(d.project_id)||0)+1));
+  const rows=[...map.entries()].sort((a,b)=>b[1]-a[1]);
+  $('#projectList').innerHTML=rows.length?rows.map(([id,n])=>'<div class="ws-list-row"><div class="ws-list-body"><div class="ws-list-title">'+esc(byId(PROJECTS,id)?.name||'General documents')+'</div><div class="ws-list-meta">'+n+' controlled document'+(n===1?'':'s')+'</div></div></div>').join(''):'<div class="ws-empty">No documents yet.</div>';
+}
+
+async function newDocument(){
+  const project=projectHint?byId(PROJECTS,projectHint):(confirm('Link this document to a project?')?choose('Choose project',PROJECTS,p=>(p.project_no||p.code)+' · '+p.name):null);
+  const title=prompt('Document title');if(!title)return;
+  const type=(prompt('Type: drawing / specification / contract / approval / report / boq / schedule / photo / vendor / other','drawing')||'drawing').toLowerCase();
+  if(!['drawing','specification','contract','approval','report','boq','schedule','photo','vendor','other'].includes(type))return toast('Invalid document type','err');
+  const discipline=prompt('Discipline e.g. Architectural / Structural / Electrical / Plumbing')||null;
+  const approval=confirm('Does each issued revision require management approval?');
+  const r=await supabase.from('project_documents').insert({business_unit_id:activeUnit(),project_id:project?.id||null,title:title.trim(),document_type:type,discipline,requires_approval:approval,status:'draft'}).select('*').single();
+  if(r.error)return fail(r.error);
+  selected=r.data.id;toast((r.data.document_no||'Document')+' created');await uploadRevision(r.data.id,true);await load();
+}
+
+function filePicker(){
+  return new Promise(resolve=>{
+    const input=Object.assign(document.createElement('input'),{type:'file'});
+    input.onchange=()=>resolve(input.files?.[0]||null);input.click();
+  });
+}
+
+async function uploadRevision(docId,quiet=false){
+  const d=byId(DOCS,docId)||await supabase.from('project_documents').select('*').eq('id',docId).single().then(r=>r.data);
+  if(!d)return;
+  const file=await filePicker();if(!file)return;
+  if(file.size>50*1024*1024)return toast('File exceeds 50 MB bucket limit','err');
+  const purpose=(prompt('Issue purpose: internal / review / approval / construction / tender / as_built / record','internal')||'internal').toLowerCase();
+  if(!['internal','review','approval','construction','tender','as_built','record'].includes(purpose))return toast('Invalid issue purpose','err');
+  const note=prompt('Revision note (optional)')||null;
+  const safe=file.name.replace(/[^\w.\-]+/g,'_');
+  const path=(d.business_unit_id||activeUnit()||'general')+'/'+(d.project_id||'general')+'/'+d.id+'/'+Date.now()+'-'+safe;
+  const up=await supabase.storage.from('erp-documents').upload(path,file,{upsert:false,contentType:file.type||undefined});
+  if(up.error)return fail(up.error);
+  const rr=await supabase.rpc('register_document_revision',{p_document_id:d.id,p_file_name:file.name,p_storage_path:path,p_mime_type:file.type||null,p_size_bytes:file.size,p_issue_purpose:purpose,p_note:note});
+  if(rr.error){
+    await supabase.storage.from('erp-documents').remove([path]);
+    return fail(rr.error);
   }
-});
+  selected=d.id;if(!quiet)toast(rr.data.revision_code+' uploaded');await load();
+}
 
-$('#fileSearch')?.addEventListener('input', e => { q = e.target.value.trim().toLowerCase(); render(); });
-$('#typeSeg')?.addEventListener('click', e => {
-  const b = e.target.closest('[data-type]'); if (!b) return;
-  fType = b.dataset.type === 'all' ? '' : b.dataset.type;
-  $$('#typeSeg [data-type]').forEach(x => x.classList.toggle('is-on', x === b));
-  render();
+async function issueRevision(id){
+  let reviewer=null;
+  if(byId(DOCS,byId(REVS,id)?.document_id)?.requires_approval){
+    reviewer=user.role==='project_manager'?user.id:null;
+  }
+  const r=await supabase.rpc('issue_document_revision',{p_revision_id:id,p_reviewer_id:reviewer});
+  if(r.error)return fail(r.error);toast((r.data.revision_code||'Revision')+' issued');await load();
+}
+
+async function reviewRevision(id,approve){
+  const comment=prompt(approve?'Approval comment (optional)':'Rejection / revision comment');
+  if(!approve&&!comment)return;
+  const r=await supabase.rpc('review_document_revision',{p_revision_id:id,p_approve:approve,p_comment:comment||null});
+  if(r.error)return fail(r.error);toast(approve?'Revision approved':'Revision rejected');await load();
+}
+
+async function openRevision(id){
+  const r=byId(REVS,id);if(!r)return;
+  const s=await supabase.storage.from('erp-documents').createSignedUrl(r.storage_path,300);
+  if(s.error)return fail(s.error);window.open(s.data.signedUrl,'_blank','noopener');
+}
+
+async function toggleClient(id){
+  const d=byId(DOCS,id);if(!d)return;
+  const r=await supabase.from('project_documents').update({client_visible:!d.client_visible,updated_at:new Date().toISOString()}).eq('id',id);
+  if(r.error)return fail(r.error);toast(!d.client_visible?'Flagged client-visible':'Returned to internal');await load();
+}
+
+$('#newDocBtn').addEventListener('click',()=>canWrite&&newDocument());
+$('#uploadBtn').addEventListener('click',()=>{if(!canWrite)return;const d=byId(DOCS,selected)||choose('Choose document',DOCS,x=>x.document_no+' · '+x.title);if(d)uploadRevision(d.id);});
+$('#meetingsBtn').addEventListener('click',()=>location.href='/meetings.html'+(projectHint?'?project='+projectHint:''));
+$('#docSearch').addEventListener('input',e=>{q=e.target.value.trim().toLowerCase();render();});
+$('#projectFilter').addEventListener('change',e=>{projectFilter=e.target.value;render();});
+$('#typeFilter').addEventListener('change',e=>{typeFilter=e.target.value;render();});
+$('#statusFilter').addEventListener('change',e=>{statusFilter=e.target.value;render();});
+document.addEventListener('click',e=>{
+  const checks=[
+    ['[data-select]',b=>{selected=b.dataset.select;renderRevisions();}],
+    ['[data-upload]',b=>uploadRevision(b.dataset.upload)],
+    ['[data-issue]',b=>issueRevision(b.dataset.issue)],
+    ['[data-approve]',b=>reviewRevision(b.dataset.approve,true)],
+    ['[data-reject]',b=>reviewRevision(b.dataset.reject,false)],
+    ['[data-open-rev]',b=>openRevision(b.dataset.openRev)],
+    ['[data-share]',b=>toggleClient(b.dataset.share)]
+  ];
+  for(const [sel,fn] of checks){const b=e.target.closest(sel);if(b){fn(b);break;}}
 });
 
 await load();

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Estimate · Bind Build ERP</title>
+<link rel="stylesheet" href="/src/styles/app.css" />
+<link rel="stylesheet" href="/src/styles/proposal.css" />
+<script>
+(function(){
+  var s=localStorage.getItem('bindbuild.theme');
+  var l=window.matchMedia('(prefers-color-scheme: light)').matches;
+  document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
+})();
+</script>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <main class="content" id="content">
+
+      <a class="back" id="backToLead" href="/crm.html">← Back to Sales</a>
+
+      <section class="prop-head">
+        <div>
+          <h1 class="prop-head__title" id="pageTitle">Preliminary Estimate</h1>
+          <div class="prop-head__meta">
+            <span class="chip chip--ver" id="numberChip">DRAFT</span>
+            <span class="chip chip--viewed" id="statusChip"><span class="dot"></span>Draft</span>
+            <span class="chip chip--client" id="clientChip">Unassigned</span>
+          </div>
+          <p class="autosave" id="autosave"><span class="dot"></span><span id="autosaveTxt">All changes saved</span></p>
+        </div>
+        <div class="prop-head__acts">
+          <button class="act-btn" id="pdfBtn">Print / PDF</button>
+          <button class="act-btn" id="issueBtn">Issue estimate</button>
+          <button class="btn-new" id="proposalBtn">Create proposal</button>
+        </div>
+      </section>
+
+      <div class="body-grid">
+        <div>
+          <article class="card ed">
+            <div class="ed__head"><h2 class="ed__title"><span class="n">1</span>Estimate details</h2></div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="dClient">Client / lead</label>
+                <select class="select" id="dClient"></select>
+              </div>
+              <div class="field">
+                <label for="dTitle">Estimate title</label>
+                <input class="input" id="dTitle" value="Preliminary Construction Estimate" />
+              </div>
+            </div>
+            <div class="grid-3">
+              <div class="field">
+                <label for="dArea">Built-up area (sq ft)</label>
+                <input class="input" id="dArea" type="number" min="0" step="1" />
+              </div>
+              <div class="field">
+                <label for="dValid">Valid until</label>
+                <input class="input" id="dValid" type="date" />
+              </div>
+              <div class="field">
+                <label for="dBy">Prepared by</label>
+                <input class="input" id="dBy" readonly />
+              </div>
+            </div>
+          </article>
+
+          <article class="card ed">
+            <div class="ed__head"><h2 class="ed__title"><span class="n">2</span>Scope / assumptions</h2></div>
+            <textarea class="textarea" id="scope" placeholder="What is included in this preliminary estimate?"></textarea>
+          </article>
+
+          <article class="card ed">
+            <div class="ed__head">
+              <h2 class="ed__title"><span class="n">3</span>Estimate breakdown</h2>
+              <span class="sum-badge ok" id="feeCount">0 items</span>
+            </div>
+            <div class="fee-scroll">
+              <table class="fee" aria-label="Estimate line items">
+                <thead><tr>
+                  <th style="width:18%">Category</th>
+                  <th style="width:32%">Description</th>
+                  <th class="r" style="width:10%">Qty</th>
+                  <th style="width:10%">Unit</th>
+                  <th class="r" style="width:13%">Rate</th>
+                  <th class="r" style="width:13%">Amount</th>
+                  <th style="width:4%"></th>
+                </tr></thead>
+                <tbody id="feeBody"></tbody>
+              </table>
+            </div>
+            <button class="add-line" id="addItem">＋ Add estimate item</button>
+          </article>
+
+          <article class="card ed" style="margin-bottom:0">
+            <div class="ed__head"><h2 class="ed__title"><span class="n">4</span>Terms & notes</h2></div>
+            <textarea class="textarea" id="terms" placeholder="Validity, exclusions, approvals, taxes, assumptions…"></textarea>
+          </article>
+        </div>
+
+        <aside class="rail">
+          <article class="card tot">
+            <h2 class="rail__title">Estimate total</h2>
+            <div class="tot__row"><span>Subtotal</span><b id="tSub">₹0</b></div>
+            <div class="tot__row disc">
+              <span class="disc-in">Discount <input id="tDiscIn" type="number" step="0.5" min="0" max="100" value="0" />%</span>
+              <b id="tDisc">₹0</b>
+            </div>
+            <div class="tot__rule"></div>
+            <div class="tot__row">
+              <span class="disc-in">GST <input id="tTaxIn" type="number" step="0.5" min="0" max="100" value="0" />%</span>
+              <b id="tGst">₹0</b>
+            </div>
+            <div class="tot__rule"></div>
+            <div class="tot__grand"><span>Total</span><b id="tGrand">₹0</b></div>
+            <button class="btn-new" id="proposalBtn2">Create proposal</button>
+          </article>
+
+          <article class="card">
+            <h2 class="rail__title">Document state</h2>
+            <div class="kv"><span class="kv__k">Number</span><span class="kv__v" id="metaNo">Draft — not issued</span></div>
+            <div class="kv"><span class="kv__k">Status</span><span class="kv__v" id="metaStatus">Draft</span></div>
+            <div class="kv"><span class="kv__k">Issued</span><span class="kv__v" id="metaIssue">—</span></div>
+            <div class="kv"><span class="kv__k">Lead</span><span class="kv__v" id="metaLead">—</span></div>
+          </article>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <span>© 2026 Studio Bind Architects · Chennai</span>
+      <span class="footer__status"><span class="dot"></span>ERP document register active</span>
+      <span class="ver-tag">Bind Build ERP</span>
+    </footer>
+  </div>
+</div>
+
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/estimate.js"></script>
+</body>
+</html>

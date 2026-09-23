@@ -24,6 +24,10 @@ export const SIDEBAR_HTML = `
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
           Dashboard
         </a>
+        <a class="nav-item" href="/assistant.html" data-route="assistant" data-nav="Bind AI">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 1 4 4c1.8.7 3 2.4 3 4.4 0 .7-.2 1.4-.5 2A4 4 0 0 1 17 21H7a4 4 0 0 1-1.5-7.6A5 5 0 0 1 5 11.4C5 9.4 6.2 7.7 8 7a4 4 0 0 1 4-4Z"/><path d="M9 12h6M12 9v6"/></svg>
+          Bind AI
+        </a>
         <a class="nav-item" href="/analytics.html" data-route="analytics" data-nav="Analytics">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg>
           Analytics
@@ -35,7 +39,7 @@ export const SIDEBAR_HTML = `
         <a class="nav-item" href="/crm.html" data-route="crm" data-nav="CRM">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/></svg>
           CRM · Leads
-          <span class="nav-item__count">8</span>
+          <span class="nav-item__count" hidden></span>
         </a>
         <a class="nav-item" href="/client.html" data-route="clients" data-nav="Clients">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg>
@@ -52,9 +56,9 @@ export const SIDEBAR_HTML = `
         <a class="nav-item" href="/projects.html" data-route="projects" data-nav="Projects">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21V12h6v9"/></svg>
           Projects
-          <span class="nav-item__count">12</span>
+          <span class="nav-item__count" hidden></span>
         </a>
-        <a class="nav-item" href="/projects.html" data-route="design" data-nav="Design">
+        <a class="nav-item" href="/design.html" data-route="design" data-nav="Design">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19 5 12l7-7 7 7z"/><path d="M5 12h14"/></svg>
           Design Studio
         </a>
@@ -73,7 +77,7 @@ export const SIDEBAR_HTML = `
         <a class="nav-item" href="/procurement.html" data-route="procurement" data-nav="Procurement">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.5"/><circle cx="19" cy="21" r="1.5"/><path d="M2 3h3l2.6 12.6a2 2 0 0 0 2 1.4h8.8a2 2 0 0 0 2-1.6L22 7H6"/></svg>
           Procurement
-          <span class="nav-item__count">3</span>
+          <span class="nav-item__count" hidden></span>
         </a>
         <a class="nav-item" href="/inventory.html" data-route="inventory" data-nav="Inventory">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m21 8-9-5-9 5v8l9 5 9-5z"/><path d="m3.3 8.7 8.7 4.8 8.7-4.8M12 22V13.5"/></svg>
@@ -95,9 +99,9 @@ export const SIDEBAR_HTML = `
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
           HR
         </a>
-        <a class="nav-item" href="/people.html" data-route="people" data-nav="People &amp; Culture">
+        <a class="nav-item" href="/people.html" data-route="people" data-nav="People &amp; Performance">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.6-9.3-9A5.4 5.4 0 0 1 12 6.6 5.4 5.4 0 0 1 21.3 12C19 16.4 12 21 12 21z"/></svg>
-          People &amp; Culture
+          People &amp; Performance
         </a>
       </div>
 
@@ -109,7 +113,15 @@ export const SIDEBAR_HTML = `
         </a>
         <a class="nav-item" href="/meetings.html" data-route="meetings" data-nav="Meetings">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 9h18"/></svg>
-          Calendar &amp; Meetings
+          Meetings
+        </a>
+        <a class="nav-item" href="/tasks.html" data-route="tasks" data-nav="Tasks">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>
+          Tasks
+        </a>
+        <a class="nav-item" href="/calendar.html" data-route="calendar" data-nav="Calendar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 9h18"/></svg>
+          Calendar
         </a>
       </div>
 
@@ -127,6 +139,10 @@ export const SIDEBAR_HTML = `
 
       <div class="nav-group">
         <div class="nav-group__label">System</div>
+        <a class="nav-item" href="/backup.html" data-route="backup" data-nav="Backup & Operations">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h13l3 3v13H4z"/><path d="M8 4v6h8V4M8 20v-6h8v6"/></svg>
+          Backup &amp; Operations
+        </a>
         <a class="nav-item" href="/settings.html" data-route="settings" data-nav="Settings">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06A2 2 0 1 1 7.07 4.2l.06.06a1.7 1.7 0 0 0 1.87.34h.01a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55h.01a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg>
           Settings
@@ -179,9 +195,9 @@ export const TOPBAR_HTML = `
       </div>
 
       <!-- Notifications -->
-      <button class="icon-btn" id="notifBtn" aria-label="Notifications, 3 unread">
+      <button class="icon-btn" id="notifBtn" aria-label="Notifications">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-        <span class="icon-btn__dot" id="notifCount">3</span>
+        <span class="icon-btn__dot" id="notifCount" hidden></span>
       </button>
 
       <!-- Theme -->

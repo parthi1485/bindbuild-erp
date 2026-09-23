@@ -1,0 +1,46 @@
+{
+  "format": "bindbuild-erp-release-manifest",
+  "version": 1,
+  "generated_at": "2026-09-23",
+  "supabase_project_ref": "glywgbhuqrfxgowovylo",
+  "migration_versions": [
+    "20260920190918",
+    "20260920191039",
+    "20260920191131",
+    "20260922233302",
+    "20260923051420",
+    "20260923060809",
+    "20260923061856"
+  ],
+  "migration_names": [
+    "erp_foundation_numbering",
+    "core_erp_schema",
+    "security_finance_integrity",
+    "analytics_backup_automation_controls",
+    "harden_role_helpers",
+    "add_foreign_key_indexes",
+    "consolidate_portal_rls_policies"
+  ],
+  "baseline_inventory": {
+    "public_tables": 78,
+    "functions_public_private": 116,
+    "user_triggers_public": 67,
+    "policies_public_storage": 247,
+    "storage_buckets": [
+      "erp-documents"
+    ],
+    "cron_jobs": [
+      "bindbuild-daily-ops-scan"
+    ],
+    "baseline_create_trigger_statements": 68
+  },
+  "runtime": {
+    "node": ">=22.0.0",
+    "supabase_js": "2.111.0"
+  },
+  "notes": [
+    "Timestamped migrations mirror live migration history.",
+    "supabase/baseline/current_schema.sql is the consolidated live-schema bootstrap baseline.",
+    "Fresh-project destructive bootstrap verification remains a separate release gate."
+  ]
+}

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Credit Note · Bind Build ERP</title>
+<link rel="stylesheet" href="/src/styles/app.css"/>
+<link rel="stylesheet" href="/src/styles/invoice.css"/>
+<script>(function(){var s=localStorage.getItem('bindbuild.theme');var l=matchMedia('(prefers-color-scheme: light)').matches;document.documentElement.setAttribute('data-theme',s||(l?'light':'dark'));})();</script>
+</head>
+<body>
+<div class="app" id="app">
+<div class="scrim" id="scrim"></div>
+<div class="main" id="main">
+<main class="content" id="content">
+  <div class="ctx">
+    <div class="ctx__main"><div class="ctx__eyebrow">Money · Credit note</div><h1 class="ctx__title" id="pageTitle">Credit Note</h1><div class="ctx__sub" id="pageSub">GST correction document</div></div>
+    <div class="ctx__actions"><button class="btn-ghost" id="invoiceBtn">Invoice</button><button class="btn-ghost" id="printBtn">Print / PDF</button></div>
+  </div>
+  <div class="grid">
+    <section class="paper">
+      <div class="paper__accent"></div>
+      <div class="paper__in">
+        <div class="inv-top">
+          <div class="seller"><div class="seller__logo">BB</div><div><div class="seller__name" id="sellerName">Bind Builds</div><div class="seller__tag">Credit note</div><div class="seller__meta" id="sellerMeta">—</div></div></div>
+          <div class="inv-title"><h2>Credit Note</h2><div class="invno" id="creditNo">—</div><div class="inv-dates">Issue date <b id="issueDate">—</b></div></div>
+        </div>
+        <div class="inv-parties">
+          <div><div class="party__lbl">Credit to</div><div class="party__nm" id="clientName">—</div><div class="party__meta" id="clientMeta">—</div></div>
+          <div><div class="party__lbl">Against invoice</div><div class="party__nm" id="invoiceNo">—</div><div class="party__meta" id="projectMeta">—</div></div>
+        </div>
+        <div class="li-wrap"><table class="li"><thead><tr><th>#</th><th>Description</th><th class="r">Taxable value</th></tr></thead><tbody><tr><td class="num">1</td><td class="desc"><b id="reason">—</b><span id="narration"></span></td><td class="num r" id="subtotal">—</td></tr></tbody></table></div>
+        <div class="tot-wrap"><div class="tot" id="totals"></div></div>
+      </div>
+    </section>
+    <aside class="rail"><section class="card"><div class="card__head"><span class="card__title">Document status</span></div><div class="card__body gstsum"><div class="gstsum__row"><span>Status</span><b id="status">—</b></div><div class="gstsum__row"><span>Tax mode</span><b id="taxMode">—</b></div></div></section></aside>
+  </div>
+</main>
+<footer class="footer"><span>© 2026 Studio Bind Architects · Chennai</span><span>Bind Build ERP</span></footer>
+</div></div>
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/credit-note.js"></script>
+</body></html>

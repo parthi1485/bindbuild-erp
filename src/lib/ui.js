@@ -39,11 +39,26 @@ export function toast(msg, kind = 'ok') {
     region.setAttribute('aria-live', 'polite');
     document.body.appendChild(region);
   }
+
+  const type = kind === 'err' || kind === 'error'
+    ? 'error'
+    : kind === 'info'
+      ? 'info'
+      : 'success';
+
+  const icon = type === 'error' ? '!' : type === 'info' ? 'i' : '✓';
   const t = document.createElement('div');
-  t.className = `toast toast--${kind}`;
-  t.textContent = msg;
+  t.className = `toast toast--${type}`;
+  t.innerHTML = `<span class="toast__icon" aria-hidden="true">${icon}</span>
+    <span class="toast__msg"></span>`;
+  t.querySelector('.toast__msg').textContent = msg;
   region.appendChild(t);
-  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3200);
+  requestAnimationFrame(() => t.classList.add('show'));
+
+  setTimeout(() => {
+    t.classList.remove('show');
+    setTimeout(() => t.remove(), 300);
+  }, 3200);
 }
 
 /* Database-enforced rules surface as raw Postgres errors. Translate the ones
