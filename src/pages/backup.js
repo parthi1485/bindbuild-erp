@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase.js';
 import { mountShell } from '../lib/shell.js';
 import { toast,fail,esc,fmtDate } from '../lib/ui.js';
-import { createStoreZip,parseStoreZip,utf8Bytes,utf8Text } from '../lib/zip-store.js';
+import { createStoreZip,parseStoreZip,utf8Bytes,utf8Text,crc32 } from '../lib/zip-store.js';
 
 const $=(s,c=document)=>c.querySelector(s);
 const user=await mountShell({route:'backup',title:'Backup & Operations'});
@@ -92,9 +92,9 @@ async function exportStorageZip(){
       total+=arr.length;
       if(total>STORAGE_LIMIT)throw new Error('Downloaded document bytes exceed '+bytes(STORAGE_LIMIT)+' browser backup cap.');
       zipEntries.push({name:file.path,data:arr,mtime:new Date(file.item.updated_at||file.item.created_at||Date.now())});
-      objects.push({path:file.path,size:arr.length,content_type:data.type||file.item.metadata?.mimetype||file.item.metadata?.contentType||'application/octet-stream'});
+      objects.push({path:file.path,size:arr.length,crc32:crc32(arr),content_type:data.type||file.item.metadata?.mimetype||file.item.metadata?.contentType||'application/octet-stream'});
     }
-    const manifest={format:'bindbuild-erp-storage-backup',format_version:1,bucket:STORAGE_BUCKET,created_at:new Date().toISOString(),object_count:objects.length,total_bytes:total,objects};
+    const manifest={format:'bindbuild-erp-storage-backup',format_version:2,bucket:STORAGE_BUCKET,created_at:new Date().toISOString(),object_count:objects.length,total_bytes:total,checksum:'crc32',objects};
     zipEntries.push({name:STORAGE_MANIFEST,data:utf8Bytes(JSON.stringify(manifest,null,2)),mtime:new Date()});
     $('#storageStatus').textContent='Building ZIP · '+objects.length+' files · '+bytes(total);
     const zip=createStoreZip(zipEntries);
@@ -117,7 +117,8 @@ async function validateStorageZip(file){
   const manifestEntry=entries.find(x=>x.name===STORAGE_MANIFEST);
   if(!manifestEntry)throw new Error('Bind Build Storage manifest is missing.');
   const manifest=JSON.parse(utf8Text(manifestEntry.data));
-  if(manifest.format!=='bindbuild-erp-storage-backup'||Number(manifest.format_version)!==1||manifest.bucket!==STORAGE_BUCKET)throw new Error('Unsupported Storage backup format.');
+  const version=Number(manifest.format_version);
+  if(manifest.format!=='bindbuild-erp-storage-backup'||![1,2].includes(version)||manifest.bucket!==STORAGE_BUCKET)throw new Error('Unsupported Storage backup format.');
   const files=entries.filter(x=>x.name!==STORAGE_MANIFEST),map=new Map(files.map(x=>[x.name,x]));
   if(files.length!==Number(manifest.object_count))throw new Error('Storage object count does not match manifest.');
   let total=0;
@@ -125,42 +126,57 @@ async function validateStorageZip(file){
     if(!safeStoragePath(obj.path))throw new Error('Unsafe Storage path in backup: '+String(obj.path));
     const entry=map.get(obj.path);if(!entry)throw new Error('ZIP is missing '+obj.path);
     if(entry.data.length!==Number(obj.size))throw new Error('Size mismatch for '+obj.path);
+    if(version>=2&&Number(obj.crc32)!==crc32(entry.data))throw new Error('Manifest checksum mismatch for '+obj.path);
     total+=entry.data.length;
   }
   if(total!==Number(manifest.total_bytes))throw new Error('Storage total byte count does not match manifest.');
   if(total>STORAGE_LIMIT)throw new Error('Storage backup exceeds '+bytes(STORAGE_LIMIT)+' restore cap.');
-  const existing=await listStorageFiles();
-  const empty=existing.length===0;
-  STORAGE_RESTORE={manifest,files,map,empty,fileName:file.name};
-  $('#storageValidation').innerHTML='<div class="sys-file">'+esc(file.name)+'</div><div class="sys-kv"><span>Format</span><b>Storage v1</b></div><div class="sys-kv"><span>Files</span><b>'+files.length.toLocaleString('en-IN')+'</b></div><div class="sys-kv"><span>Bytes</span><b>'+bytes(total)+'</b></div><div class="sys-kv"><span>Current bucket</span><b>'+(empty?'Empty / restore allowed':existing.length+' files / blocked')+'</b></div><div class="sys-note '+(empty?'':'warn')+'">'+(empty?'ZIP checksums and manifest validated.':'Restore is blocked to prevent overwriting live document files.')+'</div>';
-  $('#storageRestoreBtn').disabled=!(can&&empty);
-  toast('Document ZIP validated');
+
+  const existing=await listStorageFiles(),manifestMap=new Map((manifest.objects||[]).map(x=>[x.path,x])),existingPaths=new Set();
+  let safeResume=true,resumeError='';
+  for(const file of existing){
+    existingPaths.add(file.path);
+    const obj=manifestMap.get(file.path);
+    if(!obj){safeResume=false;resumeError='Current bucket contains a file not present in this backup: '+file.path;break;}
+    if(Number(file.item.metadata?.size||0)&&Number(file.item.metadata?.size)!==Number(obj.size)){safeResume=false;resumeError='Existing file size differs from backup: '+file.path;break;}
+    if(version>=2){
+      const dl=await supabase.storage.from(STORAGE_BUCKET).download(file.path);
+      if(dl.error)throw dl.error;
+      const currentBytes=new Uint8Array(await dl.data.arrayBuffer());
+      if(currentBytes.length!==Number(obj.size)||crc32(currentBytes)!==Number(obj.crc32)){safeResume=false;resumeError='Existing file checksum differs from backup: '+file.path;break;}
+    }else if(existing.length){
+      safeResume=false;resumeError='Storage v1 backups can restore only into an empty bucket.';break;
+    }
+  }
+  const pending=(manifest.objects||[]).filter(x=>!existingPaths.has(x.path));
+  STORAGE_RESTORE={manifest,files,map,safeResume,pending,existingCount:existing.length,fileName:file.name};
+  $('#storageValidation').innerHTML='<div class="sys-file">'+esc(file.name)+'</div><div class="sys-kv"><span>Format</span><b>Storage v'+version+'</b></div><div class="sys-kv"><span>Files</span><b>'+files.length.toLocaleString('en-IN')+'</b></div><div class="sys-kv"><span>Bytes</span><b>'+bytes(total)+'</b></div><div class="sys-kv"><span>Already restored</span><b>'+existing.length+'</b></div><div class="sys-kv"><span>Pending</span><b>'+pending.length+'</b></div><div class="sys-note '+(safeResume?'':'warn')+'">'+esc(safeResume?(pending.length?'Validated · safe resumable restore.':'All backup files are already present and checksum-verified.'):resumeError)+'</div>';
+  $('#storageRestoreBtn').disabled=!(can&&safeResume&&pending.length);
+  toast(pending.length?'Document ZIP validated · '+pending.length+' files pending':'Document ZIP already fully restored');
 }
 
 async function restoreStorageZip(){
-  if(!can||!STORAGE_RESTORE?.empty)return;
+  if(!can||!STORAGE_RESTORE?.safeResume||!STORAGE_RESTORE.pending?.length)return;
   if(prompt('Type RESTORE FILES to confirm document-byte restore')!=='RESTORE FILES')return toast('Storage restore cancelled','err');
-  if(!confirm('Final confirmation: restore '+STORAGE_RESTORE.files.length+' files into the empty private document bucket?'))return;
-  const btn=$('#storageRestoreBtn');btn.disabled=true;const uploaded=[];
+  if(!confirm('Restore '+STORAGE_RESTORE.pending.length+' pending files? Existing checksum-matched files will be left untouched.'))return;
+  const btn=$('#storageRestoreBtn');btn.disabled=true;let uploaded=0;
   try{
     let i=0;
-    for(const obj of STORAGE_RESTORE.manifest.objects){
-      $('#storageStatus').textContent='Restoring '+(++i)+' / '+STORAGE_RESTORE.manifest.object_count+' · '+obj.path;
+    for(const obj of STORAGE_RESTORE.pending){
+      $('#storageStatus').textContent='Restoring '+(++i)+' / '+STORAGE_RESTORE.pending.length+' · '+obj.path;
       const entry=STORAGE_RESTORE.map.get(obj.path);
       const {error}=await supabase.storage.from(STORAGE_BUCKET).upload(obj.path,new Blob([entry.data],{type:obj.content_type||'application/octet-stream'}),{upsert:false,contentType:obj.content_type||undefined});
       if(error)throw error;
-      uploaded.push(obj.path);
+      uploaded++;
     }
-    $('#storageStatus').textContent='Storage restore complete · '+uploaded.length+' files.';
-    toast('Document files restored · '+uploaded.length);
+    const current=await listStorageFiles();
+    $('#storageStatus').textContent='Storage restore complete · '+uploaded+' files uploaded · '+current.length+' objects now in bucket.';
+    toast('Document files restored · '+uploaded);
     STORAGE_RESTORE=null;$('#storageRestoreFile').value='';$('#storageValidation').innerHTML='';$('#storageRestoreBtn').disabled=true;
   }catch(e){
-    for(let i=0;i<uploaded.length;i+=100){
-      try{await supabase.storage.from(STORAGE_BUCKET).remove(uploaded.slice(i,i+100));}catch{}
-    }
-    $('#storageStatus').textContent='Storage restore failed; uploaded files were rolled back where permitted.';
+    $('#storageStatus').textContent='Storage restore paused after '+uploaded+' files. Keep this ZIP and validate it again to safely resume from the remaining files.';
     fail(e);
-  }finally{if(STORAGE_RESTORE)btn.disabled=!(can&&STORAGE_RESTORE.empty);}
+  }finally{if(STORAGE_RESTORE)btn.disabled=!(can&&STORAGE_RESTORE.safeResume&&STORAGE_RESTORE.pending?.length);}
 }
 
 $('#exportBackupBtn').addEventListener('click',async()=>{
