@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, extname, join, resolve } from 'node:path';
+import { createStoreZip, parseStoreZip, utf8Bytes, utf8Text } from '../src/lib/zip-store.js';
 
 const root=process.cwd();
 const errors=[];
@@ -78,6 +79,59 @@ for(const file of js){
   if(/SUPABASE_SERVICE_ROLE_KEY|service[_-]?role\s*[:=]/i.test(src))errors.push('Privileged Supabase key reference in browser source: '+rel);
   if(/sk-[A-Za-z0-9_-]{20,}/.test(src))errors.push('Possible secret API key in browser source: '+rel);
 }
+
+// Supply-chain / deploy reproducibility.
+const pkgPath=resolve(root,'package.json');
+const lockPath=resolve(root,'package-lock.json');
+if(existsSync(pkgPath)){
+  const pkg=JSON.parse(readFileSync(pkgPath,'utf8'));
+  for(const group of ['dependencies','devDependencies']){
+    for(const [name,version] of Object.entries(pkg[group]||{})){
+      if(!/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(String(version))){
+        errors.push('Dependency is not exactly pinned: '+name+'@'+version);
+      }
+    }
+  }
+}
+if(!existsSync(lockPath))errors.push('package-lock.json is required for reproducible npm ci builds');
+
+const vercelPath=resolve(root,'vercel.json');
+if(existsSync(vercelPath)){
+  const cfg=JSON.parse(readFileSync(vercelPath,'utf8'));
+  if(cfg.buildCommand!=='npm run build')errors.push('Vercel must use npm run build so QA cannot be bypassed');
+}
+
+// Consolidated Supabase bootstrap baseline.
+const baseline=resolve(root,'supabase/baseline/current_schema.sql');
+if(!existsSync(baseline))errors.push('Missing consolidated Supabase schema baseline');
+else{
+  const src=readFileSync(baseline,'utf8');
+  const markers=['project_documents','payroll_runs','portal_memberships','vendor_rfq_invites','management_dashboard','erp_notification_reads','application_backup_log'];
+  for(const marker of markers)if(!src.includes(marker))errors.push('Supabase baseline missing critical object: '+marker);
+  if(src.length<100000)errors.push('Supabase baseline looks unexpectedly small');
+}
+
+// Built-in document Storage ZIP engine regression.
+try{
+  const entries=[
+    {name:'folder/test.txt',data:utf8Bytes('Bind Build ERP')},
+    {name:'தமிழ்/door schedule.json',data:utf8Bytes('{"ok":true}')},
+    {name:'empty.bin',data:new Uint8Array()}
+  ];
+  const zip=createStoreZip(entries);
+  const parsed=parseStoreZip(zip);
+  if(parsed.length!==3||utf8Text(parsed[0].data)!=='Bind Build ERP'||parsed[1].name!=='தமிழ்/door schedule.json'){
+    errors.push('Storage ZIP round-trip regression failed');
+  }
+  const corrupt=zip.slice();
+  let flip=-1;
+  for(let i=35;i<corrupt.length;i++){if(corrupt[i]===66){flip=i;break;}}
+  if(flip>=0){
+    corrupt[flip]^=1;
+    let blocked=false;try{parseStoreZip(corrupt);}catch{blocked=true;}
+    if(!blocked)errors.push('Storage ZIP CRC corruption was not rejected');
+  }
+}catch(e){errors.push('Storage ZIP regression threw: '+(e?.message||e));}
 
 const config=resolve(root,'src/lib/config.js');
 if(existsSync(config)){
