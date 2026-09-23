@@ -13,7 +13,7 @@ const requiredPages=[
   'login.html','dashboard.html','analytics.html','crm.html','lead.html','sales.html',
   'estimate.html','proposal.html','client.html','projects.html','project.html',
   'design.html','progress.html','procurement.html','inventory.html','finance.html',
-  'hr.html','attendance.html','people.html','documents.html','meetings.html',
+  'hr.html','attendance.html','people.html','documents.html','meetings.html','tasks.html','calendar.html',
   'client-portal.html','vendor-portal.html','backup.html','settings.html'
 ];
 
