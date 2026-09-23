@@ -67,3 +67,31 @@ Supabase Auth user IDs.
 
 The browser uses the Supabase publishable key with RLS. Never commit a service
 role key or database password to this repository.
+
+
+## Release manifest
+
+`supabase/release-manifest.json` records the live migration versions and audited
+schema inventory used by the repository QA gate.
+
+Current audited live inventory:
+
+- 78 public tables
+- 115 public/private functions
+- 67 active public user triggers
+- 261 public/storage policies
+- private `erp-documents` bucket
+- active `bindbuild-daily-ops-scan` Cron job
+
+The baseline contains 68 `CREATE TRIGGER` statements because one trigger
+definition is intentionally replaced during bootstrap; the live active-trigger
+inventory is 67.
+
+## Release Storage audit
+
+`/backup.html` now includes a read-only Document Storage integrity audit.
+It compares `document_revisions.storage_path` against actual objects in the
+private bucket and reports missing, unreferenced and size-mismatched files.
+
+Do not mutate `storage.objects` directly in SQL. Object bytes are managed only
+through the Supabase Storage API.
