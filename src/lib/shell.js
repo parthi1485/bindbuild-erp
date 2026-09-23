@@ -5,7 +5,7 @@ import { supabase } from './supabase.js';
 
 /* Routes that have a real page. Everything else in the nav is still a
    prototype — add the slug here as each page gets converted. */
-const BUILT = new Set(['dashboard','analytics','crm','sales','clients','projects','design','construction','site-visits','procurement','inventory','finance','hr','people','documents','meetings','client-portal','vendor-portal','backup','settings']);
+const BUILT = new Set(['dashboard','analytics','crm','sales','clients','projects','design','construction','site-visits','procurement','inventory','finance','hr','people','documents','meetings','tasks','calendar','client-portal','vendor-portal','backup','settings']);
 
 /* ---------------------------------------------------------------
    business unit
@@ -142,6 +142,15 @@ export async function mountShell({ route, title }) {
   document.getElementById('signOutBtn')?.addEventListener('click', signOut);
   wireMenu('newBtn', 'newMenu');
   wireMenu('profileBtn', 'profileMenu');
+  /* quick-new-task-route */
+  document.getElementById('newMenu')?.addEventListener('click', e => {
+    const item=e.target.closest('[data-new]');
+    if(!item)return;
+    if(item.dataset.new==='Task'){
+      e.preventDefault();
+      location.href='/tasks.html?new=1';
+    }
+  });
 
   /* ⌘K / Ctrl-K focuses search */
   document.addEventListener('keydown', e => {
@@ -234,8 +243,9 @@ async function mountNotifications(user) {
     const row=rows.find(x=>x.id===b.dataset.notif);
     if(row?.user_status==='unread')await supabase.from('erp_notification_reads').upsert({notification_id:row.id,user_id:user.id,status:'read',read_at:new Date().toISOString()},{onConflict:'notification_id,user_id'});
     drawer.classList.remove('open');await refresh();
-    const map={invoice:'/finance.html',vendor_bill:'/finance.html',approval:'/projects.html',material:'/inventory.html',task:'/projects.html'};
-    if(map[b.dataset.kind])location.href=map[b.dataset.kind];
+    const map={invoice:'/finance.html',vendor_bill:'/finance.html',approval:'/projects.html',material:'/inventory.html'};
+    if(b.dataset.kind==='task'&&b.dataset.entity)location.href='/tasks.html?task='+encodeURIComponent(b.dataset.entity);
+    else if(map[b.dataset.kind])location.href=map[b.dataset.kind];
   });
 }
 
