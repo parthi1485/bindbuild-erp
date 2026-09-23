@@ -10316,18 +10316,6 @@ drop policy if exists "application_backup_log_insert" on public."application_bac
 create policy "application_backup_log_insert" on public."application_backup_log" as permissive for insert to public with check (((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text])) AND (created_by = ( SELECT auth.uid() AS uid))));
 drop policy if exists "application_backup_log_read" on public."application_backup_log";
 create policy "application_backup_log_read" on public."application_backup_log" as permissive for select to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text])));
-drop policy if exists "approvals_client_portal_read" on public."approvals";
-create policy "approvals_client_portal_read" on public."approvals" as permissive for select to public using ((EXISTS ( SELECT 1
-   FROM projects p
-  WHERE ((p.id = approvals.project_id) AND (p.client_id IS NOT NULL) AND has_client_portal_access(p.client_id)))));
-drop policy if exists "approvals_client_portal_update" on public."approvals";
-create policy "approvals_client_portal_update" on public."approvals" as permissive for update to public using (((status = 'pending'::text) AND (EXISTS ( SELECT 1
-   FROM projects p
-  WHERE ((p.id = approvals.project_id) AND (p.client_id IS NOT NULL) AND has_client_portal_access(p.client_id)))))) with check (((status = ANY (ARRAY['approved'::text, 'changes_requested'::text])) AND (EXISTS ( SELECT 1
-   FROM projects p
-  WHERE ((p.id = approvals.project_id) AND (p.client_id IS NOT NULL) AND has_client_portal_access(p.client_id))))));
-drop policy if exists "internal_access" on public."approvals";
-create policy "internal_access" on public."approvals" as permissive for all to public using (is_internal_user()) with check (is_internal_user());
 drop policy if exists "attendance_delete" on public."attendance";
 create policy "attendance_delete" on public."attendance" as permissive for delete to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'hr'::text])));
 drop policy if exists "attendance_insert" on public."attendance";
@@ -10340,20 +10328,10 @@ drop policy if exists "automation_runs_read" on public."automation_runs";
 create policy "automation_runs_read" on public."automation_runs" as permissive for select to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text])));
 drop policy if exists "internal_access" on public."business_units";
 create policy "internal_access" on public."business_units" as permissive for all to public using (is_internal_user()) with check (is_internal_user());
-drop policy if exists "clients_portal_read" on public."clients";
-create policy "clients_portal_read" on public."clients" as permissive for select to public using (((deleted_at IS NULL) AND has_client_portal_access(id)));
-drop policy if exists "internal_access" on public."clients";
-create policy "internal_access" on public."clients" as permissive for all to public using (is_internal_user()) with check (is_internal_user());
 drop policy if exists "construction_delete" on public."construction_stages";
 create policy "construction_delete" on public."construction_stages" as permissive for delete to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text])));
 drop policy if exists "construction_insert" on public."construction_stages";
 create policy "construction_insert" on public."construction_stages" as permissive for insert to public with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'project_manager'::text, 'site_engineer'::text])));
-drop policy if exists "construction_read" on public."construction_stages";
-create policy "construction_read" on public."construction_stages" as permissive for select to public using (( SELECT is_internal_user() AS is_internal_user));
-drop policy if exists "construction_stages_client_portal_read" on public."construction_stages";
-create policy "construction_stages_client_portal_read" on public."construction_stages" as permissive for select to public using ((EXISTS ( SELECT 1
-   FROM projects p
-  WHERE ((p.id = construction_stages.project_id) AND (p.deleted_at IS NULL) AND (p.client_id IS NOT NULL) AND has_client_portal_access(p.client_id)))));
 drop policy if exists "construction_update" on public."construction_stages";
 create policy "construction_update" on public."construction_stages" as permissive for update to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'project_manager'::text, 'site_engineer'::text]))) with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'project_manager'::text, 'site_engineer'::text])));
 drop policy if exists "credit_notes_insert" on public."credit_notes";
@@ -10376,17 +10354,10 @@ drop policy if exists "document_register_read" on public."document_register";
 create policy "document_register_read" on public."document_register" as permissive for select to public using ((current_app_role() IS NOT NULL));
 drop policy if exists "document_register_update" on public."document_register";
 create policy "document_register_update" on public."document_register" as permissive for update to public using ((current_app_role() = ANY (ARRAY['founder'::text, 'admin'::text, 'finance'::text, 'sales'::text]))) with check ((current_app_role() = ANY (ARRAY['founder'::text, 'admin'::text, 'finance'::text, 'sales'::text])));
-drop policy if exists "document_revisions_client_portal_read" on public."document_revisions";
-create policy "document_revisions_client_portal_read" on public."document_revisions" as permissive for select to public using (((status = 'approved'::text) AND (EXISTS ( SELECT 1
-   FROM (project_documents d
-     JOIN projects p ON ((p.id = d.project_id)))
-  WHERE ((d.id = document_revisions.document_id) AND (d.client_visible = true) AND (d.status = 'approved'::text) AND (d.current_revision_id = document_revisions.id) AND (p.client_id IS NOT NULL) AND has_client_portal_access(p.client_id))))));
 drop policy if exists "document_revisions_delete" on public."document_revisions";
 create policy "document_revisions_delete" on public."document_revisions" as permissive for delete to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'project_manager'::text, 'designer'::text, 'site_engineer'::text, 'procurement'::text])));
 drop policy if exists "document_revisions_insert" on public."document_revisions";
 create policy "document_revisions_insert" on public."document_revisions" as permissive for insert to public with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'project_manager'::text, 'designer'::text, 'site_engineer'::text, 'procurement'::text])));
-drop policy if exists "document_revisions_read" on public."document_revisions";
-create policy "document_revisions_read" on public."document_revisions" as permissive for select to public using (( SELECT is_internal_user() AS is_internal_user));
 drop policy if exists "document_revisions_update" on public."document_revisions";
 create policy "document_revisions_update" on public."document_revisions" as permissive for update to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'project_manager'::text, 'designer'::text, 'site_engineer'::text, 'procurement'::text]))) with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'project_manager'::text, 'designer'::text, 'site_engineer'::text, 'procurement'::text])));
 drop policy if exists "document_sequences_internal" on public."document_sequences";
@@ -10427,36 +10398,22 @@ drop policy if exists "internal_access" on public."estimates";
 create policy "internal_access" on public."estimates" as permissive for all to public using (is_internal_user()) with check (is_internal_user());
 drop policy if exists "internal_access" on public."expenses";
 create policy "internal_access" on public."expenses" as permissive for all to public using (is_internal_user()) with check (is_internal_user());
-drop policy if exists "goods_receipt_items_vendor_portal_read" on public."goods_receipt_items";
-create policy "goods_receipt_items_vendor_portal_read" on public."goods_receipt_items" as permissive for select to public using ((EXISTS ( SELECT 1
-   FROM goods_receipts g
-  WHERE ((g.id = goods_receipt_items.grn_id) AND (g.vendor_id IS NOT NULL) AND has_vendor_portal_access(g.vendor_id)))));
 drop policy if exists "grn_items_delete" on public."goods_receipt_items";
 create policy "grn_items_delete" on public."goods_receipt_items" as permissive for delete to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text])));
 drop policy if exists "grn_items_insert" on public."goods_receipt_items";
 create policy "grn_items_insert" on public."goods_receipt_items" as permissive for insert to public with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'project_manager'::text, 'site_engineer'::text])));
-drop policy if exists "grn_items_read" on public."goods_receipt_items";
-create policy "grn_items_read" on public."goods_receipt_items" as permissive for select to public using (( SELECT is_internal_user() AS is_internal_user));
 drop policy if exists "grn_items_update" on public."goods_receipt_items";
 create policy "grn_items_update" on public."goods_receipt_items" as permissive for update to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'project_manager'::text]))) with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'project_manager'::text])));
-drop policy if exists "goods_receipts_vendor_portal_read" on public."goods_receipts";
-create policy "goods_receipts_vendor_portal_read" on public."goods_receipts" as permissive for select to public using (((vendor_id IS NOT NULL) AND has_vendor_portal_access(vendor_id)));
 drop policy if exists "grn_delete" on public."goods_receipts";
 create policy "grn_delete" on public."goods_receipts" as permissive for delete to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text])));
 drop policy if exists "grn_insert" on public."goods_receipts";
 create policy "grn_insert" on public."goods_receipts" as permissive for insert to public with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'project_manager'::text, 'site_engineer'::text])));
-drop policy if exists "grn_read" on public."goods_receipts";
-create policy "grn_read" on public."goods_receipts" as permissive for select to public using (( SELECT is_internal_user() AS is_internal_user));
 drop policy if exists "grn_update" on public."goods_receipts";
 create policy "grn_update" on public."goods_receipts" as permissive for update to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'project_manager'::text]))) with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'project_manager'::text])));
 drop policy if exists "internal_access" on public."invoice_items";
 create policy "internal_access" on public."invoice_items" as permissive for all to public using (is_internal_user()) with check (is_internal_user());
-drop policy if exists "invoices_client_portal_read" on public."invoices";
-create policy "invoices_client_portal_read" on public."invoices" as permissive for select to public using (((deleted_at IS NULL) AND (invoice_no IS NOT NULL) AND (client_id IS NOT NULL) AND has_client_portal_access(client_id)));
 drop policy if exists "invoices_insert" on public."invoices";
 create policy "invoices_insert" on public."invoices" as permissive for insert to public with check ((current_app_role() = ANY (ARRAY['founder'::text, 'admin'::text, 'finance'::text])));
-drop policy if exists "invoices_read" on public."invoices";
-create policy "invoices_read" on public."invoices" as permissive for select to public using (is_internal_user());
 drop policy if exists "invoices_update" on public."invoices";
 create policy "invoices_update" on public."invoices" as permissive for update to public using ((current_app_role() = ANY (ARRAY['founder'::text, 'admin'::text, 'finance'::text]))) with check ((current_app_role() = ANY (ARRAY['founder'::text, 'admin'::text, 'finance'::text])));
 drop policy if exists "kudos_delete" on public."kudos";
@@ -10622,14 +10579,8 @@ drop policy if exists "po_items_delete" on public."po_items";
 create policy "po_items_delete" on public."po_items" as permissive for delete to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text])));
 drop policy if exists "po_items_insert" on public."po_items";
 create policy "po_items_insert" on public."po_items" as permissive for insert to public with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'project_manager'::text])));
-drop policy if exists "po_items_read" on public."po_items";
-create policy "po_items_read" on public."po_items" as permissive for select to public using (( SELECT is_internal_user() AS is_internal_user));
 drop policy if exists "po_items_update" on public."po_items";
 create policy "po_items_update" on public."po_items" as permissive for update to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'project_manager'::text, 'site_engineer'::text]))) with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'project_manager'::text, 'site_engineer'::text])));
-drop policy if exists "po_items_vendor_portal_read" on public."po_items";
-create policy "po_items_vendor_portal_read" on public."po_items" as permissive for select to public using ((EXISTS ( SELECT 1
-   FROM purchase_orders p
-  WHERE ((p.id = po_items.po_id) AND (p.po_no IS NOT NULL) AND (p.status = ANY (ARRAY['approved'::text, 'ordered'::text, 'partly_delivered'::text, 'delivered'::text, 'cancelled'::text])) AND (p.vendor_id IS NOT NULL) AND has_vendor_portal_access(p.vendor_id)))));
 drop policy if exists "portal_memberships_insert" on public."portal_memberships";
 create policy "portal_memberships_insert" on public."portal_memberships" as permissive for insert to public with check ((((portal_type = 'client'::text) AND (( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'sales'::text, 'project_manager'::text]))) OR ((portal_type = 'vendor'::text) AND (( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text])))));
 drop policy if exists "portal_memberships_read" on public."portal_memberships";
@@ -10650,12 +10601,8 @@ drop policy if exists "preconstruction_update" on public."preconstruction_steps"
 create policy "preconstruction_update" on public."preconstruction_steps" as permissive for update to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'project_manager'::text, 'designer'::text]))) with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'project_manager'::text, 'designer'::text])));
 drop policy if exists "profiles_read_self_or_admin" on public."profiles";
 create policy "profiles_read_self_or_admin" on public."profiles" as permissive for select to public using (((id = ( SELECT auth.uid() AS uid)) OR (current_app_role() = ANY (ARRAY['founder'::text, 'admin'::text, 'hr'::text]))));
-drop policy if exists "proformas_client_portal_read" on public."proforma_invoices";
-create policy "proformas_client_portal_read" on public."proforma_invoices" as permissive for select to public using (((deleted_at IS NULL) AND (proforma_no IS NOT NULL) AND (client_id IS NOT NULL) AND has_client_portal_access(client_id)));
 drop policy if exists "proformas_insert" on public."proforma_invoices";
 create policy "proformas_insert" on public."proforma_invoices" as permissive for insert to public with check ((current_app_role() = ANY (ARRAY['founder'::text, 'admin'::text, 'finance'::text, 'project_manager'::text])));
-drop policy if exists "proformas_read" on public."proforma_invoices";
-create policy "proformas_read" on public."proforma_invoices" as permissive for select to public using (is_internal_user());
 drop policy if exists "proformas_update" on public."proforma_invoices";
 create policy "proformas_update" on public."proforma_invoices" as permissive for update to public using ((current_app_role() = ANY (ARRAY['founder'::text, 'admin'::text, 'finance'::text, 'project_manager'::text]))) with check ((current_app_role() = ANY (ARRAY['founder'::text, 'admin'::text, 'finance'::text, 'project_manager'::text])));
 drop policy if exists "internal_access" on public."proforma_items";
@@ -10668,16 +10615,10 @@ drop policy if exists "allocations_read" on public."project_allocations";
 create policy "allocations_read" on public."project_allocations" as permissive for select to public using (( SELECT is_internal_user() AS is_internal_user));
 drop policy if exists "allocations_update" on public."project_allocations";
 create policy "allocations_update" on public."project_allocations" as permissive for update to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'hr'::text, 'project_manager'::text]))) with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'hr'::text, 'project_manager'::text])));
-drop policy if exists "project_documents_client_portal_read" on public."project_documents";
-create policy "project_documents_client_portal_read" on public."project_documents" as permissive for select to public using (((client_visible = true) AND (status = 'approved'::text) AND (EXISTS ( SELECT 1
-   FROM projects p
-  WHERE ((p.id = project_documents.project_id) AND (p.deleted_at IS NULL) AND (p.client_id IS NOT NULL) AND has_client_portal_access(p.client_id))))));
 drop policy if exists "project_documents_delete" on public."project_documents";
 create policy "project_documents_delete" on public."project_documents" as permissive for delete to public using (((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'project_manager'::text])) AND (status = 'draft'::text)));
 drop policy if exists "project_documents_insert" on public."project_documents";
 create policy "project_documents_insert" on public."project_documents" as permissive for insert to public with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'project_manager'::text, 'designer'::text, 'site_engineer'::text, 'procurement'::text])));
-drop policy if exists "project_documents_read" on public."project_documents";
-create policy "project_documents_read" on public."project_documents" as permissive for select to public using (( SELECT is_internal_user() AS is_internal_user));
 drop policy if exists "project_documents_update" on public."project_documents";
 create policy "project_documents_update" on public."project_documents" as permissive for update to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'project_manager'::text, 'designer'::text, 'site_engineer'::text, 'procurement'::text]))) with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'project_manager'::text, 'designer'::text, 'site_engineer'::text, 'procurement'::text])));
 drop policy if exists "progress_delete" on public."project_progress_snapshots";
@@ -10688,16 +10629,6 @@ drop policy if exists "progress_read" on public."project_progress_snapshots";
 create policy "progress_read" on public."project_progress_snapshots" as permissive for select to public using (( SELECT is_internal_user() AS is_internal_user));
 drop policy if exists "progress_update" on public."project_progress_snapshots";
 create policy "progress_update" on public."project_progress_snapshots" as permissive for update to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'project_manager'::text, 'site_engineer'::text]))) with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'project_manager'::text, 'site_engineer'::text])));
-drop policy if exists "internal_access" on public."projects";
-create policy "internal_access" on public."projects" as permissive for all to public using (is_internal_user()) with check (is_internal_user());
-drop policy if exists "projects_client_portal_read" on public."projects";
-create policy "projects_client_portal_read" on public."projects" as permissive for select to public using (((deleted_at IS NULL) AND (client_id IS NOT NULL) AND has_client_portal_access(client_id)));
-drop policy if exists "projects_vendor_portal_read" on public."projects";
-create policy "projects_vendor_portal_read" on public."projects" as permissive for select to public using (((deleted_at IS NULL) AND ((EXISTS ( SELECT 1
-   FROM purchase_orders po
-  WHERE ((po.project_id = projects.id) AND (po.vendor_id IS NOT NULL) AND (po.po_no IS NOT NULL) AND has_vendor_portal_access(po.vendor_id)))) OR (EXISTS ( SELECT 1
-   FROM vendor_rfq_invites r
-  WHERE ((r.project_id = projects.id) AND (r.status <> 'cancelled'::text) AND has_vendor_portal_access(r.vendor_id)))))));
 drop policy if exists "internal_access" on public."proposal_items";
 create policy "internal_access" on public."proposal_items" as permissive for all to public using (is_internal_user()) with check (is_internal_user());
 drop policy if exists "internal_access" on public."proposals";
@@ -10706,12 +10637,8 @@ drop policy if exists "pos_delete" on public."purchase_orders";
 create policy "pos_delete" on public."purchase_orders" as permissive for delete to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text])));
 drop policy if exists "pos_insert" on public."purchase_orders";
 create policy "pos_insert" on public."purchase_orders" as permissive for insert to public with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'project_manager'::text])));
-drop policy if exists "pos_read" on public."purchase_orders";
-create policy "pos_read" on public."purchase_orders" as permissive for select to public using (( SELECT is_internal_user() AS is_internal_user));
 drop policy if exists "pos_update" on public."purchase_orders";
 create policy "pos_update" on public."purchase_orders" as permissive for update to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'project_manager'::text, 'site_engineer'::text]))) with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'project_manager'::text, 'site_engineer'::text])));
-drop policy if exists "purchase_orders_vendor_portal_read" on public."purchase_orders";
-create policy "purchase_orders_vendor_portal_read" on public."purchase_orders" as permissive for select to public using (((po_no IS NOT NULL) AND (status = ANY (ARRAY['approved'::text, 'ordered'::text, 'partly_delivered'::text, 'delivered'::text, 'cancelled'::text])) AND (vendor_id IS NOT NULL) AND has_vendor_portal_access(vendor_id)));
 drop policy if exists "quality_delete" on public."quality_checks";
 create policy "quality_delete" on public."quality_checks" as permissive for delete to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'project_manager'::text])));
 drop policy if exists "quality_insert" on public."quality_checks";
@@ -10720,12 +10647,8 @@ drop policy if exists "quality_read" on public."quality_checks";
 create policy "quality_read" on public."quality_checks" as permissive for select to public using (( SELECT is_internal_user() AS is_internal_user));
 drop policy if exists "quality_update" on public."quality_checks";
 create policy "quality_update" on public."quality_checks" as permissive for update to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'project_manager'::text, 'site_engineer'::text]))) with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'project_manager'::text, 'site_engineer'::text])));
-drop policy if exists "receipts_client_portal_read" on public."receipts";
-create policy "receipts_client_portal_read" on public."receipts" as permissive for select to public using (((client_id IS NOT NULL) AND has_client_portal_access(client_id)));
 drop policy if exists "receipts_insert" on public."receipts";
 create policy "receipts_insert" on public."receipts" as permissive for insert to public with check ((current_app_role() = ANY (ARRAY['founder'::text, 'admin'::text, 'finance'::text])));
-drop policy if exists "receipts_read" on public."receipts";
-create policy "receipts_read" on public."receipts" as permissive for select to public using (is_internal_user());
 drop policy if exists "receipts_update" on public."receipts";
 create policy "receipts_update" on public."receipts" as permissive for update to public using ((current_app_role() = ANY (ARRAY['founder'::text, 'admin'::text, 'finance'::text]))) with check ((current_app_role() = ANY (ARRAY['founder'::text, 'admin'::text, 'finance'::text])));
 drop policy if exists "reimbursements_delete" on public."reimbursements";
@@ -10816,51 +10739,16 @@ drop policy if exists "internal_access" on public."tasks";
 create policy "internal_access" on public."tasks" as permissive for all to public using (is_internal_user()) with check (is_internal_user());
 drop policy if exists "vendor_bills_insert" on public."vendor_bills";
 create policy "vendor_bills_insert" on public."vendor_bills" as permissive for insert to public with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'finance'::text])));
-drop policy if exists "vendor_bills_portal_read" on public."vendor_bills";
-create policy "vendor_bills_portal_read" on public."vendor_bills" as permissive for select to public using (((vendor_id IS NOT NULL) AND has_vendor_portal_access(vendor_id)));
-drop policy if exists "vendor_bills_read" on public."vendor_bills";
-create policy "vendor_bills_read" on public."vendor_bills" as permissive for select to public using (( SELECT is_internal_user() AS is_internal_user));
 drop policy if exists "vendor_bills_update" on public."vendor_bills";
 create policy "vendor_bills_update" on public."vendor_bills" as permissive for update to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'finance'::text]))) with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'finance'::text])));
 drop policy if exists "vendor_payments_insert" on public."vendor_payments";
 create policy "vendor_payments_insert" on public."vendor_payments" as permissive for insert to public with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'finance'::text])));
-drop policy if exists "vendor_payments_portal_read" on public."vendor_payments";
-create policy "vendor_payments_portal_read" on public."vendor_payments" as permissive for select to public using (((vendor_id IS NOT NULL) AND has_vendor_portal_access(vendor_id)));
-drop policy if exists "vendor_payments_read" on public."vendor_payments";
-create policy "vendor_payments_read" on public."vendor_payments" as permissive for select to public using (( SELECT is_internal_user() AS is_internal_user));
 drop policy if exists "quote_items_delete" on public."vendor_quote_items";
 create policy "quote_items_delete" on public."vendor_quote_items" as permissive for delete to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text])));
-drop policy if exists "quote_items_insert" on public."vendor_quote_items";
-create policy "quote_items_insert" on public."vendor_quote_items" as permissive for insert to public with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'project_manager'::text])));
-drop policy if exists "quote_items_read" on public."vendor_quote_items";
-create policy "quote_items_read" on public."vendor_quote_items" as permissive for select to public using (( SELECT is_internal_user() AS is_internal_user));
 drop policy if exists "quote_items_update" on public."vendor_quote_items";
 create policy "quote_items_update" on public."vendor_quote_items" as permissive for update to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'project_manager'::text]))) with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'project_manager'::text])));
-drop policy if exists "vendor_quote_items_portal_insert" on public."vendor_quote_items";
-create policy "vendor_quote_items_portal_insert" on public."vendor_quote_items" as permissive for insert to public with check (((current_app_role() IS NULL) AND (EXISTS ( SELECT 1
-   FROM (vendor_quotes q
-     JOIN vendor_rfq_invites r ON (((r.requisition_id = q.requisition_id) AND (r.vendor_id = q.vendor_id))))
-  WHERE ((q.id = vendor_quote_items.quote_id) AND (q.status = 'received'::text) AND (r.status = ANY (ARRAY['invited'::text, 'viewed'::text])) AND has_vendor_portal_access(q.vendor_id))))));
-drop policy if exists "vendor_quote_items_portal_read" on public."vendor_quote_items";
-create policy "vendor_quote_items_portal_read" on public."vendor_quote_items" as permissive for select to public using ((EXISTS ( SELECT 1
-   FROM vendor_quotes q
-  WHERE ((q.id = vendor_quote_items.quote_id) AND has_vendor_portal_access(q.vendor_id)))));
 drop policy if exists "quotes_delete" on public."vendor_quotes";
 create policy "quotes_delete" on public."vendor_quotes" as permissive for delete to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text])));
-drop policy if exists "quotes_insert" on public."vendor_quotes";
-create policy "quotes_insert" on public."vendor_quotes" as permissive for insert to public with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'project_manager'::text])));
-drop policy if exists "quotes_read" on public."vendor_quotes";
-create policy "quotes_read" on public."vendor_quotes" as permissive for select to public using (( SELECT is_internal_user() AS is_internal_user));
-drop policy if exists "quotes_update" on public."vendor_quotes";
-create policy "quotes_update" on public."vendor_quotes" as permissive for update to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'project_manager'::text]))) with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'project_manager'::text])));
-drop policy if exists "vendor_quotes_portal_insert" on public."vendor_quotes";
-create policy "vendor_quotes_portal_insert" on public."vendor_quotes" as permissive for insert to public with check (((current_app_role() IS NULL) AND (created_by IS NULL) AND (status = 'received'::text) AND (subtotal = (0)::numeric) AND (tax_amount = (0)::numeric) AND (total = (0)::numeric) AND has_vendor_portal_access(vendor_id) AND (EXISTS ( SELECT 1
-   FROM vendor_rfq_invites r
-  WHERE ((r.requisition_id = vendor_quotes.requisition_id) AND (r.vendor_id = vendor_quotes.vendor_id) AND (r.status = ANY (ARRAY['invited'::text, 'viewed'::text])))))));
-drop policy if exists "vendor_quotes_portal_read" on public."vendor_quotes";
-create policy "vendor_quotes_portal_read" on public."vendor_quotes" as permissive for select to public using (has_vendor_portal_access(vendor_id));
-drop policy if exists "vendor_quotes_portal_update" on public."vendor_quotes";
-create policy "vendor_quotes_portal_update" on public."vendor_quotes" as permissive for update to public using (((current_app_role() IS NULL) AND (status = 'received'::text) AND has_vendor_portal_access(vendor_id))) with check (((current_app_role() IS NULL) AND (status = 'received'::text) AND has_vendor_portal_access(vendor_id)));
 drop policy if exists "vendor_rfq_insert" on public."vendor_rfq_invites";
 create policy "vendor_rfq_insert" on public."vendor_rfq_invites" as permissive for insert to public with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text, 'project_manager'::text])));
 drop policy if exists "vendor_rfq_read" on public."vendor_rfq_invites";
@@ -10877,10 +10765,6 @@ drop policy if exists "vendors_delete" on public."vendors";
 create policy "vendors_delete" on public."vendors" as permissive for delete to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text])));
 drop policy if exists "vendors_insert" on public."vendors";
 create policy "vendors_insert" on public."vendors" as permissive for insert to public with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text])));
-drop policy if exists "vendors_portal_read" on public."vendors";
-create policy "vendors_portal_read" on public."vendors" as permissive for select to public using (has_vendor_portal_access(id));
-drop policy if exists "vendors_read" on public."vendors";
-create policy "vendors_read" on public."vendors" as permissive for select to public using (( SELECT is_internal_user() AS is_internal_user));
 drop policy if exists "vendors_update" on public."vendors";
 create policy "vendors_update" on public."vendors" as permissive for update to public using ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text]))) with check ((( SELECT current_app_role() AS current_app_role) = ANY (ARRAY['founder'::text, 'admin'::text, 'procurement'::text])));
 drop policy if exists "erp_documents_delete" on storage."objects";
@@ -11363,3 +11247,232 @@ do $$ begin
 end $$;
 
 -- Baseline complete.
+
+
+-- RLS consolidation mirrored from live migration 20260923061856.
+drop policy if exists internal_access on public.approvals;
+drop policy if exists approvals_client_portal_read on public.approvals;
+drop policy if exists approvals_client_portal_update on public.approvals;
+create policy approvals_access_select on public.approvals for select to authenticated using (
+  (select public.is_internal_user()) or exists (
+    select 1 from public.projects p where p.id=approvals.project_id and p.client_id is not null and public.has_client_portal_access(p.client_id)
+  )
+);
+create policy approvals_access_insert on public.approvals for insert to authenticated with check ((select public.is_internal_user()));
+create policy approvals_access_update on public.approvals for update to authenticated
+using (
+  (select public.is_internal_user()) or (
+    status='pending' and exists (
+      select 1 from public.projects p where p.id=approvals.project_id and p.client_id is not null and public.has_client_portal_access(p.client_id)
+    )
+  )
+)
+with check (
+  (select public.is_internal_user()) or (
+    status=any(array['approved'::text,'changes_requested'::text]) and exists (
+      select 1 from public.projects p where p.id=approvals.project_id and p.client_id is not null and public.has_client_portal_access(p.client_id)
+    )
+  )
+);
+create policy approvals_access_delete on public.approvals for delete to authenticated using ((select public.is_internal_user()));
+
+drop policy if exists internal_access on public.clients;
+drop policy if exists clients_portal_read on public.clients;
+create policy clients_access_select on public.clients for select to authenticated
+using ((select public.is_internal_user()) or (deleted_at is null and public.has_client_portal_access(id)));
+create policy clients_access_insert on public.clients for insert to authenticated with check ((select public.is_internal_user()));
+create policy clients_access_update on public.clients for update to authenticated using ((select public.is_internal_user())) with check ((select public.is_internal_user()));
+create policy clients_access_delete on public.clients for delete to authenticated using ((select public.is_internal_user()));
+
+drop policy if exists internal_access on public.projects;
+drop policy if exists projects_client_portal_read on public.projects;
+drop policy if exists projects_vendor_portal_read on public.projects;
+create policy projects_access_select on public.projects for select to authenticated
+using (
+  (select public.is_internal_user())
+  or (deleted_at is null and client_id is not null and public.has_client_portal_access(client_id))
+  or (
+    deleted_at is null and (
+      exists (
+        select 1 from public.purchase_orders po
+        where po.project_id=projects.id and po.vendor_id is not null and po.po_no is not null
+          and public.has_vendor_portal_access(po.vendor_id)
+      )
+      or exists (
+        select 1 from public.vendor_rfq_invites r
+        where r.project_id=projects.id and r.status<>'cancelled'
+          and public.has_vendor_portal_access(r.vendor_id)
+      )
+    )
+  )
+);
+create policy projects_access_insert on public.projects for insert to authenticated with check ((select public.is_internal_user()));
+create policy projects_access_update on public.projects for update to authenticated using ((select public.is_internal_user())) with check ((select public.is_internal_user()));
+create policy projects_access_delete on public.projects for delete to authenticated using ((select public.is_internal_user()));
+
+drop policy if exists construction_read on public.construction_stages;
+drop policy if exists construction_stages_client_portal_read on public.construction_stages;
+create policy construction_stages_access_select on public.construction_stages for select to authenticated using (
+  (select public.is_internal_user()) or exists (
+    select 1 from public.projects p
+    where p.id=construction_stages.project_id and p.deleted_at is null and p.client_id is not null
+      and public.has_client_portal_access(p.client_id)
+  )
+);
+
+drop policy if exists document_revisions_read on public.document_revisions;
+drop policy if exists document_revisions_client_portal_read on public.document_revisions;
+create policy document_revisions_access_select on public.document_revisions for select to authenticated using (
+  (select public.is_internal_user()) or (
+    status='approved' and exists (
+      select 1 from public.project_documents d
+      join public.projects p on p.id=d.project_id
+      where d.id=document_revisions.document_id
+        and d.client_visible=true and d.status='approved'
+        and d.current_revision_id=document_revisions.id
+        and p.client_id is not null
+        and public.has_client_portal_access(p.client_id)
+    )
+  )
+);
+
+drop policy if exists grn_items_read on public.goods_receipt_items;
+drop policy if exists goods_receipt_items_vendor_portal_read on public.goods_receipt_items;
+create policy goods_receipt_items_access_select on public.goods_receipt_items for select to authenticated using (
+  (select public.is_internal_user()) or exists (
+    select 1 from public.goods_receipts g
+    where g.id=goods_receipt_items.grn_id and g.vendor_id is not null
+      and public.has_vendor_portal_access(g.vendor_id)
+  )
+);
+
+drop policy if exists grn_read on public.goods_receipts;
+drop policy if exists goods_receipts_vendor_portal_read on public.goods_receipts;
+create policy goods_receipts_access_select on public.goods_receipts for select to authenticated
+using ((select public.is_internal_user()) or (vendor_id is not null and public.has_vendor_portal_access(vendor_id)));
+
+drop policy if exists invoices_read on public.invoices;
+drop policy if exists invoices_client_portal_read on public.invoices;
+create policy invoices_access_select on public.invoices for select to authenticated using (
+  (select public.is_internal_user()) or (
+    deleted_at is null and invoice_no is not null and client_id is not null
+    and public.has_client_portal_access(client_id)
+  )
+);
+
+drop policy if exists po_items_read on public.po_items;
+drop policy if exists po_items_vendor_portal_read on public.po_items;
+create policy po_items_access_select on public.po_items for select to authenticated using (
+  (select public.is_internal_user()) or exists (
+    select 1 from public.purchase_orders p
+    where p.id=po_items.po_id and p.po_no is not null
+      and p.status=any(array['approved'::text,'ordered'::text,'partly_delivered'::text,'delivered'::text,'cancelled'::text])
+      and p.vendor_id is not null and public.has_vendor_portal_access(p.vendor_id)
+  )
+);
+
+drop policy if exists proformas_read on public.proforma_invoices;
+drop policy if exists proformas_client_portal_read on public.proforma_invoices;
+create policy proforma_invoices_access_select on public.proforma_invoices for select to authenticated using (
+  (select public.is_internal_user()) or (
+    deleted_at is null and proforma_no is not null and client_id is not null
+    and public.has_client_portal_access(client_id)
+  )
+);
+
+drop policy if exists project_documents_read on public.project_documents;
+drop policy if exists project_documents_client_portal_read on public.project_documents;
+create policy project_documents_access_select on public.project_documents for select to authenticated using (
+  (select public.is_internal_user()) or (
+    client_visible=true and status='approved' and exists (
+      select 1 from public.projects p
+      where p.id=project_documents.project_id and p.deleted_at is null and p.client_id is not null
+        and public.has_client_portal_access(p.client_id)
+    )
+  )
+);
+
+drop policy if exists pos_read on public.purchase_orders;
+drop policy if exists purchase_orders_vendor_portal_read on public.purchase_orders;
+create policy purchase_orders_access_select on public.purchase_orders for select to authenticated using (
+  (select public.is_internal_user()) or (
+    po_no is not null
+    and status=any(array['approved'::text,'ordered'::text,'partly_delivered'::text,'delivered'::text,'cancelled'::text])
+    and vendor_id is not null and public.has_vendor_portal_access(vendor_id)
+  )
+);
+
+drop policy if exists receipts_read on public.receipts;
+drop policy if exists receipts_client_portal_read on public.receipts;
+create policy receipts_access_select on public.receipts for select to authenticated
+using ((select public.is_internal_user()) or (client_id is not null and public.has_client_portal_access(client_id)));
+
+drop policy if exists vendor_bills_read on public.vendor_bills;
+drop policy if exists vendor_bills_portal_read on public.vendor_bills;
+create policy vendor_bills_access_select on public.vendor_bills for select to authenticated
+using ((select public.is_internal_user()) or (vendor_id is not null and public.has_vendor_portal_access(vendor_id)));
+
+drop policy if exists vendor_payments_read on public.vendor_payments;
+drop policy if exists vendor_payments_portal_read on public.vendor_payments;
+create policy vendor_payments_access_select on public.vendor_payments for select to authenticated
+using ((select public.is_internal_user()) or (vendor_id is not null and public.has_vendor_portal_access(vendor_id)));
+
+drop policy if exists quote_items_insert on public.vendor_quote_items;
+drop policy if exists vendor_quote_items_portal_insert on public.vendor_quote_items;
+drop policy if exists quote_items_read on public.vendor_quote_items;
+drop policy if exists vendor_quote_items_portal_read on public.vendor_quote_items;
+create policy vendor_quote_items_access_select on public.vendor_quote_items for select to authenticated using (
+  (select public.is_internal_user()) or exists (
+    select 1 from public.vendor_quotes q
+    where q.id=vendor_quote_items.quote_id and public.has_vendor_portal_access(q.vendor_id)
+  )
+);
+create policy vendor_quote_items_access_insert on public.vendor_quote_items for insert to authenticated with check (
+  ((select public.current_app_role())=any(array['founder'::text,'admin'::text,'procurement'::text,'project_manager'::text]))
+  or (
+    public.current_app_role() is null and exists (
+      select 1 from public.vendor_quotes q
+      join public.vendor_rfq_invites r on r.requisition_id=q.requisition_id and r.vendor_id=q.vendor_id
+      where q.id=vendor_quote_items.quote_id and q.status='received'
+        and r.status=any(array['invited'::text,'viewed'::text])
+        and public.has_vendor_portal_access(q.vendor_id)
+    )
+  )
+);
+
+drop policy if exists quotes_insert on public.vendor_quotes;
+drop policy if exists vendor_quotes_portal_insert on public.vendor_quotes;
+drop policy if exists quotes_read on public.vendor_quotes;
+drop policy if exists vendor_quotes_portal_read on public.vendor_quotes;
+drop policy if exists quotes_update on public.vendor_quotes;
+drop policy if exists vendor_quotes_portal_update on public.vendor_quotes;
+create policy vendor_quotes_access_select on public.vendor_quotes for select to authenticated
+using ((select public.is_internal_user()) or public.has_vendor_portal_access(vendor_id));
+create policy vendor_quotes_access_insert on public.vendor_quotes for insert to authenticated with check (
+  ((select public.current_app_role())=any(array['founder'::text,'admin'::text,'procurement'::text,'project_manager'::text]))
+  or (
+    public.current_app_role() is null and created_by is null and status='received'
+    and subtotal=0::numeric and tax_amount=0::numeric and total=0::numeric
+    and public.has_vendor_portal_access(vendor_id)
+    and exists (
+      select 1 from public.vendor_rfq_invites r
+      where r.requisition_id=vendor_quotes.requisition_id
+        and r.vendor_id=vendor_quotes.vendor_id
+        and r.status=any(array['invited'::text,'viewed'::text])
+    )
+  )
+);
+create policy vendor_quotes_access_update on public.vendor_quotes for update to authenticated
+using (
+  ((select public.current_app_role())=any(array['founder'::text,'admin'::text,'procurement'::text,'project_manager'::text]))
+  or (public.current_app_role() is null and status='received' and public.has_vendor_portal_access(vendor_id))
+)
+with check (
+  ((select public.current_app_role())=any(array['founder'::text,'admin'::text,'procurement'::text,'project_manager'::text]))
+  or (public.current_app_role() is null and status='received' and public.has_vendor_portal_access(vendor_id))
+);
+
+drop policy if exists vendors_read on public.vendors;
+drop policy if exists vendors_portal_read on public.vendors;
+create policy vendors_access_select on public.vendors for select to authenticated
+using ((select public.is_internal_user()) or public.has_vendor_portal_access(id));
