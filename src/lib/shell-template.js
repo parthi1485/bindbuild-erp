@@ -24,6 +24,10 @@ export const SIDEBAR_HTML = `
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
           Dashboard
         </a>
+        <a class="nav-item" href="/assistant.html" data-route="assistant" data-nav="Bind AI">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 1 4 4c1.8.7 3 2.4 3 4.4 0 .7-.2 1.4-.5 2A4 4 0 0 1 17 21H7a4 4 0 0 1-1.5-7.6A5 5 0 0 1 5 11.4C5 9.4 6.2 7.7 8 7a4 4 0 0 1 4-4Z"/><path d="M9 12h6M12 9v6"/></svg>
+          Bind AI
+        </a>
         <a class="nav-item" href="/analytics.html" data-route="analytics" data-nav="Analytics">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg>
           Analytics
