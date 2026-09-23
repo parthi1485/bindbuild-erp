@@ -25,7 +25,8 @@
     ],
     "cron_jobs": [
       "bindbuild-daily-ops-scan"
-    ]
+    ],
+    "baseline_create_trigger_statements": 68
   },
   "runtime": {
     "node": ">=22.0.0",
