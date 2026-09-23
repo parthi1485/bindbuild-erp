@@ -9,7 +9,8 @@
     "20260920191131",
     "20260922233302",
     "20260923051420",
-    "20260923060809"
+    "20260923060809",
+    "20260923061856"
   ],
   "migration_names": [
     "erp_foundation_numbering",
@@ -17,13 +18,14 @@
     "security_finance_integrity",
     "analytics_backup_automation_controls",
     "harden_role_helpers",
-    "add_foreign_key_indexes"
+    "add_foreign_key_indexes",
+    "consolidate_portal_rls_policies"
   ],
   "baseline_inventory": {
     "public_tables": 78,
     "functions_public_private": 116,
     "user_triggers_public": 67,
-    "policies_public_storage": 261,
+    "policies_public_storage": 247,
     "storage_buckets": [
       "erp-documents"
     ],
