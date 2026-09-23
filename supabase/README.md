@@ -32,21 +32,31 @@ That means:
   the entire current ERP schema from zero;
 - new DDL from this point forward should use Supabase migrations first and be
   mirrored into this folder;
-- before production merge, create a consolidated current-schema baseline (or
-  backfill the missing module migrations) and test it against a fresh database.
+- a consolidated live-schema baseline now exists at `supabase/baseline/current_schema.sql`;
+- the baseline inventory was audited on 23 Sep 2026 against the live project and
+  contains all 78 public tables, 114 public/private functions, 52 user triggers,
+  247 unique public/storage policies, and the `erp-documents` bucket;
+- this inventory audit verifies object coverage, but a destructive fresh-project
+  execution test is still required before calling the baseline fully bootstrapped
+  from zero.
 
 ## Application backup
 
 The ERP also has a Founder/Admin JSON application backup under
 `/backup.html`.
 
-It backs up application table rows and document storage paths, but it does not
-replace platform disaster recovery. It intentionally excludes:
+It backs up application table rows. The same screen also provides a browser-side
+ZIP export/restore for the private `erp-documents` Storage bucket.
+
+The application JSON still does not replace platform disaster recovery. It
+intentionally excludes:
 
 - Supabase Auth credentials and sessions
-- actual Supabase Storage file bytes
 - secrets and hosting configuration
 - platform backup history
+
+The Storage ZIP is a separate file and should be retained beside the matching
+application JSON backup.
 
 Restore is guarded: it requires an operationally empty target and compatible
 Supabase Auth user IDs.
