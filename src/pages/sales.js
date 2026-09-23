@@ -244,3 +244,7 @@ const newDeal=$('.page-head__acts .btn-new');
 if(newDeal){newDeal.href='/crm.html';newDeal.textContent='＋ New lead';}
 
 await load();
+if(new URLSearchParams(location.search).get('new')==='project'){
+  history.replaceState(null,'','/sales.html');
+  toast('Projects are created from an accepted Proposal so the Client, commercial value and audit trail stay linked.','info');
+}
