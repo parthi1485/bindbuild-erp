@@ -46,7 +46,8 @@ const toCard = r => ({
   days:daysIn(r),
   phone:r.phone || '',
   email:r.email || '',
-  notes:r.notes || ''
+  notes:r.notes || '',
+  createdAt:r.created_at || null
 });
 
 async function load() {
@@ -82,14 +83,15 @@ function leadCard(l) {
     <div class="lead__top">
       <span class="lead__prio lead__prio--${esc(l.prio)}"></span>
       <span class="lead__name">${esc(l.name)}</span>
-      <button class="lead__kebab" type="button" aria-label="Lead actions">⋯
-        <div class="menu">
+      <div class="lead__menu-wrap">
+        <button class="lead__kebab" type="button" aria-label="Lead actions" aria-expanded="false">⋯</button>
+        <div class="menu" role="menu">
           <div class="menu__label">Move to</div>
           ${STAGES.filter(s=>s.id!==l.stage).map(s=>`<button class="menu__item" type="button" data-move="${s.id}">${esc(s.name)}</button>`).join('')}
           <div class="menu__rule"></div>
           <button class="menu__item" type="button" data-open>Open lead details</button>
         </div>
-      </button>
+      </div>
     </div>
     <p class="lead__proj">${esc(l.proj)}</p>
     <p class="lead__loc">${esc(l.loc)}</p>
@@ -143,10 +145,22 @@ function renderKpis(rows) {
   if ($('#kpiValue')) $('#kpiValue').textContent = rupees(pipeline);
   if ($('#kpiActive')) $('#kpiActive').textContent = String(active.length);
 
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000);
+  const createdThisMonth = rows.filter(l => l.createdAt && new Date(l.createdAt) >= startOfMonth);
+  const addedThisMonth = createdThisMonth.reduce((sum, l) => sum + l.value, 0);
+  const newThisWeek = rows.filter(l => l.createdAt && new Date(l.createdAt) >= sevenDaysAgo).length;
+  const idle = active.filter(l => l.days > 7).length;
+  const cards = $('.kpis .kpi');
+  if (cards[0]) cards[0].querySelector('.kpi__note').innerHTML =
+    `<b>${rupees(addedThisMonth)}</b> added this month`;
+  if (cards[1]) cards[1].querySelector('.kpi__note').innerHTML =
+    `<b>${newThisWeek} new</b> this week · ${idle} idle &gt; 7 days`;
+
   const closed = rows.filter(l=>['won','lost'].includes(l.stage));
   const won = rows.filter(l=>l.stage==='won');
   const conversion = closed.length ? Math.round(won.length/closed.length*100) : 0;
-  const cards = $$('.kpis .kpi');
   if (cards[2]) {
     cards[2].querySelector('.kpi__label').textContent = 'Conversion · closed leads';
     cards[2].querySelector('.kpi__value').textContent = conversion + '%';
@@ -280,12 +294,22 @@ $('#confirmLost')?.addEventListener('click', async () => {
 
 document.addEventListener('click', async e => {
   const kebab = e.target.closest('.lead__kebab');
-  if (kebab && !e.target.closest('[data-move],[data-open]')) {
+  if (kebab) {
     e.preventDefault();
     e.stopPropagation();
-    const menu = kebab.querySelector('.menu');
-    $('.lead .menu').forEach(m => { if (m !== menu) m.style.display='none'; });
-    if (menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    const wrap = kebab.closest('.lead__menu-wrap');
+    const menu = wrap?.querySelector('.menu');
+    $('.lead .menu').forEach(m => {
+      if (m !== menu) {
+        m.style.display = 'none';
+        m.closest('.lead__menu-wrap')?.querySelector('.lead__kebab')?.setAttribute('aria-expanded','false');
+      }
+    });
+    if (menu) {
+      const open = menu.style.display === 'block';
+      menu.style.display = open ? 'none' : 'block';
+      kebab.setAttribute('aria-expanded', open ? 'false' : 'true');
+    }
     return;
   }
 
