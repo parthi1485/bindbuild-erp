@@ -7299,17 +7299,32 @@ begin
   return po;
 end $function$;
 
-CREATE OR REPLACE FUNCTION public.current_app_role()
+CREATE OR REPLACE FUNCTION private.current_app_role()
  RETURNS text
  LANGUAGE sql
  STABLE SECURITY DEFINER
- SET search_path TO 'public'
+ SET search_path TO 'public', 'auth', 'pg_catalog'
 AS $function$
   select p.role
   from public.profiles p
-  where p.id = auth.uid() and p.is_active = true
+  where p.id = (select auth.uid()) and p.is_active = true
   limit 1;
 $function$;
+
+REVOKE ALL ON FUNCTION private.current_app_role() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION private.current_app_role() TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.current_app_role()
+ RETURNS text
+ LANGUAGE sql
+ STABLE SECURITY INVOKER
+ SET search_path TO 'public', 'private', 'pg_catalog'
+AS $function$
+  select private.current_app_role();
+$function$;
+
+REVOKE ALL ON FUNCTION public.current_app_role() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.current_app_role() TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.ensure_project_store(p_project_id uuid)
  RETURNS uuid
@@ -8719,14 +8734,17 @@ end $function$;
 CREATE OR REPLACE FUNCTION public.is_internal_user()
  RETURNS boolean
  LANGUAGE sql
- STABLE SECURITY DEFINER
- SET search_path TO 'public'
+ STABLE SECURITY INVOKER
+ SET search_path TO 'public', 'private', 'pg_catalog'
 AS $function$
-  select coalesce(public.current_app_role() in (
+  select coalesce(private.current_app_role() in (
     'founder','admin','sales','project_manager','designer',
     'site_engineer','finance','procurement','hr','viewer'
   ), false);
 $function$;
+
+REVOKE ALL ON FUNCTION public.is_internal_user() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.is_internal_user() TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.issue_document_number(p_doc_type text, p_issue_date date DEFAULT CURRENT_DATE, p_lead_id uuid DEFAULT NULL::uuid, p_project_id uuid DEFAULT NULL::uuid, p_client_id uuid DEFAULT NULL::uuid, p_amount numeric DEFAULT 0, p_status text DEFAULT 'issued'::text, p_metadata jsonb DEFAULT '{}'::jsonb)
  RETURNS text
