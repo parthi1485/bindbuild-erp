@@ -393,7 +393,11 @@ function buildPreview(){
     <h3>Terms</h3><p>${esc($('#terms').value).replaceAll('\n','<br>')}</p>`;
 }
 
-function openSend(){
+async function openSend(){
+  if(dirty){
+    await save();
+    if(dirty) return;
+  }
   paintRecipient();
   if(!LEAD) return toast('Select a lead before sending','err');
   if(!LEAD.email && !LEAD.phone) return toast('Add an email or mobile number to this lead before sending','err');
