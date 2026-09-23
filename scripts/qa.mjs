@@ -6,6 +6,9 @@ const root=process.cwd();
 const errors=[];
 const warnings=[];
 
+const nodeMajor=Number(process.versions.node.split('.')[0]||0);
+if(nodeMajor<22)errors.push('Node 22+ is required; current runtime is '+process.versions.node);
+
 const requiredPages=[
   'login.html','dashboard.html','analytics.html','crm.html','lead.html','sales.html',
   'estimate.html','proposal.html','client.html','projects.html','project.html',
@@ -95,20 +98,73 @@ if(existsSync(pkgPath)){
 }
 if(!existsSync(lockPath))errors.push('package-lock.json is required for reproducible npm ci builds');
 
+const ciPath=resolve(root,'.github/workflows/erp-ci.yml');
+if(existsSync(ciPath)){
+  const ci=readFileSync(ciPath,'utf8');
+  if(!/node-version:\s*["']?22["']?/.test(ci))errors.push('ERP CI must run on Node 22');
+}
+
 const vercelPath=resolve(root,'vercel.json');
 if(existsSync(vercelPath)){
   const cfg=JSON.parse(readFileSync(vercelPath,'utf8'));
   if(cfg.buildCommand!=='npm run build')errors.push('Vercel must use npm run build so QA cannot be bypassed');
 }
 
-// Consolidated Supabase bootstrap baseline.
+// Supabase release manifest + consolidated bootstrap baseline.
+const releaseManifestPath=resolve(root,'supabase/release-manifest.json');
 const baseline=resolve(root,'supabase/baseline/current_schema.sql');
+const migrationDir=resolve(root,'supabase/migrations');
+let releaseManifest=null;
+
+if(!existsSync(releaseManifestPath))errors.push('Missing Supabase release manifest');
+else{
+  try{releaseManifest=JSON.parse(readFileSync(releaseManifestPath,'utf8'));}
+  catch(e){errors.push('Invalid supabase/release-manifest.json: '+e.message);}
+}
+
 if(!existsSync(baseline))errors.push('Missing consolidated Supabase schema baseline');
 else{
   const src=readFileSync(baseline,'utf8');
   const markers=['project_documents','payroll_runs','portal_memberships','vendor_rfq_invites','management_dashboard','erp_notification_reads','application_backup_log'];
   for(const marker of markers)if(!src.includes(marker))errors.push('Supabase baseline missing critical object: '+marker);
   if(src.length<100000)errors.push('Supabase baseline looks unexpectedly small');
+
+  if(releaseManifest?.baseline_inventory){
+    const expected=releaseManifest.baseline_inventory;
+    const counts={
+      public_tables:(src.match(/create\s+table\s+if\s+not\s+exists\s+public\./gi)||[]).length,
+      functions_public_private:(src.match(/create\s+or\s+replace\s+function\s+(?:public|private)\./gi)||[]).length,
+      user_triggers_public:(src.match(/create\s+trigger\s+/gi)||[]).length,
+      policies_public_storage:(src.match(/create\s+policy\s+/gi)||[]).length
+    };
+    for(const [key,value] of Object.entries(counts)){
+      if(Number(expected[key])!==value)errors.push('Supabase baseline '+key+'='+value+' but release manifest expects '+expected[key]);
+    }
+    for(const bucket of expected.storage_buckets||[]){
+      if(!src.includes(bucket))errors.push('Supabase baseline missing Storage bucket '+bucket);
+    }
+    for(const job of expected.cron_jobs||[]){
+      if(!src.includes(job))errors.push('Supabase baseline missing Cron job '+job);
+    }
+  }
+}
+
+if(!existsSync(migrationDir))errors.push('Missing supabase/migrations directory');
+else if(releaseManifest){
+  const files=readdirSync(migrationDir).filter(x=>/^\d{14}_.+\.sql$/.test(x)).sort();
+  const versions=files.map(x=>x.slice(0,14));
+  const expected=[...(releaseManifest.migration_versions||[])].sort();
+  if(JSON.stringify(versions)!==JSON.stringify(expected)){
+    errors.push('Migration mirror does not match release manifest. Found '+versions.join(', ')+' expected '+expected.join(', '));
+  }
+}
+
+// Supabase Storage objects must be managed through Storage APIs, not direct SQL mutation.
+for(const file of files.filter(f=>f.includes(join(root,'supabase'))&&extname(f)==='.sql')){
+  const src=readFileSync(file,'utf8');
+  if(/\b(?:delete\s+from|insert\s+into|update)\s+storage\.objects\b/i.test(src)){
+    errors.push('Direct SQL mutation of storage.objects is forbidden: '+file.replace(root+'/',''));
+  }
 }
 
 // Built-in document Storage ZIP engine regression.
