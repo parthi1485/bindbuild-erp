@@ -7,17 +7,19 @@
     "20260920190918",
     "20260920191039",
     "20260920191131",
-    "20260922233302"
+    "20260922233302",
+    "20260923051420"
   ],
   "migration_names": [
     "erp_foundation_numbering",
     "core_erp_schema",
     "security_finance_integrity",
-    "analytics_backup_automation_controls"
+    "analytics_backup_automation_controls",
+    "harden_role_helpers"
   ],
   "baseline_inventory": {
     "public_tables": 78,
-    "functions_public_private": 115,
+    "functions_public_private": 116,
     "user_triggers_public": 67,
     "policies_public_storage": 261,
     "storage_buckets": [
