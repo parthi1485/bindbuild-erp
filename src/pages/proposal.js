@@ -242,8 +242,48 @@ function paint(){
     acceptBtn.hidden = !PROPOSAL.proposal_no || !!PROPOSAL.accepted_at;
     acceptBtn.textContent = PROPOSAL.accepted_at ? 'Accepted' : 'Accept & create project';
   }
-  renderItems();renderScope();renderSchedule();paintTimeline();
+  renderItems();renderScope();renderSchedule();paintTimeline();paintRecipient();
   document.title=(PROPOSAL.proposal_no||'Draft Proposal')+' · Bind Build ERP';
+}
+
+function formatPhone(phone){
+  const digits=String(phone||'').replace(/\D/g,'').slice(-10);
+  return digits ? '+91 ' + digits.replace(/(\d{5})(\d{5})/,'$1 $2') : '—';
+}
+
+function paintRecipient(){
+  const name=LEAD?.name||'Unassigned';
+  const phone=LEAD?.phone||'';
+  const email=LEAD?.email||'';
+
+  const card=$('#clientCard');
+  if(card){
+    card.innerHTML=`
+      <h2 class="rail__title">Client / lead</h2>
+      <div class="kv"><span class="kv__k">Name</span><span class="kv__v">${esc(name)}</span></div>
+      <div class="kv"><span class="kv__k">Phone</span><span class="kv__v">${esc(formatPhone(phone))}</span></div>
+      <div class="kv"><span class="kv__k">Email</span><span class="kv__v">${esc(email||'—')}</span></div>
+      <div class="kv"><span class="kv__k">Stage</span><span class="kv__v">${esc(LEAD?.stage||'—')} · ${esc(LEAD?.priority||'—')}</span></div>`;
+  }
+
+  const sub=$('#sendRecipientSub');
+  if(sub) sub.textContent=LEAD ? `${name} will receive this proposal using the selected channels.` : 'Select a lead before sending.';
+
+  const emailLabel=$('#sendEmailLabel');
+  if(emailLabel) emailLabel.textContent='Email · '+(email||'not available');
+  const emailCheck=$('#chEmail');
+  if(emailCheck){
+    emailCheck.disabled=!email;
+    emailCheck.checked=!!email;
+  }
+
+  const waLabel=$('#sendWaLabel');
+  if(waLabel) waLabel.textContent='WhatsApp · '+(phone?formatPhone(phone):'not available');
+  const waCheck=$('#chWa');
+  if(waCheck){
+    waCheck.disabled=!phone;
+    waCheck.checked=!!phone;
+  }
 }
 
 function paintTimeline(){
@@ -302,6 +342,7 @@ async function save(){
   $('.prop-head__title').textContent = PROPOSAL.title || 'Project Proposal';
   const clientChip=$('.chip--client');
   if(clientChip)clientChip.textContent=LEAD?.name||'Unassigned';
+  paintRecipient();
 }
 
 async function issueAndSend(){
@@ -353,8 +394,11 @@ function buildPreview(){
 }
 
 function openSend(){
-  setVal('sendMsg',`Hello ${LEAD?.name||'there'},\n\nPlease find our proposal ${PROPOSAL.proposal_no||''}. Happy to walk you through the scope, commercials and payment milestones.\n\n${user.name}\nBind Builds`);
-  if(!openModal('sendModal'))issueAndSend();
+  paintRecipient();
+  if(!LEAD) return toast('Select a lead before sending','err');
+  if(!LEAD.email && !LEAD.phone) return toast('Add an email or mobile number to this lead before sending','err');
+  setVal('sendMsg',`Hello ${LEAD.name||'there'},\n\nPlease find our proposal ${PROPOSAL.proposal_no||''}. Happy to walk you through the scope, commercials and payment milestones.\n\n${user.name}\nBind Builds`);
+  openModal('sendModal');
 }
 
 wireModalDismiss();
@@ -419,7 +463,9 @@ $('#sendBtn2')?.addEventListener('click',openSend);
 $('#confirmSend')?.addEventListener('click',async()=>{
   const byEmail=$('#chEmail')?.checked;
   const byWa=$('#chWa')?.checked;
-  if(!byEmail&&!byWa)return toast('Pick at least one channel','err');
+  if(!byEmail&&!byWa)return toast('Pick at least one available channel','err');
+  if(byEmail && !LEAD?.email) return toast('This lead has no email address','err');
+  if(byWa && !LEAD?.phone) return toast('This lead has no mobile number','err');
   await issueAndSend();
   closeAllModals();
   const link=`${location.origin}/proposal.html?id=${PROPOSAL.id}`;
