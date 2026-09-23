@@ -10,7 +10,7 @@ if(!user)throw new Error('redirecting');
 
 const canWrite=['founder','admin','finance'].includes(user.role);
 const canUnlock=['founder','admin'].includes(user.role);
-let ORG=null,LOCK=null;
+let ORG=null,LOCK=null,SELF_EMP=null;
 
 const fields={
   tradeName:'trade_name',legalName:'legal_name',gstin:'gstin',pan:'pan',
@@ -44,18 +44,19 @@ async function load(){
   try{
     const unit=activeUnit();
     if(!unit)throw new Error('Choose a business unit first');
-    const [o,l,t]=await Promise.all([
+    const [o,l,t,e]=await Promise.all([
       supabase.from('organisation_profiles').select('*').eq('business_unit_id',unit).maybeSingle(),
       supabase.from('accounting_period_locks').select('*').eq('business_unit_id',unit).eq('period_key',fyKey()).maybeSingle(),
-      supabase.from('profiles').select('id,full_name,role,is_active').eq('is_active',true).order('full_name')
+      supabase.from('profiles').select('id,full_name,role,is_active').eq('is_active',true).order('full_name'),
+      supabase.from('employees').select('id,employee_no,full_name,designation,department,status').eq('profile_id',user.id).maybeSingle()
     ]);
-    if(o.error)throw o.error;if(l.error)throw l.error;if(t.error)throw t.error;
-    ORG=o.data;LOCK=l.data;
+    if(o.error)throw o.error;if(l.error)throw l.error;if(t.error)throw t.error;if(e.error)throw e.error;
+    ORG=o.data;LOCK=l.data;SELF_EMP=e.data;
     if(!ORG){
       const ins=await supabase.from('organisation_profiles').insert({business_unit_id:unit,trade_name:activeUnitName()}).select('*').single();
       if(ins.error)throw ins.error;ORG=ins.data;
     }
-    paintOrg();paintLock();paintTeam(t.data||[]);paintTheme();
+    paintOrg();paintLock();paintTeam(t.data||[]);paintTheme();paintProfile();paintRequestedTab();
   }catch(e){fail(e);}
 }
 
@@ -108,6 +109,27 @@ $('#lockBtn').addEventListener('click',async()=>{
   }).select('*').single();
   if(error)return fail(error);LOCK=data;paintLock();toast('FY '+key+' locked');
 });
+
+function paintProfile(){
+  $('#myName').value=user.name||'';
+  $('#myEmail').value=user.email||'';
+  $('#myRole').value=String(user.role||'').replaceAll('_',' ');
+  $('#myUserId').value=user.id||'';
+  $('#profileStatus').textContent=user.profile?.is_active?'Active':'Inactive';
+  $('#employeeLinkMeta').textContent=SELF_EMP
+    ? [SELF_EMP.employee_no,SELF_EMP.designation,SELF_EMP.department,SELF_EMP.status].filter(Boolean).join(' · ')
+    : 'No HR employee record is linked to this ERP account.';
+  $('#openEmployeeBtn').disabled=!SELF_EMP;
+  $('#openEmployeeBtn').onclick=()=>{if(SELF_EMP)location.href='/employee.html?id='+encodeURIComponent(SELF_EMP.id);};
+}
+function paintRequestedTab(){
+  const requested=new URLSearchParams(location.search).get('tab');
+  const btn=requested?document.querySelector('[data-tab="'+CSS.escape(requested)+'"]'):null;
+  if(btn){
+    $('[data-tab]').forEach(x=>x.classList.toggle('on',x===btn));
+    $('.panel').forEach(p=>p.classList.toggle('on',p.id==='p-'+requested));
+  }
+}
 
 function paintTeam(team){
   $('#teamList').innerHTML=team.length?team.map(p=>`<div class="mem"><span class="mav c0">${esc(initials(p.full_name||'?'))}</span><div><div class="mem__n">${esc(p.full_name||'Unnamed')}</div><div class="mem__e">${esc(String(p.role||'viewer').replaceAll('_',' '))}</div></div><span class="role ${['founder','admin'].includes(p.role)?'admin':''}">${esc(p.role)}</span></div>`).join(''):'<div class="mem">No active users</div>';
