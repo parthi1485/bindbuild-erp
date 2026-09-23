@@ -134,11 +134,14 @@ else{
     const counts={
       public_tables:(src.match(/create\s+table\s+if\s+not\s+exists\s+public\./gi)||[]).length,
       functions_public_private:(src.match(/create\s+or\s+replace\s+function\s+(?:public|private)\./gi)||[]).length,
-      user_triggers_public:new Set([...src.matchAll(/create\s+trigger\s+"?([A-Za-z0-9_]+)"?/gi)].map(m=>m[1].toLowerCase())).size,
       policies_public_storage:(src.match(/create\s+policy\s+/gi)||[]).length
     };
     for(const [key,value] of Object.entries(counts)){
       if(Number(expected[key])!==value)errors.push('Supabase baseline '+key+'='+value+' but release manifest expects '+expected[key]);
+    }
+    const triggerStatements=(src.match(/create\s+trigger\s+/gi)||[]).length;
+    if(Number(expected.baseline_create_trigger_statements)!==triggerStatements){
+      errors.push('Supabase baseline create-trigger statements='+triggerStatements+' but release manifest expects '+expected.baseline_create_trigger_statements);
     }
     for(const bucket of expected.storage_buckets||[]){
       if(!src.includes(bucket))errors.push('Supabase baseline missing Storage bucket '+bucket);
