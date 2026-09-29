@@ -1,35 +1,97 @@
-# Database
+# Supabase database
 
-Project: `eyfccifvzhdgjrhnxsrm` · region `ap-south-1` (Mumbai)
+Current project: `glywgbhuqrfxgowovylo`
 
-Applied migrations, in order:
+This repository now mirrors the migrations that are actually recorded in the
+current Supabase project's migration history.
 
-| # | Migration | Purpose |
-|---|-----------|---------|
-| 000 | proposal_generator_base | Original 4 tables + 5 public proposal RPCs |
-| 001 | identity_and_access_foundation | profiles, user_roles, role helpers, signup trigger |
-| 002 | crm_and_sales | clients, notes, files, meetings, proposal_items, targets, stage config |
-| 003 | harden_access_and_first_user_bootstrap | Role-gated RLS, first-user owner grant, stage sync |
-| 004 | restore_data_from_tokyo | Data carried over from the Tokyo project |
+## Recorded migrations
 
-The `.sql` files here are placeholders — the migrations are already applied and
-recorded in Supabase's own migration history. Pull them locally with:
+| Version | Migration |
+|---|---|
+| 20260920190918 | `erp_foundation_numbering` |
+| 20260920191039 | `core_erp_schema` |
+| 20260920191131 | `security_finance_integrity` |
+| 20260922233302 | `analytics_backup_automation_controls` |
 
-```bash
-npx supabase link --project-ref eyfccifvzhdgjrhnxsrm
-npx supabase db pull
-```
+The SQL files under `supabase/migrations/` were copied from
+`supabase_migrations.schema_migrations` after each migration was applied.
 
-## Notes
+## Important schema-drift note
 
-- Roles live in `user_roles`, never as a column on `profiles`. That is what
-  stops a user editing their own permissions.
-- `has_role` / `is_staff` / `is_admin` are SECURITY DEFINER. Without that,
-  any policy querying `user_roles` recurses infinitely.
-- **The first account to sign up automatically becomes `owner`.** Sign up
-  before inviting anyone else.
-- `leads.stage` (legacy smallint, used by the proposal generator) and
-  `leads.stage_key` (enum, used by the ERP) are kept in sync by the
-  `leads_sync_stage` trigger, so the two apps cannot drift apart.
-- `clients` carries GSTIN, PAN and state_code from day one. Place of supply
-  decides CGST+SGST vs IGST.
+The ERP was expanded rapidly after the original three recorded migrations.
+Some earlier live DDL for Design, Construction, Procurement, HR, Documents,
+Meetings, Portals and related workflow controls was applied directly to the
+database before the migration-tracking cleanup.
+
+That means:
+
+- the four timestamped migration files above are authentic migration-history
+  records;
+- they do **not yet guarantee** that a brand-new Supabase project can reproduce
+  the entire current ERP schema from zero;
+- new DDL from this point forward should use Supabase migrations first and be
+  mirrored into this folder;
+- a consolidated live-schema baseline now exists at `supabase/baseline/current_schema.sql`;
+- the baseline inventory was audited on 23 Sep 2026 against the live project and
+  contains all 78 public tables, 115 public/private functions, 67 user triggers,
+  261 public/storage policies, and the private `erp-documents` bucket;
+- this inventory audit verifies object coverage, but a destructive fresh-project
+  execution test is still required before calling the baseline fully bootstrapped
+  from zero.
+
+## Application backup
+
+The ERP also has a Founder/Admin JSON application backup under
+`/backup.html`.
+
+It backs up application table rows. The same screen also provides a browser-side
+ZIP export/restore for the private `erp-documents` Storage bucket.
+
+The application JSON still does not replace platform disaster recovery. It
+intentionally excludes:
+
+- Supabase Auth credentials and sessions
+- secrets and hosting configuration
+- platform backup history
+
+The Storage ZIP is a separate file and should be retained beside the matching
+application JSON backup. New Storage archives use format v2 with per-object CRC32
+checksums; restore is non-destructive and can safely resume when existing bucket
+objects are a checksum-matched subset of the same archive.
+
+Restore is guarded: it requires an operationally empty target and compatible
+Supabase Auth user IDs.
+
+## Security
+
+The browser uses the Supabase publishable key with RLS. Never commit a service
+role key or database password to this repository.
+
+
+## Release manifest
+
+`supabase/release-manifest.json` records the live migration versions and audited
+schema inventory used by the repository QA gate.
+
+Current audited live inventory:
+
+- 78 public tables
+- 115 public/private functions
+- 67 active public user triggers
+- 261 public/storage policies
+- private `erp-documents` bucket
+- active `bindbuild-daily-ops-scan` Cron job
+
+The baseline contains 68 `CREATE TRIGGER` statements because one trigger
+definition is intentionally replaced during bootstrap; the live active-trigger
+inventory is 67.
+
+## Release Storage audit
+
+`/backup.html` now includes a read-only Document Storage integrity audit.
+It compares `document_revisions.storage_path` against actual objects in the
+private bucket and reports missing, unreferenced and size-mismatched files.
+
+Do not mutate `storage.objects` directly in SQL. Object bytes are managed only
+through the Supabase Storage API.

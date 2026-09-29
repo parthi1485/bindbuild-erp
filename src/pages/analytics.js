@@ -1,171 +1,59 @@
 import { supabase } from '../lib/supabase.js';
-import { mountShell } from '../lib/shell.js';
+import { mountShell, activeUnit } from '../lib/shell.js';
 import { toast, fail, esc } from '../lib/ui.js';
-const $ = (s,c=document)=>c.querySelector(s), $$=(s,c=document)=>[...c.querySelectorAll(s)];
-
-const user = await mountShell({ route: 'analytics', title: 'Analytics' });
-if (!user) throw new Error('redirecting');
-
-const cssVar = c => c.startsWith('var(')
-  ? getComputedStyle(document.documentElement).getPropertyValue(c.slice(4,-1)).trim() || '#5a8dee' : c;
-const money = v => { const n = Number(v)||0;
-  if (Math.abs(n)>=1e7) return '₹'+(n/1e7).toFixed(2).replace(/\.00$/,'')+'Cr';
-  if (Math.abs(n)>=1e5) return '₹'+(n/1e5).toFixed(1).replace(/\.0$/,'')+'L';
-  return '₹'+Math.round(n).toLocaleString('en-IN'); };
-
-let months = 6;
-
-async function load() {
-  const from = new Date(); from.setMonth(from.getMonth()-(months-1)); from.setDate(1);
-  const iso = from.toISOString().slice(0,10);
-
-  const [fin, pays, exps, leads, stages] = await Promise.all([
-    supabase.from('project_financials').select('*'),
-    supabase.from('invoice_payments').select('amount,paid_on').gte('paid_on', iso),
-    supabase.from('expenses').select('amount,category,status,expense_date').gte('expense_date', iso),
-    supabase.from('leads').select('stage_key,budget,source'),
-    supabase.from('lead_stage_config').select('*').order('sort_order')
-  ]);
-  if (fin.error) return fail(fin.error);
-
-  revenue(pays.data ?? []);
-  cost(exps.data ?? []);
-  pipeline(leads.data ?? [], stages.data ?? []);
-  sources(leads.data ?? []);
-  projects(fin.data ?? []);
-  insights(fin.data ?? [], leads.data ?? []);
+const $=(s,c=document)=>c.querySelector(s),$$=(s,c=document)=>[...c.querySelectorAll(s)];
+const user=await mountShell({route:'analytics',title:'Analytics'});if(!user)throw new Error('redirecting');
+const money=v=>{const n=Number(v)||0;if(Math.abs(n)>=1e7)return '₹'+(n/1e7).toFixed(2).replace(/\.00$/,'')+'Cr';if(Math.abs(n)>=1e5)return '₹'+(n/1e5).toFixed(1).replace(/\.0$/,'')+'L';return '₹'+Math.round(n).toLocaleString('en-IN');};
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+let RANGE='6m',DATA=null,CHARTS=[];
+function dates(){
+ const now=new Date(),to=now.toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'}),d=new Date(to+'T12:00:00');
+ if(RANGE==='90d')d.setDate(d.getDate()-89);
+ else if(RANGE==='6m')d.setMonth(d.getMonth()-5,1);
+ else if(RANGE==='12m')d.setMonth(d.getMonth()-11,1);
+ else {const m=d.getMonth();d.setFullYear(m>=3?d.getFullYear():d.getFullYear()-1,3,1);}
+ return {from:d.toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'}),to};
 }
-
-function labels() {
-  const out = [];
-  for (let i = months-1; i >= 0; i--) {
-    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-i);
-    out.push({ key: d.toISOString().slice(0,7), label: d.toLocaleString('en-IN',{month:'short'}) });
-  }
-  return out;
+async function load(){
+ try{
+  const r=dates();$('#rangeLabel').textContent=r.from+' → '+r.to+' · live ERP records';
+  const {data,error}=await supabase.rpc('management_dashboard',{p_business_unit_id:activeUnit(),p_from:r.from,p_to:r.to});
+  if(error)throw error;DATA=data;render();
+ }catch(e){fail(e);}
 }
-
-function revenue(pays) {
-  const c = $('#revChart'); if (!c || !window.Chart) return;
-  const ms = labels();
-  const data = ms.map(m => pays.filter(p => (p.paid_on||'').startsWith(m.key))
-                               .reduce((a,p)=>a+Number(p.amount||0),0));
-  new window.Chart(c, { type:'line',
-    data:{ labels: ms.map(m=>m.label), datasets:[{ data, borderColor: cssVar('var(--accent)'),
-      backgroundColor:'rgba(90,141,238,.14)', fill:true, tension:.35, pointRadius:3 }]},
-    options:{ plugins:{legend:{display:false}}, maintainAspectRatio:false,
-      scales:{ x:{grid:{display:false}}, y:{beginAtZero:true, ticks:{callback:v=>money(v)}}}}});
-  const tag = $('#revTag');
-  if (tag) tag.textContent = money(data.reduce((a,b)=>a+b,0)) + ` collected in ${months}m`;
+function render(){
+ const k=DATA.kpis||{};
+ $('#kCollections').textContent=money(k.collections);$('#kCollectionsSub').textContent=money(k.booked_cost)+' booked cost';
+ $('#kReceivables').textContent=money(k.receivables);$('#kReceivableSub').textContent=money(k.invoiced)+' invoiced in range';
+ $('#kPayables').textContent=money(k.vendor_payables);$('#kPipeline').textContent=money(k.open_pipeline);$('#kLeadsSub').textContent=(k.new_leads||0)+' new leads';
+ $('#kWin').textContent=Number(k.win_rate||0).toFixed(1).replace('.0','')+'%';$('#kWinSub').textContent=(k.won_leads||0)+' won · '+(k.lost_leads||0)+' lost';
+ $('#kRisk').textContent=String(k.at_risk_projects||0);$('#kRiskSub').textContent=(k.overdue_projects||0)+' overdue projects';
+ $('#opProjects').textContent=String(k.active_projects||0);$('#opTasks').textContent=String(k.overdue_tasks||0);$('#opApprovals').textContent=String(k.pending_approvals||0);$('#opHead').textContent=String(k.headcount||0);$('#opCapacity').textContent=Number(k.avg_capacity||0).toFixed(0)+'%';$('#opPO').textContent=money(k.open_po_commitment);
+ renderCharts();renderProjects();renderRisks();
 }
-
-function cost(exps) {
-  const paid = exps.filter(e => e.status === 'paid');
-  const map = new Map();
-  paid.forEach(e => map.set(e.category, (map.get(e.category)||0) + Number(e.amount||0)));
-  const rows = [...map].sort((a,b)=>b[1]-a[1]);
-  const PAL = ['var(--accent)','var(--violet)','#38bdf8','var(--warning)','var(--success)','var(--danger)','#f59e0b','var(--text-3)'];
-
-  const c = $('#costChart');
-  if (c && window.Chart && rows.length) {
-    new window.Chart(c, { type:'doughnut',
-      data:{ labels: rows.map(r=>r[0]), datasets:[{ data: rows.map(r=>r[1]), borderWidth:0,
-        backgroundColor: rows.map((_,i)=>cssVar(PAL[i%PAL.length])) }]},
-      options:{ cutout:'66%', plugins:{legend:{display:false}}, maintainAspectRatio:false }});
-  }
-  const lg = $('#costLegend');
-  if (lg) lg.innerHTML = rows.length
-    ? rows.map(([k,v],i)=>`<li class="lg"><span class="lg__dot" style="background:${cssVar(PAL[i%PAL.length])}"></span>
-        <span class="lg__nm">${esc(k)}</span><span class="lg__v">${money(v)}</span></li>`).join('')
-    : '<li class="lg">No paid expenses in this period</li>';
+function chart(el,type,data,options={}){if(!window.Chart||!$(el))return;CHARTS.push(new Chart($(el),{type,data,options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},...options}}));}
+function renderCharts(){
+ CHARTS.forEach(c=>c.destroy());CHARTS=[];
+ const accent=css('--accent')||'#5a8dee',muted=css('--text-3')||'#657079',success=css('--success')||'#41d1a0',danger=css('--danger')||'#ef4444',warning=css('--warning')||'#f59e0b';
+ const m=DATA.monthly||[];chart('#cashChart','bar',{labels:m.map(x=>x.label),datasets:[{label:'Collections',data:m.map(x=>x.collections),backgroundColor:accent,borderRadius:5},{label:'Booked cost',data:m.map(x=>x.booked_cost),backgroundColor:muted,borderRadius:5}]},{plugins:{legend:{display:true,labels:{color:css('--text-2')}}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,ticks:{callback:v=>money(v)}}}});$('#cashTag').textContent=money(m.reduce((a,x)=>a+Number(x.collections||0),0))+' collected';
+ const p=DATA.pipeline||[];chart('#pipeChart','bar',{labels:p.map(x=>x.stage),datasets:[{data:p.map(x=>x.value),backgroundColor:accent,borderRadius:5}]},{indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{callback:v=>money(v)}},y:{grid:{display:false}}}});$('#pipeLegend').innerHTML=p.map(x=>'<span class="lg"><span class="lg__nm">'+esc(x.stage)+'</span><span class="lg__v">'+money(x.value)+' · '+x.count+'</span></span>').join('')||'<span class="lg">No open pipeline</span>';
+ const s=DATA.sources||[];chart('#sourceChart','bar',{labels:s.map(x=>x.source),datasets:[{data:s.map(x=>x.count),backgroundColor:accent,borderRadius:5}]},{indexAxis:'y',scales:{x:{beginAtZero:true,grid:{display:false}}}});
+ const c=DATA.expense_categories||[];chart('#costChart','doughnut',{labels:c.map(x=>x.category),datasets:[{data:c.map(x=>x.amount),backgroundColor:[accent,success,warning,danger,'#a78bfa','#38bdf8',muted],borderWidth:0}]},{cutout:'66%'});$('#costLegend').innerHTML=c.map(x=>'<span class="lg"><span class="lg__nm">'+esc(x.category)+'</span><span class="lg__v">'+money(x.amount)+'</span></span>').join('')||'<span class="lg">No booked costs</span>';
+ const h=DATA.project_health||[];chart('#healthChart','doughnut',{labels:h.map(x=>x.health),datasets:[{data:h.map(x=>x.count),backgroundColor:h.map(x=>['critical','atrisk','at_risk'].includes(x.health)?danger:x.health==='ontrack'?success:warning),borderWidth:0}]},{cutout:'62%',plugins:{legend:{display:true,position:'bottom'}}});
 }
-
-function pipeline(leads, stages) {
-  const open = stages.filter(s => !['won','lost'].includes(s.stage));
-  const rows = open.map(s => ({ label: s.label, color: s.color,
-    value: leads.filter(l=>l.stage_key===s.stage).reduce((a,l)=>a+Number(l.budget||0),0) })).filter(r=>r.value>0);
-
-  const c = $('#pipeChart');
-  if (c && window.Chart && rows.length) {
-    new window.Chart(c, { type:'bar',
-      data:{ labels: rows.map(r=>r.label), datasets:[{ data: rows.map(r=>r.value),
-        backgroundColor: rows.map(r=>cssVar(r.color)), borderRadius:6 }]},
-      options:{ plugins:{legend:{display:false}}, maintainAspectRatio:false,
-        scales:{ x:{grid:{display:false}}, y:{beginAtZero:true, ticks:{callback:v=>'₹'+v+'L'}}}}});
-  }
-  const lg = $('#pipeLegend');
-  if (lg) lg.innerHTML = rows.length
-    ? rows.map(r=>`<li class="lg"><span class="lg__dot" style="background:${cssVar(r.color)}"></span>
-        <span class="lg__nm">${esc(r.label)}</span><span class="lg__v">₹${r.value}L</span></li>`).join('')
-    : '<li class="lg">Pipeline is empty</li>';
+function renderProjects(){
+ const rows=DATA.top_projects||[];$('#projBody').innerHTML=rows.length?rows.map(p=>'<tr><td><div class="tbl__nm">'+esc(p.project_no||p.code||'Project')+' · '+esc(p.name)+'</div></td><td class="num">'+money(p.contract_value)+'</td><td><b>'+Number(p.progress_pct||0)+'%</b><div class="bar"><div class="bar__f" style="width:'+Math.min(100,Number(p.progress_pct||0))+'%"></div></div></td><td class="num">'+money(p.collected)+'</td><td class="num">'+money(p.receivable)+'</td><td class="num">'+money(p.booked_cost)+'</td><td><span class="pill '+(['critical','atrisk','at_risk'].includes(p.health)?'risk':'on')+'">'+esc(p.health||'—')+'</span></td></tr>').join(''):'<tr><td colspan="7" class="tbl__empty">No projects yet.</td></tr>';
 }
-
-function sources(leads) {
-  const c = $('#srcChart'); if (!c || !window.Chart) return;
-  const map = new Map();
-  leads.forEach(l => map.set(l.source || 'Unknown', (map.get(l.source||'Unknown')||0)+1));
-  const rows = [...map].sort((a,b)=>b[1]-a[1]);
-  if (!rows.length) return;
-  new window.Chart(c, { type:'bar',
-    data:{ labels: rows.map(r=>r[0]), datasets:[{ data: rows.map(r=>r[1]),
-      backgroundColor: cssVar('var(--violet)'), borderRadius:6 }]},
-    options:{ indexAxis:'y', plugins:{legend:{display:false}}, maintainAspectRatio:false,
-      scales:{ x:{beginAtZero:true, grid:{display:false}} }}});
+function renderRisks(){
+ const out=[],k=DATA.kpis||{},r=DATA.risks||{};
+ if(k.overdue_tasks)out.push(k.overdue_tasks+' overdue task'+(k.overdue_tasks===1?'':'s')+' require follow-up.');
+ if(k.pending_approvals)out.push(k.pending_approvals+' project approval'+(k.pending_approvals===1?' is':'s are')+' pending.');
+ (r.overdue_invoices||[]).slice(0,4).forEach(x=>out.push((x.invoice_no||'Invoice')+' overdue · '+money(x.balance)+' outstanding.'));
+ (r.overdue_vendor_bills||[]).slice(0,4).forEach(x=>out.push((x.bill_no||'Vendor bill')+' overdue · '+money(x.balance)+' payable.'));
+ if(k.avg_capacity<50&&k.headcount>0)out.push('Average active manpower allocation is '+Number(k.avg_capacity).toFixed(0)+'%.');
+ $('#riskList').innerHTML=out.length?out.map(x=>'<div class="ins__row"><div><div class="ins__t">'+esc(x)+'</div></div></div>').join(''):'<div class="ins__row"><div><div class="ins__t">No high-priority management exceptions in the current snapshot.</div></div></div>';
 }
-
-function projects(fin) {
-  const body = $('#projBody'); if (!body) return;
-  const rows = fin.filter(r => Number(r.billed) > 0 || Number(r.cost) > 0);
-  body.innerHTML = rows.length ? rows.map(r => {
-    const gm = r.gross_margin_pct;
-    return `<tr><td>${esc(r.code)} · ${esc(r.name)}</td>
-      <td class="num">${money(r.contract_value_inr)}</td>
-      <td class="num">${money(r.billed)}</td>
-      <td class="num">${money(r.received)}</td>
-      <td class="num">${money(r.cost)}</td>
-      <td class="num ${gm===null?'':gm<10?'bad':gm<20?'warn':'ok'}">${gm===null?'—':gm+'%'}</td></tr>`;
-  }).join('')
-  : '<tr><td colspan="6" class="tbl__empty">No project has been billed or costed yet</td></tr>';
-}
-
-function insights(fin, leads) {
-  const el = $('#insList'); if (!el) return;
-  const out = [];
-
-  const thin = fin.filter(r => r.gross_margin_pct !== null && r.gross_margin_pct < 15);
-  if (thin.length) out.push(`${thin.length} project${thin.length>1?'s are':' is'} running under 15% gross margin: ${thin.map(t=>t.code).join(', ')}.`);
-
-  const stuck = leads.filter(l => ['proposal','nego'].includes(l.stage_key));
-  if (stuck.length) out.push(`${stuck.length} lead${stuck.length>1?'s are':' is'} sitting at proposal or negotiation, worth ₹${stuck.reduce((a,l)=>a+Number(l.budget||0),0)}L.`);
-
-  const unbilled = fin.filter(r => Number(r.contract_value_inr) > 0 && Number(r.billed) === 0);
-  if (unbilled.length) out.push(`${unbilled.length} project${unbilled.length>1?'s have':' has'} a contract value but nothing billed yet.`);
-
-  const owing = fin.reduce((a,r)=>a+Number(r.receivable||0),0);
-  if (owing > 0) out.push(`${money(owing)} is billed but not yet collected.`);
-
-  el.innerHTML = out.length
-    ? out.map(t => `<li class="ins">${esc(t)}</li>`).join('')
-    : '<li class="ins">Not enough data yet. Insights appear once projects are billed and costed.</li>';
-}
-
-$('#rangeSeg')?.addEventListener('click', e => {
-  const b = e.target.closest('[data-months]'); if (!b) return;
-  months = Number(b.dataset.months) || 6;
-  $$('#rangeSeg [data-months]').forEach(x => x.classList.toggle('is-on', x === b));
-  location.reload();
-});
-
-$('#exportBtn')?.addEventListener('click', async () => {
-  const { data } = await supabase.from('project_financials').select('*');
-  if (!data?.length) return toast('Nothing to export', 'err');
-  const head = ['Code','Name','Status','Contract value','Billed','Received','Receivable','Cost','Gross margin','GM %'];
-  const rows = data.map(r => [r.code,r.name,r.status,r.contract_value_inr,r.billed,r.received,r.receivable,r.cost,r.gross_margin,r.gross_margin_pct]);
-  const csv = [head,...rows].map(r=>r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(',')).join('\n');
-  const url = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
-  const a = document.createElement('a');
-  a.href = url; a.download = `bindbuild-analytics-${new Date().toISOString().slice(0,10)}.csv`; a.click();
-  URL.revokeObjectURL(url); toast('Exported');
-});
-
+$('#rangeSeg').addEventListener('click',e=>{const b=e.target.closest('[data-range]');if(!b)return;RANGE=b.dataset.range;$$('#rangeSeg [data-range]').forEach(x=>x.classList.toggle('on',x===b));load();});
+$('#refreshBtn').addEventListener('click',load);
+$('#exportBtn').addEventListener('click',()=>{if(!DATA)return;const rows=[['Project','Contract','Progress %','Collected','Receivable','Booked cost','Health'],...(DATA.top_projects||[]).map(p=>[p.project_no||p.code,p.contract_value,p.progress_pct,p.collected,p.receivable,p.booked_cost,p.health])];const csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');const u=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));const a=document.createElement('a');a.href=u;a.download='bindbuild-management-analytics-'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(u);toast('Analytics CSV exported');});
 await load();

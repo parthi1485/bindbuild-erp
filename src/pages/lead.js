@@ -1,453 +1,369 @@
 import { supabase } from '../lib/supabase.js';
 import { mountShell, activeUnit } from '../lib/shell.js';
-import { toast, fail, esc, initials, fmtDate, openModal, closeAllModals,
-         wireModalDismiss, val, setVal } from '../lib/ui.js';
+import { toast, fail, esc, initials, fmtDate, openModal, closeAllModals, wireModalDismiss, val, setVal } from '../lib/ui.js';
 
-const $  = (s, c = document) => c.querySelector(s);
+const $ = (s, c = document) => c.querySelector(s);
 const $$ = (s, c = document) => [...c.querySelectorAll(s)];
 
-const user = await mountShell({ route: 'crm', title: 'Lead details' });
+const user = await mountShell({ route:'crm', title:'Lead details' });
 if (!user) throw new Error('redirecting');
 
 const leadId = new URLSearchParams(location.search).get('id');
 if (!leadId) {
-  toast('No lead selected', 'err');
-  setTimeout(() => location.replace('/crm.html'), 1200);
-  throw new Error('no id');
+  location.replace('/crm.html');
+  throw new Error('no lead id');
 }
 
-const money = l => l >= 100
-  ? '₹' + (l / 100).toFixed(2).replace(/\.00$/, '') + ' Cr'
-  : '₹' + l + ' L';
+const STAGES = [
+  { id:'new', name:'New', probability:0.10 },
+  { id:'contacted', name:'Contacted', probability:0.20 },
+  { id:'meeting', name:'Site / Office Meet', probability:0.35 },
+  { id:'proposal', name:'Proposal', probability:0.55 },
+  { id:'follow_up', name:'Follow-up', probability:0.70 },
+  { id:'won', name:'Won', probability:1 },
+  { id:'lost', name:'Lost', probability:0 }
+];
 
-let LEAD = null, STAGES = [];
+let LEAD = null;
 
-/** Fill a .kv row by its visible key label. */
+const money = v => {
+  const n = Number(v || 0);
+  if (n >= 1e7) return '₹' + (n/1e7).toFixed(2).replace(/\.00$/,'') + ' Cr';
+  if (n >= 1e5) return '₹' + (n/1e5).toFixed(1).replace(/\.0$/,'') + ' L';
+  return '₹' + Math.round(n).toLocaleString('en-IN');
+};
+
 function setKv(label, value) {
-  const row = $$('.kv').find(r => $('.kv__k', r)?.textContent.trim().toLowerCase() === label.toLowerCase());
-  if (row) $('.kv__v', row).textContent = value || '—';
+  const row = $$('.kv').find(r => $('.kv__k',r)?.textContent.trim().toLowerCase() === label.toLowerCase());
+  if (row) {
+    const out = $('.kv__v',row);
+    if (out) out.textContent = value || '—';
+  }
 }
 
-/* ---------------------------------------------------------------
-   load
---------------------------------------------------------------- */
+function stageLabel(stage) {
+  return STAGES.find(s=>s.id===stage)?.name || stage || 'New';
+}
+
 async function load() {
-  const [leadRes, stageRes] = await Promise.all([
-    supabase.from('leads').select('*').eq('id', leadId).maybeSingle(),
-    supabase.from('lead_stage_config').select('*').order('sort_order')
-  ]);
-
-  if (leadRes.error) return fail(leadRes.error);
-  if (!leadRes.data) {
-    toast('Lead not found', 'err');
-    return setTimeout(() => location.replace('/crm.html'), 1200);
+  const { data, error } = await supabase.from('leads').select('*').eq('id',leadId).is('deleted_at',null).maybeSingle();
+  if (error) return fail(error);
+  if (!data) {
+    toast('Lead not found','err');
+    setTimeout(()=>location.replace('/crm.html'),800);
+    return;
   }
-
-  LEAD   = leadRes.data;
-  STAGES = stageRes.data ?? [];
-
+  LEAD=data;
   paintHeader();
   paintStage();
-  await Promise.all([paintTimeline(), paintNotes(), paintMeetings(), paintFiles()]);
+  paintCorePanels();
+  await paintCommercials();
 }
 
 function paintHeader() {
-  const av = $('.lead-avatar');
-  if (av) av.textContent = initials(LEAD.name);
-
-  const nm = $('.lead-head__name');
-  if (nm) nm.textContent = LEAD.name;
+  if ($('.lead-avatar')) $('.lead-avatar').textContent = initials(LEAD.name);
+  if ($('.lead-head__name')) $('.lead-head__name').textContent = LEAD.name;
 
   const sub = $('.lead-head__sub');
-  if (sub) {
-    const bits = [LEAD.service, LEAD.sqft ? `${Number(LEAD.sqft).toLocaleString('en-IN')} sq ft` : null, LEAD.area]
-      .filter(Boolean).join(' · ');
-    sub.textContent = `${bits} · Lead since ${fmtDate(LEAD.created_at)}`;
-  }
+  if (sub) sub.textContent = [LEAD.lead_no, LEAD.service, LEAD.area || LEAD.city, 'Lead since ' + fmtDate(LEAD.created_at)].filter(Boolean).join(' · ');
 
-  setKv('Phone',   LEAD.phone ? `+91 ${LEAD.phone}` : '—');
-  setKv('Email',   LEAD.email);
-  setKv('Site',    LEAD.area);
-  setKv('Budget',  LEAD.budget ? money(Number(LEAD.budget)) : 'Not discussed');
-  setKv('Scope',   LEAD.service);
-  setKv('Plot',    LEAD.sqft ? `${Number(LEAD.sqft).toLocaleString('en-IN')} sq ft` : '—');
-  setKv('Source',  LEAD.source);
-  setKv('Owner',   user.name);
+  setKv('Phone', LEAD.phone ? '+91 ' + LEAD.phone : '—');
+  setKv('Email', LEAD.email || '—');
+  setKv('Site', LEAD.area || LEAD.city || '—');
+  setKv('Budget', LEAD.expected_value ? money(LEAD.expected_value) : 'Not discussed');
+  setKv('Scope', LEAD.service || '—');
+  setKv('Plot', '—');
+  setKv('Source', LEAD.source || '—');
+  setKv('Owner', user.name);
+  setKv('Built-up', 'Not captured');
+  setKv('Start', 'Not scheduled');
 
-  document.title = `${LEAD.name} · Bind Build ERP`;
-  const here = $('.crumbs .here');
-  if (here) here.textContent = LEAD.name;
+  document.title = `${LEAD.lead_no || 'Lead'} · ${LEAD.name} · Bind Builds ERP`;
+  const here=$('.crumbs .here');
+  if (here) here.textContent = LEAD.lead_no || LEAD.name;
 }
 
 function paintStage() {
-  const cfg = STAGES.find(s => s.stage === LEAD.stage_key);
+  const cfg = STAGES.find(s=>s.id===LEAD.stage) || STAGES[0];
+  const chip=$('#stageChip');
+  if (chip) chip.textContent = cfg.name;
 
-  const chip = $('#stageChip');
-  if (chip && cfg) {
-    chip.textContent = cfg.label;
-    chip.style.color = cfg.color;
+  const fill=$('#probFill');
+  if (fill) {
+    const pct=Math.round(cfg.probability*100);
+    fill.style.width=pct+'%';
+    fill.setAttribute('aria-valuenow',String(pct));
+    const lbl=fill.closest('[data-prob]')?.querySelector('.prob__pct') || fill.parentElement?.querySelector('.prob__pct');
+    if (lbl) lbl.textContent=pct+'%';
+    const railPct = $('.deal-prob__row b');
+    if (railPct) railPct.textContent = pct + '%';
   }
 
-  const fill = $('#probFill');
-  if (fill && cfg) {
-    const pct = Math.round(Number(cfg.probability) * 100);
-    fill.style.width = pct + '%';
-    fill.setAttribute('aria-valuenow', String(pct));
-    const lbl = fill.closest('[data-prob]')?.querySelector('.prob__pct')
-             || fill.parentElement?.querySelector('.prob__pct');
-    if (lbl) lbl.textContent = pct + '%';
-  }
-
-  /* stepper: mark every stage up to the current one as done */
-  const stepper = $('#stepper');
+  const stepper=$('#stepper');
   if (stepper) {
-    const order = STAGES.filter(s => !['won', 'lost'].includes(s.stage));
-    const idx = order.findIndex(s => s.stage === LEAD.stage_key);
-    stepper.innerHTML = order.map((s, i) => `
-      <li class="step ${i < idx ? 'is-done' : i === idx ? 'is-now' : ''}" data-stage="${s.stage}">
-        <span class="step__dot"></span>
-        <span class="step__label">${esc(s.label)}</span>
-      </li>`).join('');
-  }
-}
-
-/* ---------------------------------------------------------------
-   timeline — activities grouped by day
---------------------------------------------------------------- */
-const TL_ICON = {
-  call:'call', whatsapp:'wa', wa:'wa', email:'email',
-  note:'note', stage:'stage', stage_change:'stage', proposal:'email', meeting:'call'
-};
-
-async function paintTimeline() {
-  const { data, error } = await supabase
-    .from('activities')
-    .select('kind,detail,created_at')
-    .eq('lead_id', leadId)
-    .order('created_at', { ascending: false });
-
-  if (error) return fail(error);
-
-  const el = $('#timeline');
-  const n  = $('#nTimeline');
-  if (n) n.textContent = data.length;
-  if (!el) return;
-
-  if (!data.length) {
-    el.innerHTML = `<li class="tl-empty">No activity logged yet. Use the box below to record a call, message or note.</li>`;
-    return;
-  }
-
-  const groups = new Map();
-  for (const a of data) {
-    const key = fmtDate(a.created_at);
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(a);
-  }
-
-  el.innerHTML = [...groups].map(([day, items]) => `
-    <li class="tl-day">
-      <div class="tl-day__label">${esc(day)}</div>
-      <ul class="tl-items">
-        ${items.map(a => `
-          <li class="tl-item tl-item--${TL_ICON[a.kind] || 'note'}">
-            <span class="tl-item__txt">${esc(a.detail || a.kind)}</span>
-            <span class="tl-item__time">${new Date(a.created_at)
-              .toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}</span>
-          </li>`).join('')}
-      </ul>
+    const order=STAGES.filter(s=>!['won','lost'].includes(s.id));
+    const idx=order.findIndex(s=>s.id===LEAD.stage);
+    stepper.innerHTML=order.map((s,i)=>`<li class="step ${i<idx?'is-done':i===idx?'is-now':''}" data-stage="${s.id}">
+      <span class="step__dot"></span><span class="step__label">${esc(s.name)}</span>
     </li>`).join('');
+  }
 }
 
-/* ---------------------------------------------------------------
-   notes
---------------------------------------------------------------- */
-async function paintNotes() {
-  const { data, error } = await supabase
-    .from('lead_notes')
-    .select('id,body,pinned,created_at,created_by')
-    .eq('lead_id', leadId)
-    .order('pinned', { ascending: false })
-    .order('created_at', { ascending: false });
+function paintCorePanels() {
+  const timeline=$('#timeline');
+  if (timeline) timeline.innerHTML = `
+    <li class="tl-day"><div class="tl-day__label">LIVE ERP RECORD</div>
+      <ul class="tl-items">
+        <li class="tl-item tl-item--stage"><span class="tl-item__txt">Current stage: ${esc(stageLabel(LEAD.stage))}</span><span class="tl-item__time">${fmtDate(LEAD.updated_at)}</span></li>
+        <li class="tl-item tl-item--note"><span class="tl-item__txt">Lead ${esc(LEAD.lead_no || '')} created</span><span class="tl-item__time">${fmtDate(LEAD.created_at)}</span></li>
+      </ul>
+    </li>`;
+  if ($('#nTimeline')) $('#nTimeline').textContent='2';
 
-  if (error) return fail(error);
+  const notes=$('#noteList');
+  if (notes) notes.innerHTML = LEAD.notes
+    ? `<li class="note"><p class="note__txt">${esc(LEAD.notes).replaceAll('\n','<br>')}</p><p class="note__meta">Lead notes · ${fmtDate(LEAD.updated_at)}</p></li>`
+    : '<li class="note"><p class="note__txt">No notes yet.</p></li>';
+  if ($('#nNotes')) $('#nNotes').textContent = LEAD.notes ? '1' : '0';
 
-  const el = $('#noteList');
-  const n  = $('#nNotes');
-  if (n) n.textContent = data.length;
-  if (!el) return;
+  const meetings=$('#meetList');
+  if (meetings) meetings.innerHTML='<li class="mt"><span class="mt__body"><span class="mt__title">Calendar module will be connected in the next migration stage</span></span></li>';
+  if ($('#nMeet')) $('#nMeet').textContent='0';
 
-  el.innerHTML = data.length
-    ? data.map(nt => `
-        <li class="note ${nt.pinned ? 'is-pinned' : ''}" data-id="${nt.id}">
-          <p class="note__txt">${esc(nt.body)}</p>
-          <p class="note__meta">${esc(user.name)} · ${fmtDate(nt.created_at)}</p>
-          <button class="note__pin" data-pin="${nt.id}" data-on="${nt.pinned}"
-                  aria-label="${nt.pinned ? 'Unpin note' : 'Pin note'}">${nt.pinned ? '★' : '☆'}</button>
-        </li>`).join('')
-    : `<li class="note"><p class="note__txt">No notes yet.</p></li>`;
+  const files=$('#fileList');
+  if (files) files.innerHTML='<li class="file"><span class="file__name">Project file storage will be connected after Sales → Project conversion.</span></li>';
+  if ($('#nFiles')) $('#nFiles').textContent='0';
 }
 
-/* ---------------------------------------------------------------
-   meetings
---------------------------------------------------------------- */
-async function paintMeetings() {
-  const { data, error } = await supabase
-    .from('meetings')
-    .select('id,title,meeting_type,scheduled_at,duration_min,done')
-    .eq('lead_id', leadId)
-    .order('scheduled_at', { ascending: false });
+async function paintCommercials() {
+  const [estRes, propRes, taskRes] = await Promise.all([
+    supabase.from('estimates')
+      .select('id,estimate_no,title,status,total,created_at')
+      .eq('lead_id', leadId).is('deleted_at', null)
+      .order('created_at', { ascending:false }).limit(1),
+    supabase.from('proposals')
+      .select('id,proposal_no,title,status,grand_total,sent_at,accepted_at,created_at')
+      .eq('lead_id', leadId).is('deleted_at', null)
+      .order('created_at', { ascending:false }).limit(1),
+    supabase.from('tasks')
+      .select('id,title,due_at,status')
+      .ilike('title', '%'+(LEAD.lead_no || LEAD.name)+'%')
+      .not('status','in','("done","cancelled")')
+      .order('due_at',{ascending:true}).limit(1)
+  ]);
 
-  if (error) return fail(error);
+  if (estRes.error) fail(estRes.error);
+  if (propRes.error) fail(propRes.error);
 
-  const el = $('#meetList');
-  const n  = $('#nMeet');
-  if (n) n.textContent = data.length;
-  if (!el) return;
+  const estimate = estRes.data?.[0] || null;
+  const proposal = propRes.data?.[0] || null;
 
-  el.innerHTML = data.length
-    ? data.map(m => {
-        const d = new Date(m.scheduled_at);
-        return `<li class="mt ${m.done ? 'is-done' : ''}" data-id="${m.id}">
-          <span class="mt__date"><b>${String(d.getDate()).padStart(2,'0')}</b>
-            <span>${d.toLocaleString('en-IN',{month:'short'}).toUpperCase()}</span></span>
-          <span class="mt__body">
-            <span class="mt__title">${esc(m.title)}</span>
-            <span class="mt__meta">${d.toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'})} · ${esc(m.meeting_type||'meeting')}${m.duration_min ? ' · ' + m.duration_min + 'm' : ''}</span>
-          </span>
-        </li>`;
-      }).join('')
-    : `<li class="mt"><span class="mt__body"><span class="mt__title">Nothing scheduled</span></span></li>`;
-}
+  const propCard = $('.card.prop');
+  if (propCard) {
+    const doc = proposal || estimate;
+    const kind = proposal ? 'Proposal' : estimate ? 'Estimate' : 'Commercials';
+    propCard.innerHTML = doc ? `
+      <h2 class="rail__title">${kind} status</h2>
+      <div class="prop__ver"><span class="prop__badge">${esc(proposal?.proposal_no || estimate?.estimate_no || 'DRAFT')}</span></div>
+      <p class="prop__val">${money(proposal?.grand_total ?? estimate?.total ?? 0)}</p>
+      <p class="prop__meta">${esc(doc.status || 'draft')}${proposal?.sent_at ? ' · sent ' + fmtDate(proposal.sent_at) : ''}${proposal?.accepted_at ? ' · accepted ' + fmtDate(proposal.accepted_at) : ''}</p>
+      <div class="prop__acts">
+        <button class="act-btn" id="openCommercialBtn">Open ${kind.toLowerCase()}</button>
+        <button class="act-btn" id="remindBtn">Remind</button>
+      </div>`
+      : `
+      <h2 class="rail__title">Commercials</h2>
+      <p class="prop__meta">No estimate or proposal created yet.</p>
+      <div class="prop__acts"><button class="act-btn" id="railEstimateBtn">Create estimate</button></div>`;
 
-/* ---------------------------------------------------------------
-   files
---------------------------------------------------------------- */
-const extKind = n => {
-  const e = (n.split('.').pop() || '').toLowerCase();
-  if (e === 'pdf') return 'pdf';
-  if (['png','jpg','jpeg','webp','gif','zip'].includes(e)) return 'img';
-  if (['dwg','dxf'].includes(e)) return 'dwg';
-  return 'doc';
-};
+    $('#openCommercialBtn')?.addEventListener('click', () => {
+      location.href = proposal ? '/proposal.html?id='+proposal.id : '/estimate.html?id='+estimate.id;
+    });
+    $('#railEstimateBtn')?.addEventListener('click', () => location.href='/estimate.html?lead='+leadId);
+  }
 
-async function paintFiles() {
-  const { data, error } = await supabase
-    .from('lead_files')
-    .select('id,file_name,storage_path,size_bytes,kind,created_at')
-    .eq('lead_id', leadId)
-    .order('created_at', { ascending: false });
+  const next = $('.card.next');
+  if (next) {
+    const task = taskRes.data?.[0];
+    next.innerHTML = task ? `
+      <h2 class="rail__title">Next action</h2>
+      <p class="next__due">${task.due_at ? fmtDate(task.due_at) : 'No due date'}</p>
+      <p class="next__txt">${esc(task.title)}</p>`
+      : `
+      <h2 class="rail__title">Next action</h2>
+      <p class="next__txt">No open follow-up task. Use Remind to create one.</p>`;
+  }
 
-  if (error) return fail(error);
-
-  const el = $('#fileList');
-  const n  = $('#nFiles');
-  if (n) n.textContent = data.length;
-  if (!el) return;
-
-  el.innerHTML = data.length
-    ? data.map(f => `
-        <li class="file file--${esc(f.kind || extKind(f.file_name))}" data-path="${esc(f.storage_path)}">
-          <span class="file__name">${esc(f.file_name)}</span>
-          <span class="file__meta">${(Number(f.size_bytes || 0) / 1048576).toFixed(1)} MB · ${fmtDate(f.created_at)}</span>
-        </li>`).join('')
-    : `<li class="file"><span class="file__name">No files uploaded</span></li>`;
-}
-
-/* ---------------------------------------------------------------
-   actions
---------------------------------------------------------------- */
-async function logActivity(kind, detail) {
-  const { error } = await supabase.from('activities')
-    .insert({ lead_id: leadId, user_id: user.id, kind, detail });
-  if (error) return fail(error);
-  await supabase.from('leads')
-    .update({ last_contact_at: new Date().toISOString() }).eq('id', leadId);
-  await paintTimeline();
+  const tags = $('#tags');
+  if (tags) {
+    const found = [...String(LEAD.notes || '').matchAll(/#([\w-]+)/g)].map(m => m[1]);
+    tags.innerHTML = [...new Set(found)].map(t => `<span class="tag">${esc(t)}</span>`).join('')
+      + '<button class="tag tag--add" id="addTag">＋ Add tag</button>';
+  }
 }
 
 async function setStage(stage) {
-  const { error } = await supabase.from('leads')
-    .update({ stage_key: stage, last_contact_at: new Date().toISOString() })
-    .eq('id', leadId);
+  const { error } = await supabase.from('leads').update({stage}).eq('id',leadId);
   if (error) return fail(error);
-
-  LEAD.stage_key = stage;
+  LEAD.stage=stage;
+  LEAD.updated_at=new Date().toISOString();
   paintStage();
-  const label = STAGES.find(s => s.stage === stage)?.label || stage;
-  toast(`Moved to ${label}`);
-  await logActivity('stage_change', `Stage changed to ${label}`);
+  paintCorePanels();
+  toast(`Moved to ${stageLabel(stage)}`);
 }
+
+async function appendNote(text) {
+  const clean=String(text||'').trim();
+  if (!clean) return;
+  const stamp=new Date().toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'});
+  const next=[LEAD.notes, `[${stamp}] ${clean}`].filter(Boolean).join('\n');
+  const { error } = await supabase.from('leads').update({notes:next}).eq('id',leadId);
+  if (error) return fail(error);
+  LEAD.notes=next;
+  LEAD.updated_at=new Date().toISOString();
+  paintCorePanels();
+  await paintCommercials();
+}
+
+wireModalDismiss();
+
+$('#estimateBtn')?.addEventListener('click', async () => {
+  const { data, error } = await supabase.from('estimates')
+    .select('id').eq('lead_id',leadId).is('deleted_at',null)
+    .order('created_at',{ascending:false}).limit(1);
+  if (error) return fail(error);
+  location.href = data?.length ? '/estimate.html?id='+data[0].id : '/estimate.html?lead='+leadId;
+});
+
+$('#proposalQuickBtn')?.addEventListener('click', async () => {
+  const { data, error } = await supabase.from('proposals')
+    .select('id').eq('lead_id',leadId).is('deleted_at',null)
+    .order('created_at',{ascending:false}).limit(1);
+  if (error) return fail(error);
+  location.href = data?.length ? '/proposal.html?id='+data[0].id : '/proposal.html?lead='+leadId;
+});
 
 $('#btnWon')?.addEventListener('click', async () => {
   await setStage('won');
 
-  /* a won lead with no client record is a dead end: nothing downstream —
-     invoices, projects, the client portal — can attach to a lead. */
-  if (LEAD.client_id) return;
-  if (!confirm(`Create a client record for ${LEAD.name}?`)) return;
+  const existing = await supabase.from('clients').select('id').eq('lead_id',leadId).is('deleted_at',null).maybeSingle();
+  if (existing.error) return fail(existing.error);
+  if (existing.data) return toast('Lead won · client already exists');
 
   const { data, error } = await supabase.from('clients').insert({
+    business_unit_id: LEAD.business_unit_id || activeUnit(),
+    lead_id: LEAD.id,
     name: LEAD.name,
-    phone: LEAD.phone,
+    phone: LEAD.phone || null,
     email: LEAD.email || null,
-    address_line: LEAD.area,
-    city: 'Chennai',
-    business_unit_id: LEAD.business_unit_id ?? activeUnit(),
-    converted_from_lead_id: LEAD.id,
-    owner_id: user.id,
-    notes: LEAD.note || ''
+    city: LEAD.city || 'Chennai',
+    address: LEAD.area || null
   }).select('id').single();
 
   if (error) return fail(error);
-
-  await supabase.from('leads').update({ client_id: data.id }).eq('id', leadId);
-  LEAD.client_id = data.id;
-
-  await supabase.from('activities').insert({
-    lead_id: leadId, client_id: data.id, user_id: user.id,
-    kind: 'note', detail: 'Converted to client'
-  });
-
-  toast('Client created');
-  if (confirm('Open the client profile?')) location.href = `/client.html?id=${data.id}`;
+  toast('Lead won · client record created');
 });
-wireModalDismiss();
 
 $('#btnLost')?.addEventListener('click', () => {
-  setVal('lostNote', '');
-  if (!openModal('lostModal')) setStage('lost');
+  setVal('lostNote','');
+  openModal('lostModal');
 });
 
 $('#confirmLost')?.addEventListener('click', async () => {
-  const { error } = await supabase.from('leads')
-    .update({ lost_reason: val('lostNote') }).eq('id', leadId);
-  if (error) return fail(error);
+  const reason=$('input[name="lr"]:checked')?.value || 'Lost';
+  const detail=val('lostNote');
+  await appendNote(`Lost reason: ${reason}${detail?' — '+detail:''}`);
   closeAllModals();
   await setStage('lost');
 });
 
 $('#logBtn')?.addEventListener('click', async () => {
-  const box = $('#logText');
-  const txt = (box?.value || '').trim();
-  if (!txt) return toast('Write something to log first', 'err');
-  await logActivity('note', txt);
-  box.value = '';
-  toast('Activity logged');
+  const box=$('#logText');
+  const txt=(box?.value||'').trim();
+  if (!txt) return toast('Write something to log first','err');
+  await appendNote('Activity: '+txt);
+  if (box) box.value='';
+  toast('Activity recorded in lead notes');
 });
 
 $('#noteBtn')?.addEventListener('click', async () => {
-  const box = $('#noteText');
-  const txt = (box?.value || '').trim();
-  if (!txt) return toast('Write a note first', 'err');
-  const { error } = await supabase.from('lead_notes')
-    .insert({ lead_id: leadId, body: txt, created_by: user.id });
-  if (error) return fail(error);
-  box.value = '';
+  const box=$('#noteText');
+  const txt=(box?.value||'').trim();
+  if (!txt) return toast('Write a note first','err');
+  await appendNote(txt);
+  if (box) box.value='';
   toast('Note saved');
-  await paintNotes();
+});
+
+$('#schedBtn')?.addEventListener('click', () => toast('Calendar/meeting module is the next backend stage.'));
+
+document.addEventListener('click', async e => {
+  if (!e.target.closest('#addTag')) return;
+  const tag=val('tagIn') || prompt('Add a tag');
+  if (!tag) return;
+  await appendNote('#'+tag.replace(/^#/,''));
+  setVal('tagIn','');
+  toast('Tag saved in lead notes');
 });
 
 document.addEventListener('click', async e => {
-  const pin = e.target.closest('[data-pin]');
-  if (!pin) return;
-  const on = pin.dataset.on === 'true';
-  const { error } = await supabase.from('lead_notes')
-    .update({ pinned: !on }).eq('id', pin.dataset.pin);
-  if (error) return fail(error);
-  await paintNotes();
-});
+  if (!e.target.closest('#remindBtn')) return;
+  const when=prompt('Follow up on? (YYYY-MM-DD)',new Date(Date.now()+3*86400000).toISOString().slice(0,10));
+  if (!when) return;
+  const at=new Date(when+'T10:00:00');
+  if (Number.isNaN(at.valueOf())) return toast('Use YYYY-MM-DD','err');
 
-$('#schedBtn')?.addEventListener('click', () => {
-  setVal('mTitle', '');
-  setVal('mDate', new Date().toISOString().slice(0, 10));
-  setVal('mTime', '10:00');
-  openModal('meetModal');
-});
-
-$('#saveMeet')?.addEventListener('click', async () => {
-  const title = val('mTitle');
-  if (!title) return toast('Give the meeting a title', 'err');
-  const date = val('mDate'), time = val('mTime') || '10:00';
-  if (!date) return toast('Pick a date', 'err');
-
-  const at = new Date(`${date}T${time}`);
-  if (isNaN(at)) return toast('That date did not parse', 'err');
-
-  const { error } = await supabase.from('meetings').insert({
-    lead_id: leadId, title, meeting_type: val('mType') || 'call',
-    scheduled_at: at.toISOString(), created_by: user.id
+  const { error }=await supabase.from('tasks').insert({
+    title:`Follow up · ${LEAD.lead_no || LEAD.name} · ${LEAD.name}`,
+    description:`Sales follow-up for lead ${LEAD.lead_no || ''}`,
+    priority:LEAD.priority==='hot'?'high':'medium',
+    status:'todo',
+    assigned_to:user.id,
+    due_at:at.toISOString()
   });
   if (error) return fail(error);
-  closeAllModals();
-  toast('Meeting scheduled');
-  await paintMeetings();
+  toast(`Follow-up task created for ${fmtDate(at)}`);
+  await paintCommercials();
 });
 
-/* tags live on the lead's note field until a tags table exists */
-$('#addTag')?.addEventListener('click', async () => {
-  const tag = val('tagIn') || prompt('Add a tag');
-  if (!tag) return;
-  const note = `${LEAD.note || ''}\n#${tag}`.trim();
-  const { error } = await supabase.from('leads').update({ note }).eq('id', leadId);
-  if (error) return fail(error);
-  LEAD.note = note;
-  setVal('tagIn', '');
-  toast('Tag added');
+$('#fileInput')?.addEventListener('change', e => {
+  e.target.value='';
+  toast('File storage will be enabled when Documents is migrated.');
 });
-
-$('#remindBtn')?.addEventListener('click', async () => {
-  const when = prompt('Follow up on? (YYYY-MM-DD)', new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10));
-  if (!when) return;
-  const { error } = await supabase.from('leads').update({ next_follow_up: when }).eq('id', leadId);
-  if (error) return fail(error);
-  toast(`Reminder set for ${fmtDate(when)}`);
-});
-
-/* ---- file upload ---- */
-async function upload(files) {
-  for (const file of files) {
-    const path = `${leadId}/${Date.now()}-${file.name.replace(/[^\w.\-]/g, '_')}`;
-    const up = await supabase.storage.from('lead-files').upload(path, file);
-    if (up.error) { fail(up.error); continue; }
-
-    const { error } = await supabase.from('lead_files').insert({
-      lead_id: leadId, file_name: file.name, storage_path: path,
-      kind: extKind(file.name), mime_type: file.type, size_bytes: file.size,
-      uploaded_by: user.id
-    });
-    if (error) fail(error);
-  }
-  toast('Upload complete');
-  await paintFiles();
-}
-
-$('#fileInput')?.addEventListener('change', e => e.target.files.length && upload(e.target.files));
-const dz = $('#dropzone');
-dz?.addEventListener('click', () => $('#fileInput')?.click());
-dz?.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('is-over'); });
-dz?.addEventListener('dragleave', () => dz.classList.remove('is-over'));
-dz?.addEventListener('drop', e => {
+$('#dropzone')?.addEventListener('click', e => {
   e.preventDefault();
-  dz.classList.remove('is-over');
-  if (e.dataTransfer.files.length) upload(e.dataTransfer.files);
+  toast('File storage will be enabled when Documents is migrated.');
 });
 
-/* open a stored file in a new tab via a signed URL */
-document.addEventListener('click', async e => {
-  const f = e.target.closest('.file[data-path]');
-  if (!f) return;
-  const { data, error } = await supabase.storage
-    .from('lead-files').createSignedUrl(f.dataset.path, 60);
-  if (error) return fail(error);
-  window.open(data.signedUrl, '_blank');
+
+document.addEventListener('click', e => {
+  const btn=e.target.closest('[data-contact]');
+  if(!btn)return;
+  const kind=String(btn.dataset.contact||'').toLowerCase();
+  if(kind==='call'){
+    if(!LEAD?.phone)return toast('No mobile number on this lead','err');
+    location.href='tel:+91'+String(LEAD.phone).replace(/\D/g,'').slice(-10);
+  }
+  if(kind==='whatsapp'){
+    if(!LEAD?.phone)return toast('No mobile number on this lead','err');
+    const phone=String(LEAD.phone).replace(/\D/g,'').slice(-10);
+    window.open('https://wa.me/91'+phone,'_blank');
+  }
+  if(kind==='email'){
+    if(!LEAD?.email)return toast('No email address on this lead','err');
+    location.href='mailto:'+LEAD.email;
+  }
 });
 
-/* tabs */
+document.addEventListener('click', e => {
+  const step = e.target.closest('.step[data-stage]');
+  if (step) setStage(step.dataset.stage);
+});
+
 $$('.tab[data-tab]').forEach(t => t.addEventListener('click', () => {
-  $$('.tab').forEach(x => { x.classList.remove('is-on'); x.setAttribute('aria-selected', 'false'); });
-  t.classList.add('is-on'); t.setAttribute('aria-selected', 'true');
-  $$('[data-panel]').forEach(p => p.classList.toggle('is-on', p.dataset.panel === t.dataset.tab));
+  $$('.tab').forEach(x => { x.classList.remove('is-on'); x.setAttribute('aria-selected','false'); });
+  t.classList.add('is-on'); t.setAttribute('aria-selected','true');
+  $$('[data-panel]').forEach(p => p.classList.toggle('is-on', p.dataset.panel===t.dataset.tab));
 }));
 
 await load();

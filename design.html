@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Design & Pre-Construction · Bind Build ERP</title>
+<link rel="stylesheet" href="/src/styles/app.css"/>
+<link rel="stylesheet" href="/src/styles/design.css"/>
+<script>(function(){var s=localStorage.getItem('bindbuild.theme');var l=matchMedia('(prefers-color-scheme: light)').matches;document.documentElement.setAttribute('data-theme',s||(l?'light':'dark'));})();</script>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <main class="content" id="content">
+      <section class="page-head">
+        <div>
+          <div class="eyebrow">DELIVERY · DESIGN STUDIO</div>
+          <h1 class="page-head__title">Design & Pre-Construction</h1>
+          <p class="page-head__sub">From discovery to signed GFC set and Bhoomi Pooja</p>
+        </div>
+        <div class="page-head__acts">
+          <select id="projectSel" class="field-select" aria-label="Project"></select>
+          <button class="btn-ghost" id="openProjectBtn">Open project</button>
+        </div>
+      </section>
+
+      <section class="kpis" id="kpis">
+        <article class="kpi"><span class="kpi__label">Pre-construction</span><b class="kpi__value" id="progressPct">0%</b><span class="kpi__meta" id="progressMeta">—</span></article>
+        <article class="kpi"><span class="kpi__label">Current step</span><b class="kpi__value kpi__value--sm" id="currentStep">—</b><span class="kpi__meta" id="currentPhase">—</span></article>
+        <article class="kpi"><span class="kpi__label">Design deliverables</span><b class="kpi__value" id="deliverableCount">0/0</b><span class="kpi__meta">Approved / completed</span></article>
+        <article class="kpi"><span class="kpi__label">Construction release</span><b class="kpi__value kpi__value--sm" id="releaseStatus">Not released</b><span class="kpi__meta" id="releaseMeta">Bhoomi Pooja pending</span></article>
+      </section>
+
+      <section class="workspace">
+        <article class="card timeline-card">
+          <div class="card-head">
+            <div><h2>Pre-construction timeline</h2><p id="projectMeta">Select a project</p></div>
+            <span class="status-pill" id="projectStatus">PLANNING</span>
+          </div>
+          <div class="timeline" id="timeline"></div>
+        </article>
+
+        <aside class="card inspector">
+          <div class="card-head"><div><h2 id="stepTitle">Step details</h2><p id="stepPhase">Choose a timeline step</p></div></div>
+          <div class="inspector-body" id="stepEditor">
+            <div class="empty">Select a step to update owner, due date, status and notes.</div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="lower-grid">
+        <article class="card">
+          <div class="card-head"><div><h2>Design deliverables</h2><p>Revision + client approval + GFC readiness</p></div></div>
+          <div class="table-wrap"><table class="data-table"><thead><tr><th>Deliverable</th><th>Stage</th><th>Rev</th><th>Due</th><th>Status</th><th>Client</th></tr></thead><tbody id="deliverablesBody"></tbody></table></div>
+        </article>
+
+        <article class="card">
+          <div class="card-head"><div><h2>Drawing register</h2><p>Issued drawing history for this project</p></div><button class="btn-ghost" id="addDrawingBtn">+ Drawing</button></div>
+          <div class="table-wrap"><table class="data-table"><thead><tr><th>Drawing No.</th><th>Title</th><th>Discipline</th><th>Rev</th><th>Status</th></tr></thead><tbody id="drawingsBody"></tbody></table></div>
+        </article>
+      </section>
+
+      <section class="lower-grid">
+        <article class="card">
+          <div class="card-head"><div><h2>Approvals</h2><p>Internal decision trail linked to pre-construction</p></div></div>
+          <div id="approvalsList" class="list-stack"></div>
+        </article>
+        <article class="card">
+          <div class="card-head"><div><h2>Pre-construction tasks</h2><p>Open actions linked to the selected project</p></div></div>
+          <div id="tasksList" class="list-stack"></div>
+        </article>
+      </section>
+    </main>
+    <footer class="footer"><span>© 2026 Studio Bind Architects · Chennai</span><span>Bind Build ERP</span></footer>
+  </div>
+</div>
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/design.js"></script>
+</body>
+</html>

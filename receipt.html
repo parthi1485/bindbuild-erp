@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Receipt · Bind Build ERP</title>
+<link rel="stylesheet" href="/src/styles/app.css"/>
+<link rel="stylesheet" href="/src/styles/invoice.css"/>
+<script>(function(){var s=localStorage.getItem('bindbuild.theme');var l=matchMedia('(prefers-color-scheme: light)').matches;document.documentElement.setAttribute('data-theme',s||(l?'light':'dark'));})();</script>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="scrim" id="scrim"></div>
+  <div class="main" id="main">
+    <main class="content" id="content">
+      <div class="ctx">
+        <div class="ctx__main">
+          <div class="ctx__eyebrow">Money · Payment receipt</div>
+          <h1 class="ctx__title" id="pageTitle">Receipt</h1>
+          <div class="ctx__sub" id="pageSub">Payment acknowledgement</div>
+        </div>
+        <div class="ctx__actions">
+          <button class="btn-ghost" id="backBtn">Back</button>
+          <button class="btn-ghost" id="printBtn">Print / PDF</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <section class="paper">
+          <div class="paper__accent"></div>
+          <div class="paper__in">
+            <div class="inv-top">
+              <div class="seller">
+                <div class="seller__logo">BB</div>
+                <div>
+                  <div class="seller__name" id="sellerName">Bind Builds</div>
+                  <div class="seller__tag">Payment receipt</div>
+                  <div class="seller__meta" id="sellerMeta">—</div>
+                </div>
+              </div>
+              <div class="inv-title">
+                <h2>Receipt</h2>
+                <div class="invno" id="receiptNo">—</div>
+                <div class="inv-dates">Receipt date <b id="receiptDate">—</b></div>
+              </div>
+            </div>
+
+            <div class="inv-parties">
+              <div>
+                <div class="party__lbl">Received from</div>
+                <div class="party__nm" id="clientName">—</div>
+                <div class="party__meta" id="clientMeta">—</div>
+              </div>
+              <div>
+                <div class="party__lbl">Against</div>
+                <div class="party__nm" id="againstName">—</div>
+                <div class="party__meta" id="againstMeta">—</div>
+              </div>
+            </div>
+
+            <div style="padding:32px 0;text-align:center">
+              <div style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3)">Amount received</div>
+              <div style="font-family:var(--font-display);font-size:40px;font-weight:700;margin-top:8px" id="amount">₹0</div>
+              <div style="margin-top:14px;color:var(--text-2)" id="paymentMeta">—</div>
+            </div>
+
+            <div class="words"><b>Notes: </b><span id="notes">—</span></div>
+          </div>
+        </section>
+
+        <aside class="rail">
+          <section class="card">
+            <div class="card__head"><span class="card__title">Receipt status</span></div>
+            <div class="card__body gstsum">
+              <div class="gstsum__row"><span>Status</span><b id="status">—</b></div>
+              <div class="gstsum__row"><span>Payment mode</span><b id="mode">—</b></div>
+              <div class="gstsum__row"><span>Reference</span><b id="ref">—</b></div>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </main>
+    <footer class="footer"><span>© 2026 Studio Bind Architects · Chennai</span><span>Bind Build ERP</span></footer>
+  </div>
+</div>
+<div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/receipt.js"></script>
+</body>
+</html>

@@ -1,75 +1,46 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Assistant · Bind Build ERP</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="/src/styles/app.css" />
-<link rel="stylesheet" href="/src/styles/assistant.css" />
-
-<script>
-  (function(){
-    var s=localStorage.getItem('bindbuild.theme');
-    var l=window.matchMedia('(prefers-color-scheme: light)').matches;
-    document.documentElement.setAttribute('data-theme', s || (l?'light':'dark'));
-  })();
-</script>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Bind AI · Bind Build ERP</title>
+<link rel="stylesheet" href="/src/styles/app.css"/>
+<link rel="stylesheet" href="/src/styles/assistant.css"/>
+<script>(function(){var s=localStorage.getItem('bindbuild.theme');var l=matchMedia('(prefers-color-scheme: light)').matches;document.documentElement.setAttribute('data-theme',s||(l?'light':'dark'));})();</script>
 </head>
-<body>
-<div class="app" id="app">
-  <!-- sidebar injected by shell.js -->
-  <div class="scrim" id="scrim"></div>
-  <div class="main" id="main">
-    <!-- topbar injected by shell.js -->
-    <main class="content" id="content">
-
-    <div class="content">
-      <div class="chatwrap">
-        <div class="thread" id="thread">
-          <div class="thread__in" id="threadIn">
-            <div class="welcome" id="welcome">
-              <div class="welcome__logo"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 014 4c1.7.6 3 2.3 3 4.3a4.3 4.3 0 01-.4 1.8A4 4 0 0117 20H7a4 4 0 01-1.6-7.6A4.3 4.3 0 015 11.3C5 9.3 6.3 7.6 8 7a4 4 0 014-4z"/><path d="M9.5 12l1.7 1.7L15 10"/></svg></div>
-              <div class="welcome__t">Hi Parthiban, I'm Bind AI</div>
-              <div class="welcome__s">Ask me about your projects, finances, site status or team. I know your studio's data. Try one of these:</div>
-              <div class="chips" id="chips">
-                <button class="chip" data-q="What's the status of the Adyar Courtyard project?"><div class="chip__t">Adyar project status</div><div class="chip__m">Progress, milestone &amp; budget</div></button>
-                <button class="chip" data-q="How much money is pending from clients?"><div class="chip__t">Outstanding payments</div><div class="chip__m">What's still to be billed</div></button>
-                <button class="chip" data-q="Who is on site today?"><div class="chip__t">Who's on site today</div><div class="chip__m">Team &amp; site headcount</div></button>
-                <button class="chip" data-q="What's next on the schedule?"><div class="chip__t">What's coming up</div><div class="chip__m">Next milestones &amp; deadlines</div></button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="composer">
-          <div class="composer__in">
-            <textarea id="input" rows="1" placeholder="Ask Bind AI anything about your studio…" aria-label="Message"></textarea>
-            <button class="send" id="send" aria-label="Send" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-          </div>
-          <div class="composer__hint">Bind AI can make mistakes — this is a demo assistant with sample studio data. Verify important figures.</div>
-        </div>
+<body><div class="app" id="app"><div class="scrim" id="scrim"></div><div class="main" id="main">
+<main class="content" id="content">
+  <div class="chatwrap">
+    <div class="thread" id="thread">
+      <div class="thread__in" id="threadIn">
+        <section class="welcome" id="welcome">
+          <div class="welcome__logo">AI</div>
+          <div class="welcome__t">Bind AI</div>
+          <div class="welcome__s">Your live ERP copilot. Ask about leads, projects, collections, site issues, team capacity, stock or today’s priorities.</div>
+          <div class="chips" id="chips"></div>
+        </section>
       </div>
-      <aside class="rail">
-        <div class="rail__lead">What I can do</div>
-        <div class="cap"><div class="cap__ic i-blue"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/></svg></div><div><div class="cap__t">Project insights</div><div class="cap__m">Progress, budgets, milestones</div></div></div>
-        <div class="cap"><div class="cap__ic i-green"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5h4a1.5 1.5 0 010 3h-3a1.5 1.5 0 000 3h4"/></svg></div><div><div class="cap__t">Money &amp; billing</div><div class="cap__m">Invoices, dues, expenses</div></div></div>
-        <div class="cap"><div class="cap__ic i-amber"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg></div><div><div class="cap__t">Site &amp; team</div><div class="cap__m">Who's where, reports, attendance</div></div></div>
-        <div class="cap"><div class="cap__ic i-violet"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg></div><div><div class="cap__t">Draft &amp; summarise</div><div class="cap__m">Emails, reports, proposals</div></div></div>
-        <div class="rail__lead">Recent chats</div>
-        <div class="thread-item" data-q="Summarise last week's site progress"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Last week's site progress</div>
-        <div class="thread-item" data-q="Draft a payment reminder for Dr. Meenakshi"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Payment reminder draft</div>
-        <div class="thread-item" data-q="What's the concrete order for the FF slab?"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>FF slab concrete order</div>
-      </aside>
     </div>
-  
-    </main>
-
+    <div class="composer">
+      <div style="max-width:760px;margin:0 auto 8px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span class="badge-ai">LIVE ERP DATA · READ ONLY</span>
+        <button class="new-btn" id="newChat">New chat</button>
+      </div>
+      <div class="composer__in">
+        <textarea id="input" rows="1" placeholder="Ask Bind AI about your studio…" aria-label="Message"></textarea>
+        <button class="send" id="send" aria-label="Send" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <div class="composer__hint">Uses live ERP queries and deterministic drafting. No paid LLM/API is used in this version. Verify financial or compliance decisions before acting.</div>
+    </div>
   </div>
-</div>
-
-<div class="toast-region" aria-live="polite"></div>
-<script type="module" src="/src/pages/assistant.js"></script>
-</body>
-</html>
+  <aside class="rail">
+    <div class="rail__lead">What I can do</div>
+    <div class="cap"><div class="cap__ic i-blue">01</div><div><div class="cap__t">Daily founder brief</div><div class="cap__m">Pipeline, dues, tasks, approvals and risks</div></div></div>
+    <div class="cap"><div class="cap__ic i-green">02</div><div><div class="cap__t">Project intelligence</div><div class="cap__m">Progress, value, invoices, tasks and issues</div></div></div>
+    <div class="cap"><div class="cap__ic i-amber">03</div><div><div class="cap__t">Finance & collections</div><div class="cap__m">Receivables, collections and vendor payables</div></div></div>
+    <div class="cap"><div class="cap__ic i-violet">04</div><div><div class="cap__t">Client follow-up drafts</div><div class="cap__m">Short WhatsApp/email wording from live lead context</div></div></div>
+    <div class="rail__lead">Recent local chats</div>
+    <div id="recentChats"></div>
+  </aside>
+</main>
+</div></div><div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/assistant.js"></script></body></html>

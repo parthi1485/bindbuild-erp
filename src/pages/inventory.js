@@ -1,190 +1,164 @@
 import { supabase } from '../lib/supabase.js';
-import { mountShell } from '../lib/shell.js';
+import { mountShell, scopeToUnit, activeUnit } from '../lib/shell.js';
 import { toast, fail, esc, fmtDate } from '../lib/ui.js';
 
-const $  = (s, c = document) => c.querySelector(s);
-const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+const $=(s,c=document)=>c.querySelector(s);
+const user=await mountShell({route:'inventory',title:'Inventory'});
+if(!user)throw new Error('redirecting');
 
-const user = await mountShell({ route: 'inventory', title: 'Inventory' });
-if (!user) throw new Error('redirecting');
+const canMaster=['founder','admin','procurement','project_manager'].includes(user.role);
+const canIssue=['founder','admin','procurement','project_manager','site_engineer'].includes(user.role);
+const money=v=>'₹'+Math.round(Number(v)||0).toLocaleString('en-IN');
+const qty=v=>Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:3});
+const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
+const projectHint=new URLSearchParams(location.search).get('project');
 
-const money = v => {
-  const n = Number(v) || 0;
-  if (Math.abs(n) >= 1e7) return '₹' + (n / 1e7).toFixed(2).replace(/\.00$/, '') + 'Cr';
-  if (Math.abs(n) >= 1e5) return '₹' + (n / 1e5).toFixed(2).replace(/\.00$/, '') + 'L';
-  return '₹' + n.toLocaleString('en-IN');
-};
+let BAL=[],STORES=[],MATERIALS=[],MOVES=[],PROJECTS=[];
+let fStore='',fCat='',fStatus='',search='';
 
-const qtyFmt = n => {
-  const v = Number(n) || 0;
-  return Number.isInteger(v) ? String(v) : v.toFixed(2).replace(/\.?0+$/, '');
-};
+function byId(rows,id){return rows.find(x=>x.id===id);}
+function movementSign(t){return ['grn_in','return_in','transfer_in','adjust_in'].includes(t)?'+':'−';}
 
-let BAL = [], STORES = [], MOVES = [];
-let fStore = '', fCat = '', fStatus = '', q = '';
-
-async function load() {
-  const [bRes, sRes, mRes] = await Promise.all([
-    supabase.from('stock_balances').select('*').order('name'),
-    supabase.from('stores').select('*').eq('status', 'active').order('name'),
-    supabase.from('stock_ledger')
-      .select('*, materials(name,unit), stores(name)')
-      .order('moved_on', { ascending: false })
-      .limit(25)
-  ]);
-
-  if (bRes.error) return fail(bRes.error);
-  BAL    = bRes.data ?? [];
-  STORES = sRes.data ?? [];
-  MOVES  = mRes.data ?? [];
-
-  fillFilters();
-  render();
+async function load(){
+  try{
+    const a=await Promise.all([
+      supabase.from('stock_balances').select('*').order('name'),
+      scopeToUnit(supabase.from('stores').select('*')).eq('status','active').order('name'),
+      scopeToUnit(supabase.from('materials').select('*')).eq('status','active').order('name'),
+      scopeToUnit(supabase.from('stock_ledger').select('*')).order('moved_on',{ascending:false}).order('created_at',{ascending:false}).limit(50),
+      scopeToUnit(supabase.from('projects').select('id,project_no,code,name,status').is('deleted_at',null)).order('name')
+    ]);
+    a.forEach(r=>{if(r.error)throw r.error;});
+    [BAL,STORES,MATERIALS,MOVES,PROJECTS]=a.map(r=>r.data||[]);
+    fillFilters();render();
+  }catch(e){fail(e);}
 }
 
-function fillFilters() {
-  const st = $('#storeSel');
-  if (st && st.options.length <= 1) {
-    STORES.forEach(s => st.add(new Option(s.name, s.id)));
-  }
-  const cat = $('#cat');
-  if (cat && cat.options.length <= 1) {
-    [...new Set(BAL.map(b => b.category).filter(Boolean))].sort()
-      .forEach(c => cat.add(new Option(c, c)));
-  }
+function fillFilters(){
+  $('#storeSel').innerHTML='<option value="">All stores</option>'+STORES.map(s=>'<option value="'+s.id+'"'+(s.id===fStore?' selected':'')+'>'+esc(s.name)+'</option>').join('');
+  const cats=[...new Set(MATERIALS.map(m=>m.category).filter(Boolean))].sort();
+  $('#catSel').innerHTML='<option value="">All categories</option>'+cats.map(c=>'<option value="'+esc(c)+'"'+(c===fCat?' selected':'')+'>'+esc(c)+'</option>').join('');
 }
 
-function passes(b) {
-  if (fStore && b.store_id !== fStore) return false;
-  if (fCat && b.category !== fCat) return false;
-  if (fStatus && b.stock_status !== fStatus) return false;
-  if (q && !`${b.name} ${b.code || ''} ${b.category}`.toLowerCase().includes(q)) return false;
+function pass(b){
+  if(projectHint&&b.project_id!==projectHint)return false;
+  if(fStore&&b.store_id!==fStore)return false;
+  if(fCat&&b.category!==fCat)return false;
+  if(fStatus&&b.stock_status!==fStatus)return false;
+  if(search&&!String(b.name+' '+(b.code||'')+' '+(b.category||'')+' '+(b.store_name||'')).toLowerCase().includes(search))return false;
   return true;
 }
 
-function render() {
-  const rows = BAL.filter(passes);
-  const body = $('#invBody');
-
-  if (body) {
-    body.innerHTML = rows.length ? rows.map(b => `
-      <tr data-mat="${b.material_id}" data-store="${b.store_id}">
-        <td>
-          <div class="inv-nm">${esc(b.name)}</div>
-          <div class="inv-sub">${esc(b.category)}${b.code ? ' · ' + esc(b.code) : ''}</div>
-        </td>
-        <td>${esc(b.store_name)}</td>
-        <td class="num">${qtyFmt(b.qty)} ${esc(b.unit)}</td>
-        <td class="num">${qtyFmt(b.reorder_level)} ${esc(b.unit)}</td>
-        <td><span class="pill ${b.stock_status}"><span class="pill__dot"></span>${
-          b.stock_status === 'out' ? 'Out of stock'
-          : b.stock_status === 'low' ? 'Low' : 'In stock'}</span></td>
-        <td class="num">${money(b.value)}</td>
-        <td>
-          <button class="mini-act" data-move="in:${b.material_id}:${b.store_id}" title="Record stock in">+</button>
-          <button class="mini-act" data-move="out:${b.material_id}:${b.store_id}" title="Record issue">−</button>
-        </td>
-      </tr>`).join('')
-    : `<tr><td colspan="7" class="tbl__empty">No stock matches these filters.</td></tr>`;
-  }
-
-  const count = $('#invCount');
-  if (count) count.textContent = `${rows.length} item${rows.length === 1 ? '' : 's'}`;
-
-  const low = BAL.filter(b => b.stock_status === 'low');
-  const out = BAL.filter(b => b.stock_status === 'out');
-  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  set('kLow', String(low.length));
-  set('kOut', String(out.length));
-
-  const tag = $('#alertTag');
-  if (tag) { tag.textContent = String(low.length + out.length); tag.hidden = !(low.length + out.length); }
-
-  const al = $('#alerts');
-  if (al) {
-    const rowsA = [...out, ...low].slice(0, 8);
-    al.innerHTML = rowsA.length
-      ? rowsA.map(b => `<li class="alert alert--${b.stock_status}">
-          <span class="alert__nm">${esc(b.name)}</span>
-          <span class="alert__meta">${esc(b.store_name)} · ${qtyFmt(b.qty)} ${esc(b.unit)} of ${qtyFmt(b.reorder_level)}</span>
-        </li>`).join('')
-      : '<li class="alert">Everything above reorder level</li>';
-  }
-
-  const st = $('#stores');
-  if (st) {
-    st.innerHTML = STORES.map(s => {
-      const items = BAL.filter(b => b.store_id === s.id && Number(b.qty) > 0);
-      const value = items.reduce((a, b) => a + Number(b.value || 0), 0);
-      return `<li class="store">
-        <span class="store__nm">${esc(s.name)}</span>
-        <span class="store__meta">${items.length} items · ${money(value)}</span>
-      </li>`;
-    }).join('');
-  }
-
-  const mv = $('#moves');
-  if (mv) {
-    mv.innerHTML = MOVES.length
-      ? MOVES.map(m => {
-          const inward = ['in', 'transfer_in', 'adjust'].includes(m.movement_type);
-          return `<li class="mv mv--${inward ? 'in' : 'out'}">
-            <span class="mv__nm">${esc(m.materials?.name || '—')}</span>
-            <span class="mv__qty">${inward ? '+' : '−'}${qtyFmt(m.qty)} ${esc(m.materials?.unit || '')}</span>
-            <span class="mv__meta">${esc(m.stores?.name || '')} · ${fmtDate(m.moved_on)}</span>
-          </li>`;
-        }).join('')
-      : '<li class="mv">No movements recorded yet</li>';
-  }
+function render(){
+  const rows=BAL.filter(pass);
+  const stockValue=BAL.reduce((a,b)=>a+Number(b.value||0),0);
+  const low=BAL.filter(b=>b.stock_status==='low'),out=BAL.filter(b=>b.stock_status==='out');
+  const todayMoves=MOVES.filter(m=>m.moved_on===today()).length;
+  $('#kValue').textContent=money(stockValue);
+  $('#kSku').textContent=String(MATERIALS.length);
+  $('#kLow').textContent=String(low.length);
+  $('#kOut').textContent=String(out.length);
+  $('#kMove').textContent=String(todayMoves);
+  $('#invCount').textContent=String(rows.length);
+  $('#alertTag').textContent=String(low.length+out.length);
+  $('#storeCount').textContent=String(STORES.length);
+  $('#addItemBtn').disabled=!canMaster;
+  $('#adjustBtn').disabled=!canMaster;
+  renderStock(rows);renderMoves();renderAlerts([...out,...low]);renderStores();renderCategories();
 }
 
-/* ---------------------------------------------------------------
-   record a movement — never mutate a quantity, always append
---------------------------------------------------------------- */
-document.addEventListener('click', async e => {
-  const btn = e.target.closest('[data-move]');
-  if (!btn) return;
+function renderStock(rows){
+  $('#invBody').innerHTML=rows.length?rows.map(b=>{
+    const store=byId(STORES,b.store_id),project=store?.project_id?byId(PROJECTS,store.project_id):null;
+    return '<tr><td><div class="s-doc">'+esc(b.name)+'</div><div class="s-meta">'+esc(b.category||'Uncategorised')+(b.code?' · '+esc(b.code):'')+'</div></td><td>'+esc(b.store_name||'—')+'<div class="s-meta">'+esc(project?.name||'')+'</div></td><td class="num"><b>'+qty(b.qty)+' '+esc(b.unit)+'</b></td><td class="num">'+qty(b.reorder_level)+' '+esc(b.unit)+'</td><td><span class="s-status '+esc(b.stock_status)+'">'+(b.stock_status==='ok'?'in stock':b.stock_status==='low'?'low':'out')+'</span></td><td class="num">'+money(b.value)+'</td><td><div class="s-actions-inline">'+(canIssue&&Number(b.qty)>0?'<button class="s-btn primary" data-issue="'+b.material_id+':'+b.store_id+'">Issue</button>':'')+(canMaster?'<button class="s-btn" data-adjust="'+b.material_id+':'+b.store_id+'">Adjust</button>':'')+'</div></td></tr>';
+  }).join(''):'<tr><td colspan="7"><div class="s-empty">No stock matches the selected filters.</div></td></tr>';
+}
 
-  const [dir, materialId, storeId] = btn.dataset.move.split(':');
-  const row = BAL.find(b => b.material_id === materialId && b.store_id === storeId);
-  const label = dir === 'in' ? 'received' : 'issued';
+function renderMoves(){
+  $('#moveBody').innerHTML=MOVES.length?MOVES.map(m=>{
+    const mat=byId(MATERIALS,m.material_id),store=byId(STORES,m.store_id);
+    return '<tr><td>'+fmtDate(m.moved_on)+'</td><td>'+esc(mat?.name||'Material')+'</td><td>'+esc(store?.name||'Store')+'</td><td><span class="s-status '+(movementSign(m.movement_type)==='+'?'approved':'submitted')+'">'+esc(m.movement_type.replaceAll('_',' '))+'</span></td><td class="num"><b>'+movementSign(m.movement_type)+qty(m.qty)+' '+esc(mat?.unit||'')+'</b></td><td>'+esc(m.reference_no||m.purpose||'—')+'</td></tr>';
+  }).join(''):'<tr><td colspan="6"><div class="s-empty">No stock movements yet.</div></td></tr>';
+}
 
-  const raw = prompt(`Quantity ${label} (${row?.unit || 'nos'})`);
-  if (raw === null) return;
-  const qtyVal = Number(raw);
-  if (!Number.isFinite(qtyVal) || qtyVal <= 0) return toast('Enter a positive quantity', 'err');
+function renderAlerts(rows){
+  $('#alerts').innerHTML=rows.length?rows.slice(0,10).map(b=>'<div class="s-list-row"><div class="s-list-body"><div class="s-list-title">'+esc(b.name)+'</div><div class="s-list-meta">'+esc(b.store_name)+' · '+qty(b.qty)+' '+esc(b.unit)+' on hand · reorder '+qty(b.reorder_level)+'</div></div><span class="s-status '+esc(b.stock_status)+'">'+esc(b.stock_status)+'</span></div>').join(''):'<div class="s-empty">Everything is above reorder level.</div>';
+}
 
-  if (dir === 'out' && row && qtyVal > Number(row.qty)) {
-    if (!confirm(`Only ${qtyFmt(row.qty)} ${row.unit} on hand. Issue anyway and go negative?`)) return;
+function renderStores(){
+  $('#stores').innerHTML=STORES.length?STORES.map(s=>{
+    const rows=BAL.filter(b=>b.store_id===s.id&&Number(b.qty)>0),value=rows.reduce((a,b)=>a+Number(b.value||0),0),p=byId(PROJECTS,s.project_id);
+    return '<div class="s-list-row"><div class="s-list-body"><div class="s-list-title">'+esc(s.name)+'</div><div class="s-list-meta">'+esc(p?.name||s.location||'')+' · '+rows.length+' stocked items · '+money(value)+'</div></div></div>';
+  }).join(''):'<div class="s-empty">Stores are created when a project first receives material.</div>';
+}
+
+function renderCategories(){
+  const map=new Map();
+  BAL.forEach(b=>map.set(b.category||'Other',(map.get(b.category||'Other')||0)+Number(b.value||0)));
+  const rows=[...map.entries()].sort((a,b)=>b[1]-a[1]),top=Math.max(1,...rows.map(x=>x[1]));
+  $('#categoryList').innerHTML=rows.length?rows.map(([name,value])=>'<div class="s-list-row"><div class="s-list-body"><div class="s-list-title">'+esc(name)+'</div><div class="s-list-meta">'+money(value)+'</div><div class="s-vbar"><span style="width:'+Math.round(value/top*100)+'%"></span></div></div></div>').join(''):'<div class="s-empty">Category values appear after the first GRN.</div>';
+}
+
+async function addMaterial(){
+  const name=prompt('Material name');if(!name)return;
+  const code=(prompt('Material code (optional)')||'').trim()||null;
+  const category=prompt('Category e.g. Cement, Steel, Aggregate, Electrical, Plumbing')||null;
+  const unit=prompt('Unit','nos')||'nos';
+  const rate=Number(prompt('Default / reference rate',0)||0);
+  const reorder=Number(prompt('Reorder level',0)||0);
+  const hsn=(prompt('HSN code (optional)')||'').trim()||null;
+  const gst=Number(prompt('GST %','18')||18);
+  const r=await supabase.from('materials').insert({business_unit_id:activeUnit(),code,name:name.trim(),category,unit,default_rate:Math.max(0,rate),reorder_level:Math.max(0,reorder),hsn_code:hsn,gst_rate:Math.max(0,gst),status:'active'}).select('*').single();
+  if(r.error)return fail(r.error);toast('Material master added');await load();
+}
+
+async function issue(materialId,storeId){
+  const b=BAL.find(x=>x.material_id===materialId&&x.store_id===storeId),m=byId(MATERIALS,materialId);if(!b)return;
+  const amount=Number(prompt('Issue quantity · available '+qty(b.qty)+' '+b.unit,'1'));if(!Number.isFinite(amount)||amount<=0)return;
+  const purpose=prompt('Purpose / work package');if(!purpose)return toast('Purpose is required','err');
+  const r=await supabase.rpc('issue_site_stock',{p_store_id:storeId,p_material_id:materialId,p_qty:amount,p_purpose:purpose,p_moved_on:today()});
+  if(r.error)return fail(r.error);toast(qty(amount)+' '+(m?.unit||'')+' issued to site');await load();
+}
+
+async function adjust(materialId,storeId){
+  const b=BAL.find(x=>x.material_id===materialId&&x.store_id===storeId);if(!b)return;
+  const direction=(prompt('Adjustment type: in / out','in')||'').toLowerCase();if(!['in','out'].includes(direction))return toast('Use in or out','err');
+  const amount=Number(prompt('Adjustment quantity',1));if(!Number.isFinite(amount)||amount<=0)return;
+  const reason=prompt('Mandatory adjustment reason');if(!reason)return toast('Adjustment reason is required','err');
+  const r=await supabase.from('stock_ledger').insert({business_unit_id:b.business_unit_id,project_id:b.project_id,store_id:storeId,material_id:materialId,movement_type:direction==='in'?'adjust_in':'adjust_out',qty:amount,rate:Number(b.last_rate||0),purpose:reason,moved_on:today(),recorded_by:user.id});
+  if(r.error)return fail(r.error);toast('Stock adjustment posted');await load();
+}
+
+async function genericAdjust(){
+  if(!STORES.length||!MATERIALS.length)return toast('Create material master and receive stock before adjustment','err');
+  const store=promptChoice('Choose store',STORES,s=>s.name);if(!store)return;
+  const mat=promptChoice('Choose material',MATERIALS,m=>m.name+' · '+m.unit);if(!mat)return;
+  const b=BAL.find(x=>x.store_id===store.id&&x.material_id===mat.id);
+  if(!b){
+    const direction=(prompt('No current balance. Adjustment type must be in','in')||'').toLowerCase();if(direction!=='in')return toast('Cannot adjust out from zero stock','err');
+    const amount=Number(prompt('Adjustment quantity',1));if(!Number.isFinite(amount)||amount<=0)return;
+    const reason=prompt('Mandatory adjustment reason');if(!reason)return;
+    const r=await supabase.from('stock_ledger').insert({business_unit_id:store.business_unit_id,project_id:store.project_id,store_id:store.id,material_id:mat.id,movement_type:'adjust_in',qty:amount,rate:Number(mat.default_rate||0),purpose:reason,moved_on:today(),recorded_by:user.id});
+    if(r.error)return fail(r.error);toast('Opening adjustment posted');await load();return;
   }
+  await adjust(mat.id,store.id);
+}
 
-  const { error } = await supabase.from('stock_ledger').insert({
-    material_id: materialId,
-    store_id: storeId,
-    movement_type: dir,
-    qty: qtyVal,
-    rate: row?.last_rate ?? 0,
-    recorded_by: user.id
-  });
+function promptChoice(title,rows,label){
+  const raw=prompt(title+'\n\n'+rows.map((x,i)=>(i+1)+'. '+label(x)).join('\n')+'\n\nEnter number');
+  if(raw===null)return null;const n=Number(raw);return Number.isInteger(n)&&n>0&&n<=rows.length?rows[n-1]:null;
+}
 
-  if (error) return fail(error);
-  toast(`${qtyFmt(qtyVal)} ${row?.unit || ''} ${label}`);
-  await load();
-});
-
-/* ---------------------------------------------------------------
-   filters
---------------------------------------------------------------- */
-$('#storeSel')?.addEventListener('change', e => { fStore = e.target.value; render(); });
-$('#cat')?.addEventListener('change', e => { fCat = e.target.value; render(); });
-$('#statSel')?.addEventListener('change', e => { fStatus = e.target.value; render(); });
-$('#invSearch')?.addEventListener('input', e => { q = e.target.value.trim().toLowerCase(); render(); });
-$('#catSeg')?.addEventListener('click', e => {
-  const b = e.target.closest('[data-cat]');
-  if (!b) return;
-  fCat = b.dataset.cat === 'all' ? '' : b.dataset.cat;
-  $$('#catSeg [data-cat]').forEach(x => x.classList.toggle('is-on', x === b));
-  render();
+$('#procurementBtn').addEventListener('click',()=>location.href='/procurement.html');
+$('#addItemBtn').addEventListener('click',()=>canMaster&&addMaterial());
+$('#adjustBtn').addEventListener('click',()=>canMaster&&genericAdjust());
+$('#storeSel').addEventListener('change',e=>{fStore=e.target.value;render();});
+$('#catSel').addEventListener('change',e=>{fCat=e.target.value;render();});
+$('#statSel').addEventListener('change',e=>{fStatus=e.target.value;render();});
+$('#invSearch').addEventListener('input',e=>{search=e.target.value.trim().toLowerCase();render();});
+document.addEventListener('click',e=>{
+  const issueBtn=e.target.closest('[data-issue]');if(issueBtn){const [m,s]=issueBtn.dataset.issue.split(':');return issue(m,s);}
+  const adj=e.target.closest('[data-adjust]');if(adj){const [m,s]=adj.dataset.adjust.split(':');return adjust(m,s);}
 });
 
 await load();

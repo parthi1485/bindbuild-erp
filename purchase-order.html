@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Purchase Order · Bind Build ERP</title>
+<link rel="stylesheet" href="/src/styles/app.css"/>
+<link rel="stylesheet" href="/src/styles/invoice.css"/>
+<script>(function(){var s=localStorage.getItem('bindbuild.theme');var l=matchMedia('(prefers-color-scheme: light)').matches;document.documentElement.setAttribute('data-theme',s||(l?'light':'dark'));})();</script>
+</head>
+<body>
+<div class="app" id="app"><div class="scrim" id="scrim"></div><div class="main" id="main">
+<main class="content" id="content">
+  <div class="ctx"><div class="ctx__main"><div class="ctx__eyebrow">Supply · Purchase order</div><h1 class="ctx__title" id="pageTitle">Purchase Order</h1><div class="ctx__sub" id="pageSub">—</div></div><div class="ctx__actions"><button class="btn-ghost" id="backBtn">Procurement</button><button class="btn-ghost" id="printBtn">Print / PDF</button></div></div>
+  <div class="grid"><section class="paper"><div class="paper__accent"></div><div class="paper__in">
+    <div class="inv-top"><div class="seller"><div class="seller__logo">BB</div><div><div class="seller__name" id="sellerName">Bind Builds</div><div class="seller__tag">Purchase Order</div><div class="seller__meta" id="sellerMeta">—</div></div></div><div class="inv-title"><h2>Purchase Order</h2><div class="invno" id="poNo">—</div><div class="inv-dates">Order date <b id="orderDate">—</b><br/>Expected <b id="expectedDate">—</b></div></div></div>
+    <div class="inv-parties"><div><div class="party__lbl">Vendor</div><div class="party__nm" id="vendorName">—</div><div class="party__meta" id="vendorMeta">—</div></div><div><div class="party__lbl">Deliver to</div><div class="party__nm" id="projectName">—</div><div class="party__meta" id="deliveryMeta">—</div></div></div>
+    <div class="li-wrap"><table class="li"><thead><tr><th>#</th><th>Description</th><th>Qty</th><th>Unit</th><th class="r">Rate</th><th class="r">GST</th><th class="r">Amount</th></tr></thead><tbody id="itemsBody"></tbody></table></div>
+    <div class="tot-wrap"><div class="tot" id="totals"></div></div>
+    <div style="margin-top:24px"><div class="party__lbl">Commercial terms</div><div class="party__meta" id="terms">—</div></div>
+  </div></section>
+  <aside class="rail"><section class="card"><div class="card__head"><span class="card__title">Order state</span></div><div class="card__body gstsum"><div class="gstsum__row"><span>Status</span><b id="status">—</b></div><div class="gstsum__row"><span>Requisition</span><b id="mrNo">—</b></div><div class="gstsum__row"><span>Quote</span><b id="quoteRef">—</b></div></div></section></aside></div>
+</main><footer class="footer"><span>© 2026 Studio Bind Architects · Chennai</span><span>Bind Build ERP</span></footer>
+</div></div><div class="toast-region" aria-live="polite"></div>
+<script type="module" src="/src/pages/purchase-order.js"></script>
+</body></html>

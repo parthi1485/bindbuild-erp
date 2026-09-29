@@ -1,178 +1,117 @@
 import { supabase } from '../lib/supabase.js';
-import { mountShell } from '../lib/shell.js';
-import { toast, fail, esc, initials, fmtDate } from '../lib/ui.js';
+import { mountShell, scopeToUnit } from '../lib/shell.js';
+import { toast, fail, esc, fmtDate, initials } from '../lib/ui.js';
 
-const $  = (s, c = document) => c.querySelector(s);
-const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+const $=(s,c=document)=>c.querySelector(s);
+const user=await mountShell({route:'hr',title:'Attendance'});
+if(!user)throw new Error('redirecting');
 
-const user = await mountShell({ route: 'hr', title: 'Attendance' });
-if (!user) throw new Error('redirecting');
+const canMark=['founder','admin','hr','project_manager','site_engineer'].includes(user.role);
+let onDate=new URLSearchParams(location.search).get('date')||new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
+let EMP=[],ATT=[],LEAVES=[],LTYPES=[],ALLOCS=[],PROJECTS=[];
+let q='',dept='';
 
-const canMark = ['owner','admin','hr','site_engineer','architect'].some(r => user.roles.includes(r));
+const byId=(rows,id)=>rows.find(x=>x.id===id);
 
-let onDate = new URLSearchParams(location.search).get('date') || new Date().toISOString().slice(0, 10);
-let TEAM = [], ATT = [], LEAVES = [];
-let fStatus = '', fLoc = '', q = '';
-
-const STATUSES = ['present','wfh','half_day','leave','absent'];
-const LABEL = { present:'Present', wfh:'Remote', half_day:'Half day', leave:'On leave',
-                absent:'Absent', holiday:'Holiday', week_off:'Week off', unmarked:'Not marked' };
-
-async function load() {
-  const [tRes, aRes, lRes] = await Promise.all([
-    supabase.from('employees').select('*, profiles(full_name)').eq('status','active'),
-    supabase.from('attendance').select('*').eq('on_date', onDate),
-    supabase.from('leave_requests')
-      .select('*, leave_types(name), employees(profiles(full_name))')
-      .eq('status','approved').lte('from_date', onDate).gte('to_date', onDate)
-  ]);
-  if (tRes.error) return fail(tRes.error);
-  TEAM = tRes.data ?? []; ATT = aRes.data ?? []; LEAVES = lRes.data ?? [];
-
-  const lbl = $('#dLbl');
-  if (lbl) lbl.textContent = fmtDate(onDate);
-  const ctx = $('#ctxDate');
-  if (ctx) ctx.textContent = onDate === new Date().toISOString().slice(0,10) ? 'Today' : fmtDate(onDate);
-
-  render();
+async function load(){
+  try{
+    const a=await Promise.all([
+      scopeToUnit(supabase.from('employees').select('*')).in('status',['active','on_leave']).order('full_name'),
+      supabase.from('attendance').select('*').eq('on_date',onDate),
+      supabase.from('leave_requests').select('*').eq('status','approved').lte('from_date',onDate).gte('to_date',onDate),
+      scopeToUnit(supabase.from('leave_types').select('*')).eq('active',true),
+      supabase.from('project_allocations').select('*').eq('status','active').lte('start_date',onDate),
+      scopeToUnit(supabase.from('projects').select('id,project_no,code,name').is('deleted_at',null))
+    ]);
+    a.forEach(r=>{if(r.error)throw r.error;});
+    [EMP,ATT,LEAVES,LTYPES,ALLOCS,PROJECTS]=a.map(r=>r.data||[]);
+    ALLOCS=ALLOCS.filter(a=>!a.end_date||a.end_date>=onDate);
+    $('#dateInput').value=onDate;
+    $('#dateLabel').textContent=fmtDate(onDate);
+    render();
+  }catch(e){fail(e);}
 }
 
-const rowFor = id => ATT.find(a => a.employee_id === id);
-const statusOf = id => {
-  const r = rowFor(id);
-  if (r) return r.status;
-  if (LEAVES.some(l => l.employee_id === id)) return 'leave';
-  return 'unmarked';
-};
+function attendanceRow(empId){return ATT.find(a=>a.employee_id===empId);}
+function approvedLeave(empId){return LEAVES.find(l=>l.employee_id===empId);}
+function effectiveStatus(empId){return attendanceRow(empId)?.status||(approvedLeave(empId)?'leave':'unmarked');}
+function allocation(empId){return ALLOCS.find(a=>a.employee_id===empId);}
+function statusChip(s){return '<span class="po-status '+esc(s)+'">'+esc(s.replaceAll('_',' '))+'</span>';}
 
-function passes(e) {
-  if (fStatus && statusOf(e.id) !== fStatus) return false;
-  if (fLoc && (e.work_location || '') !== fLoc) return false;
-  if (q && !(e.profiles?.full_name || '').toLowerCase().includes(q)) return false;
-  return true;
+function render(){
+  const depts=[...new Set(EMP.map(e=>e.department).filter(Boolean))].sort();
+  $('#deptFilter').innerHTML='<option value="">All departments</option>'+depts.map(d=>'<option value="'+esc(d)+'"'+(d===dept?' selected':'')+'>'+esc(d)+'</option>').join('');
+  const rows=EMP.filter(e=>(!dept||e.department===dept)&&(!q||String(e.full_name+' '+(e.designation||'')+' '+(e.department||'')).toLowerCase().includes(q)));
+  const counts={present:0,leave:0,absent:0,unmarked:0,wfh:0,half_day:0};
+  EMP.forEach(e=>{const s=effectiveStatus(e.id);counts[s]=(counts[s]||0)+1;});
+  const present=counts.present+counts.wfh+counts.half_day;
+
+  $('#kStrength').textContent=String(EMP.length);
+  $('#kPresent').textContent=String(present);
+  $('#kPct').textContent=(EMP.length?Math.round(present/EMP.length*100):0)+'%';
+  $('#kLeave').textContent=String(counts.leave);
+  $('#kAbsent').textContent=String(counts.absent);
+  $('#kUnmarked').textContent=String(counts.unmarked);
+  $('#kFlex').textContent=String(counts.wfh+counts.half_day);
+  $('#rowCount').textContent=rows.length+' people';
+
+  $('#attBody').innerHTML=rows.length?rows.map(e=>{
+    const a=attendanceRow(e.id),s=effectiveStatus(e.id),al=allocation(e.id),p=al?byId(PROJECTS,al.project_id):null;
+    const projectMeta=p?(p.project_no||p.code)+' · '+p.name:(e.work_location||'—');
+    const acts=canMark?'<div class="po-inline">'+
+      ['present','wfh','half_day','absent','leave'].map(x=>'<button class="po-btn'+(s===x?' primary':'')+'" data-mark="'+e.id+':'+x+'" title="'+x.replaceAll('_',' ')+'">'+({present:'P',wfh:'W',half_day:'½',absent:'A',leave:'L'})[x]+'</button>').join('')+
+      '</div>':'';
+    return '<tr><td><div style="display:flex;gap:9px;align-items:center"><span class="po-avatar">'+esc(initials(e.full_name))+'</span><div><div class="po-doc">'+esc(e.full_name)+'</div><div class="po-meta">'+esc(e.employee_no||'EMP')+' · '+esc(e.designation||'—')+'</div></div></div></td><td>'+esc(e.department||'—')+'</td><td>'+esc(projectMeta)+'</td><td>'+esc(a?.check_in?.slice(0,5)||'—')+'</td><td>'+esc(a?.check_out?.slice(0,5)||'—')+'</td><td>'+statusChip(s)+'</td><td>'+acts+'</td></tr>';
+  }).join(''):'<tr><td colspan="7"><div class="po-empty">No employees match this view.</div></td></tr>';
+
+  $('#leaveTag').textContent=String(LEAVES.length);
+  $('#leaveList').innerHTML=LEAVES.length?LEAVES.map(l=>{
+    const lt=byId(LTYPES,l.leave_type_id);
+    return '<div class="po-list-row"><span class="po-avatar">'+esc(initials(byId(EMP,l.employee_id)?.full_name||'?'))+'</span><div class="po-list-body"><div class="po-list-title">'+esc(byId(EMP,l.employee_id)?.full_name||'Employee')+'</div><div class="po-list-meta">'+esc(lt?.name||'Leave')+' · '+Number(l.days)+' day'+(Number(l.days)===1?'':'s')+'</div></div></div>';
+  }).join(''):'<div class="po-empty">Nobody has approved leave on this date.</div>';
+
+  $('#allocList').innerHTML=ALLOCS.length?ALLOCS.slice(0,12).map(a=>'<div class="po-list-row"><div class="po-list-body"><div class="po-list-title">'+esc(byId(EMP,a.employee_id)?.full_name||'Employee')+'</div><div class="po-list-meta">'+esc(byId(PROJECTS,a.project_id)?.name||'Project')+' · '+Number(a.allocation_pct)+'%</div></div></div>').join(''):'<div class="po-empty">No active allocations.</div>';
+
+  $('#markAllBtn').disabled=!canMark||!EMP.some(e=>effectiveStatus(e.id)==='unmarked');
 }
 
-function render() {
-  const rows = TEAM.filter(passes);
-  const el = $('#reg');
-  if (el) {
-    el.innerHTML = rows.length ? rows.map(e => {
-      const r = rowFor(e.id), st = statusOf(e.id);
-      const nm = e.profiles?.full_name || 'Unnamed';
-      return `<li class="pr" data-id="${e.id}">
-        <span class="pr__av">${esc(initials(nm))}</span>
-        <span class="pr__body">
-          <span class="pr__nm">${esc(nm)}</span>
-          <span class="pr__role">${esc(e.designation || '—')} · ${esc(e.work_location || '—')}</span>
-        </span>
-        <span class="pr__in">${r?.check_in ? r.check_in.slice(0,5) : '—'}</span>
-        <span class="pr__out">${r?.check_out ? r.check_out.slice(0,5) : '—'}</span>
-        <span class="pr__st st--${st}">${LABEL[st]}</span>
-        ${canMark ? `<span class="pr__acts">${
-          STATUSES.map(s => `<button class="mk${st === s ? ' is-on' : ''}" data-mark="${e.id}:${s}" title="${LABEL[s]}">${LABEL[s][0]}</button>`).join('')
-        }</span>` : ''}
-      </li>`;
-    }).join('')
-    : '<li class="pr"><span class="pr__body">Nobody matches these filters.</span></li>';
-  }
-
-  const cnt = $('#regCount');
-  if (cnt) cnt.textContent = `${rows.length} of ${TEAM.length}`;
-
-  const tally = s => TEAM.filter(e => statusOf(e.id) === s).length;
-  const present = tally('present') + tally('wfh') + tally('half_day');
-  const pct = TEAM.length ? Math.round(present / TEAM.length * 100) : 0;
-
-  const set = (id, v) => { const x = document.getElementById(id); if (x) x.textContent = v; };
-  set('kPres', String(present)); set('sPres', String(present));
-  set('kAbs',  String(tally('absent'))); set('sAbs', String(tally('absent')));
-  set('kLeave',String(tally('leave')));  set('sLeave', String(tally('leave')));
-  set('kLate', String(ATT.filter(a => a.check_in && a.check_in > '09:30').length));
-  set('sLate', String(ATT.filter(a => a.check_in && a.check_in > '09:30').length));
-  set('kPct', pct + '%'); set('ringPct', pct + '%');
-
-  const ring = $('#ring');
-  if (ring) {
-    const r = Number(ring.getAttribute('r')) || 54;
-    const c = 2 * Math.PI * r;
-    ring.style.strokeDasharray = String(c);
-    ring.style.strokeDashoffset = String(c * (1 - pct / 100));
-  }
-
-  const ll = $('#leavelist');
-  if (ll) {
-    ll.innerHTML = LEAVES.length
-      ? LEAVES.map(l => `<li class="lvr">
-          <span class="lvr__nm">${esc(l.employees?.profiles?.full_name || '—')}</span>
-          <span class="lvr__meta">${esc(l.leave_types?.name || 'Leave')} · ${l.days}d</span>
-        </li>`).join('')
-      : '<li class="lvr">Nobody on leave</li>';
-  }
-
-  const locSeg = $('#locSeg');
-  if (locSeg && !locSeg.dataset.filled) {
-    const locs = [...new Set(TEAM.map(e => e.work_location).filter(Boolean))];
-    locSeg.innerHTML = `<button data-loc="all" class="is-on">All</button>` +
-      locs.map(l => `<button data-loc="${esc(l)}">${esc(l)}</button>`).join('');
-    locSeg.dataset.filled = '1';
-  }
+async function mark(empId,status){
+  if(!canMark)return;
+  const e=byId(EMP,empId),al=allocation(empId);
+  const projectId=['project_manager','site_engineer'].includes(user.role)?al?.project_id||null:null;
+  const existing=attendanceRow(empId);
+  const now=new Date().toLocaleTimeString('en-GB',{hour12:false,timeZone:'Asia/Kolkata'});
+  const inTime=['present','wfh','half_day'].includes(status)?(existing?.check_in||now):null;
+  const outTime=existing?.check_out||null;
+  const r=await supabase.rpc('mark_employee_attendance',{p_employee_id:empId,p_on_date:onDate,p_status:status,p_project_id:projectId,p_check_in:inTime,p_check_out:outTime,p_note:null});
+  if(r.error)return fail(r.error);
+  toast((e?.full_name||'Employee')+' · '+status.replaceAll('_',' '));await load();
 }
 
-/* ---- mark attendance ---- */
-document.addEventListener('click', async e => {
-  const b = e.target.closest('[data-mark]');
-  if (!b) return;
-  const [empId, status] = b.dataset.mark.split(':');
-  const now = new Date().toTimeString().slice(0, 8);
-  const existing = rowFor(empId);
+async function markAll(){
+  const rows=EMP.filter(e=>effectiveStatus(e.id)==='unmarked'&&(!['project_manager','site_engineer'].includes(user.role)||allocation(e.id)));
+  if(!rows.length)return;
+  if(!confirm('Mark '+rows.length+' unmarked employees present? Approved leave is excluded.'))return;
+  for(const e of rows){
+    const al=allocation(e.id);
+    const projectId=['project_manager','site_engineer'].includes(user.role)?al?.project_id||null:null;
+    const r=await supabase.rpc('mark_employee_attendance',{p_employee_id:e.id,p_on_date:onDate,p_status:'present',p_project_id:projectId,p_check_in:'09:00:00',p_check_out:null,p_note:'Bulk marked'});
+    if(r.error){fail(r.error);return;}
+  }
+  toast(rows.length+' employees marked present');await load();
+}
 
-  const payload = {
-    employee_id: empId, on_date: onDate, status,
-    marked_by: user.id,
-    check_in: status === 'present' || status === 'wfh' || status === 'half_day'
-      ? (existing?.check_in || now) : existing?.check_in ?? null
-  };
+function shift(n){
+  const d=new Date(onDate+'T12:00:00');d.setDate(d.getDate()+n);onDate=d.toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});
+  history.replaceState(null,'','/attendance.html?date='+onDate);load();
+}
 
-  const { error } = existing
-    ? await supabase.from('attendance').update(payload).eq('id', existing.id)
-    : await supabase.from('attendance').insert(payload);
-
-  if (error) return fail(error);
-  await load();
-});
-
-$('#markAll')?.addEventListener('click', async () => {
-  if (!canMark) return toast('You cannot mark attendance', 'err');
-  const unmarked = TEAM.filter(e => statusOf(e.id) === 'unmarked');
-  if (!unmarked.length) return toast('Everyone is already marked');
-  if (!confirm(`Mark ${unmarked.length} unmarked as present?`)) return;
-
-  const now = new Date().toTimeString().slice(0, 8);
-  const { error } = await supabase.from('attendance').insert(
-    unmarked.map(e => ({ employee_id: e.id, on_date: onDate, status: 'present',
-                         check_in: now, marked_by: user.id })));
-  if (error) return fail(error);
-  toast(`${unmarked.length} marked present`);
-  await load();
-});
-
-/* ---- date nav ---- */
-const shift = n => {
-  const d = new Date(onDate); d.setDate(d.getDate() + n);
-  onDate = d.toISOString().slice(0, 10);
-  load();
-};
-$('#dPrev')?.addEventListener('click', () => shift(-1));
-$('#dNext')?.addEventListener('click', () => shift(1));
-
-$('#statSel')?.addEventListener('change', e => { fStatus = e.target.value; render(); });
-$('#regSearch')?.addEventListener('input', e => { q = e.target.value.trim().toLowerCase(); render(); });
-$('#locSeg')?.addEventListener('click', e => {
-  const b = e.target.closest('[data-loc]');
-  if (!b) return;
-  fLoc = b.dataset.loc === 'all' ? '' : b.dataset.loc;
-  $$('#locSeg [data-loc]').forEach(x => x.classList.toggle('is-on', x === b));
-  render();
-});
+$('#prevBtn').addEventListener('click',()=>shift(-1));
+$('#nextBtn').addEventListener('click',()=>shift(1));
+$('#dateInput').addEventListener('change',e=>{onDate=e.target.value;history.replaceState(null,'','/attendance.html?date='+onDate);load();});
+$('#markAllBtn').addEventListener('click',markAll);
+$('#searchInput').addEventListener('input',e=>{q=e.target.value.trim().toLowerCase();render();});
+$('#deptFilter').addEventListener('change',e=>{dept=e.target.value;render();});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-mark]');if(!b)return;const [id,s]=b.dataset.mark.split(':');mark(id,s);});
 
 await load();

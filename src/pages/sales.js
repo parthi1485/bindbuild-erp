@@ -1,288 +1,250 @@
 import { supabase } from '../lib/supabase.js';
-import { mountShell } from '../lib/shell.js';
-import { toast, fail, esc } from '../lib/ui.js';
+import { mountShell, activeUnit } from '../lib/shell.js';
+import { toast, fail, esc, fmtDate } from '../lib/ui.js';
 
-const $  = (s, c = document) => c.querySelector(s);
-const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+const $=(s,c=document)=>c.querySelector(s);
+const $$=(s,c=document)=>[...c.querySelectorAll(s)];
 
-const user = await mountShell({ route: 'sales', title: 'Sales pipeline' });
-if (!user) throw new Error('redirecting');
+const user=await mountShell({route:'sales',title:'Sales & Proposals'});
+if(!user)throw new Error('redirecting');
 
-/* budgets are stored in lakhs */
-const L  = v => '₹' + (Number(v) || 0).toFixed(1).replace(/\.0$/, '') + ' L';
-const CR = v => '₹' + ((Number(v) || 0) / 100).toFixed(2) + ' Cr';
+const STAGES=[
+  {id:'new',name:'New',p:.10},
+  {id:'contacted',name:'Contacted',p:.20},
+  {id:'meeting',name:'Site / Office Meet',p:.35},
+  {id:'proposal',name:'Proposal',p:.60},
+  {id:'follow_up',name:'Follow-up',p:.75},
+  {id:'won',name:'Won',p:1},
+  {id:'lost',name:'Lost',p:0}
+];
 
-const FN_CLASS = ['', 's2', 's3', 's4', 's5', 's6'];
-const cssVar = c => c.startsWith('var(')
-  ? getComputedStyle(document.documentElement)
-      .getPropertyValue(c.slice(4, -1)).trim() || '#5a8dee'
-  : c;
+let LEADS=[],ESTIMATES=[],PROPOSALS=[];
+const rupees=v=>{
+  const n=Number(v||0);
+  if(Math.abs(n)>=1e7)return '₹'+(n/1e7).toFixed(2).replace(/\.00$/,'')+' Cr';
+  if(Math.abs(n)>=1e5)return '₹'+(n/1e5).toFixed(1).replace(/\.0$/,'')+' L';
+  return '₹'+Math.round(n).toLocaleString('en-IN');
+};
+const cssVar=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
-let LEADS = [], STAGES = [];
-
-async function load() {
-  const [stageRes, leadRes, targetRes] = await Promise.all([
-    supabase.from('lead_stage_config').select('*').order('sort_order'),
-    supabase.from('leads').select('name,service,budget,stage_key,created_at,updated_at'),
-    supabase.from('sales_targets').select('period_month,target_value')
-  ]);
-
-  if (stageRes.error) return fail(stageRes.error);
-  if (leadRes.error)  return fail(leadRes.error);
-
-  STAGES = stageRes.data ?? [];
-  LEADS  = leadRes.data ?? [];
-
-  paintFunnel();
-  paintWinLoss();
-  paintRevenue();
-  paintStageChart();
-  paintForecast();
-  paintRing(targetRes.data ?? []);
+function scoped(rows){
+  const id=activeUnit();
+  return id?rows.filter(r=>!r.business_unit_id||r.business_unit_id===id):rows;
 }
 
-/* ---------------------------------------------------------------
-   funnel — cumulative, since a lead at 'nego' already passed 'new'
---------------------------------------------------------------- */
-function paintFunnel() {
-  const el = $('#funnelRows');
-  if (!el) return;
+async function load(){
+  try{
+    const [l,e,p]=await Promise.all([
+      supabase.from('leads').select('*').is('deleted_at',null).order('updated_at',{ascending:false}),
+      supabase.from('estimates').select('*').is('deleted_at',null).order('created_at',{ascending:false}),
+      supabase.from('proposals').select('*').is('deleted_at',null).order('created_at',{ascending:false})
+    ]);
+    if(l.error)throw l.error;if(e.error)throw e.error;if(p.error)throw p.error;
+    LEADS=scoped(l.data||[]);ESTIMATES=scoped(e.data||[]);PROPOSALS=scoped(p.data||[]);
+    paintKpis();paintFunnel();paintWinLoss();paintStageChart();paintRevenue();paintForecast();paintRing();paintDocumentHub();
+  }catch(err){fail(err);}
+}
 
-  const order = STAGES.filter(s => !['won', 'lost'].includes(s.stage));
-  const rank  = new Map(STAGES.map(s => [s.stage, s.sort_order]));
+function paintKpis(){
+  const open=LEADS.filter(x=>!['won','lost'].includes(x.stage));
+  const pipe=open.reduce((a,x)=>a+Number(x.expected_value||0),0);
+  const closed=LEADS.filter(x=>['won','lost'].includes(x.stage));
+  const won=closed.filter(x=>x.stage==='won').length;
+  const winRate=closed.length?Math.round(won/closed.length*100):0;
+  const avgDays=open.length?Math.round(open.reduce((a,x)=>a+Math.max(0,(Date.now()-new Date(x.created_at))/86400000),0)/open.length):0;
+  const issued=PROPOSALS.filter(x=>['sent','accepted'].includes(x.status)).reduce((a,x)=>a+Number(x.grand_total||0),0);
 
-  const rows = order.map(s => ({
-    name: s.label,
-    sub:  ['top of funnel','qualified','discovery done','quote sent','terms'][s.sort_order - 1] || '',
-    n: LEADS.filter(l => {
-      const r = rank.get(l.stage_key);
-      /* won leads passed every stage; lost leads stop where they died */
-      if (l.stage_key === 'won') return true;
-      if (l.stage_key === 'lost') return false;
-      return r >= s.sort_order;
-    }).length
+  const cards=$$('.kpis .kpi');
+  const vals=cards.map(x=>x.querySelector('.kpi__val'));
+  const labs=cards.map(x=>x.querySelector('.kpi__label'));
+  const deltas=cards.map(x=>x.querySelector('.kpi__delta'));
+  if(vals[0])vals[0].textContent=rupees(pipe);
+  if(labs[0])labs[0].textContent='Open pipeline value';
+  if(deltas[0])deltas[0].textContent=open.length+' active leads';
+
+  if(vals[1])vals[1].textContent=winRate+'%';
+  if(labs[1])labs[1].textContent='Lead win rate';
+  if(deltas[1])deltas[1].textContent=closed.length+' closed';
+
+  if(vals[2])vals[2].textContent=avgDays+' days';
+  if(labs[2])labs[2].textContent='Avg. open lead age';
+  if(deltas[2])deltas[2].textContent='live CRM';
+
+  if(vals[3])vals[3].textContent=rupees(issued);
+  if(labs[3])labs[3].textContent='Issued proposal value';
+  if(deltas[3])deltas[3].textContent=PROPOSALS.filter(x=>x.status==='sent').length+' awaiting decision';
+}
+
+function paintFunnel(){
+  const host=$('#funnelRows');if(!host)return;
+  const order=STAGES.filter(s=>!['won','lost'].includes(s.id));
+  const rank=new Map(order.map((s,i)=>[s.id,i]));
+  const rows=order.map((s,i)=>({
+    name:s.name,
+    n:LEADS.filter(l=>l.stage==='won'||(!['lost'].includes(l.stage)&&(rank.get(l.stage)??-1)>=i)).length
   }));
-
-  /* Won is the terminal row */
-  rows.push({ name: 'Won', sub: 'closed', n: LEADS.filter(l => l.stage_key === 'won').length });
-
-  const top = Math.max(...rows.map(r => r.n), 1);
-
-  el.innerHTML = rows.map((s, i) => {
-    const wpct = Math.round(s.n / top * 100);
-    const prev = i ? rows[i - 1].n : s.n;
-    const conv = i ? (prev ? Math.round(s.n / prev * 100) : 0) : 100;
-    const convHtml = i
-      ? `<b>${conv}%</b> from prev · <span class="drop">−${100 - conv}%</span>`
-      : `<b>${s.n}</b> deals entered`;
+  rows.push({name:'Won',n:LEADS.filter(l=>l.stage==='won').length});
+  const top=Math.max(...rows.map(r=>r.n),1);
+  host.innerHTML=rows.map((r,i)=>{
+    const prev=i?rows[i-1].n:r.n;
+    const conv=i?(prev?Math.round(r.n/prev*100):0):100;
     return `<div class="fn">
-      <div class="fn__name">${esc(s.name)}<small>${esc(s.sub)}</small></div>
-      <div class="fn__bar"><div class="fn__fill ${FN_CLASS[i] || 's6'}" data-w="${wpct}">${s.n}</div></div>
-      <div class="fn__conv">${convHtml}</div>
+      <div class="fn__name">${esc(r.name)}<small>${i===0?'top of funnel':i===rows.length-1?'closed':'progressed'}</small></div>
+      <div class="fn__bar"><div class="fn__fill ${['','s2','s3','s4','s5','s6'][i]||'s6'}" style="width:${Math.round(r.n/top*100)}%">${r.n}</div></div>
+      <div class="fn__conv"><b>${conv}%</b> from prev</div>
     </div>`;
   }).join('');
-
-  /* the prototype animates width from data-w */
-  requestAnimationFrame(() => {
-    $$('#funnelRows .fn__fill').forEach(f => f.style.width = f.dataset.w + '%');
-  });
 }
 
-/* ---------------------------------------------------------------
-   charts
---------------------------------------------------------------- */
-function paintWinLoss() {
-  const c = $('#wlChart');
-  if (!c || !window.Chart) return;
-
-  const won  = LEADS.filter(l => l.stage_key === 'won').length;
-  const lost = LEADS.filter(l => l.stage_key === 'lost').length;
-  const open = LEADS.length - won - lost;
-
-  new window.Chart(c, {
-    type: 'doughnut',
-    data: {
-      labels: ['Won', 'Lost', 'In play'],
-      datasets: [{
-        data: [won, lost, open],
-        borderWidth: 0,
-        backgroundColor: [cssVar('var(--success)'), cssVar('var(--danger)'), cssVar('var(--text-3)')]
-      }]
-    },
-    options: { cutout: '66%', plugins: { legend: { display: false } }, maintainAspectRatio: false }
-  });
+function paintWinLoss(){
+  const el=$('#wlChart');if(!el||!window.Chart)return;
+  const won=LEADS.filter(x=>x.stage==='won').length;
+  const lost=LEADS.filter(x=>x.stage==='lost').length;
+  const open=LEADS.filter(x=>!['won','lost'].includes(x.stage)).length;
+  new Chart(el,{type:'doughnut',data:{labels:['Won','Lost','Open'],datasets:[{
+    data:[won,lost,open],
+    borderWidth:0,backgroundColor:[cssVar('--success'),cssVar('--danger'),cssVar('--text-3')]
+  }]},options:{cutout:'66%',plugins:{legend:{display:false}},maintainAspectRatio:false}});
+  const legend=el.closest('.card')?.querySelector('.legend');
+  if(legend)legend.innerHTML=`
+    <span><i style="background:var(--success)"></i>Won · ${won}</span>
+    <span><i style="background:var(--danger)"></i>Lost · ${lost}</span>
+    <span><i style="background:var(--text-3)"></i>Open · ${open}</span>`;
 }
 
-function paintStageChart() {
-  const c = $('#stageChart');
-  if (!c || !window.Chart) return;
-
-  const open = STAGES.filter(s => !['won','lost'].includes(s.stage)).map(s => ({
-    label: s.label,
-    color: cssVar(s.color),
-    value: LEADS.filter(l => l.stage_key === s.stage)
-                .reduce((a, l) => a + Number(l.budget || 0), 0)
-  })).filter(s => s.value > 0);
-
-  new window.Chart(c, {
-    type: 'bar',
-    data: {
-      labels: open.map(s => s.label),
-      datasets: [{ data: open.map(s => s.value), backgroundColor: open.map(s => s.color), borderRadius: 6 }]
-    },
-    options: {
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false } },
-        y: { beginAtZero: true, ticks: { callback: v => '₹' + v + 'L' } }
-      },
-      maintainAspectRatio: false
-    }
-  });
+function paintStageChart(){
+  const el=$('#stageChart');if(!el||!window.Chart)return;
+  const open=STAGES.filter(s=>!['won','lost'].includes(s.id));
+  new Chart(el,{type:'bar',data:{labels:open.map(s=>s.name),datasets:[{
+    data:open.map(s=>LEADS.filter(l=>l.stage===s.id).reduce((a,l)=>a+Number(l.expected_value||0),0)),
+    backgroundColor:cssVar('--accent'),borderRadius:6
+  }]},options:{plugins:{legend:{display:false}},scales:{
+    x:{grid:{display:false}},y:{beginAtZero:true,ticks:{callback:v=>rupees(v)}}
+  },maintainAspectRatio:false}});
 }
 
-function paintRevenue() {
-  const c = $('#revChart');
-  if (!c || !window.Chart) return;
-
-  /* won value per month over the last 6 months */
-  const months = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(1);
-    d.setMonth(d.getMonth() - i);
-    months.push({ key: d.toISOString().slice(0, 7), label: d.toLocaleString('en-IN', { month: 'short' }) });
+function paintRevenue(){
+  const el=$('#revChart');if(!el||!window.Chart)return;
+  const months=[];
+  for(let i=5;i>=0;i--){
+    const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-i);
+    months.push({key:d.toISOString().slice(0,7),label:d.toLocaleString('en-IN',{month:'short'})});
   }
-
-  const won = LEADS.filter(l => l.stage_key === 'won');
-  const series = months.map(m =>
-    won.filter(l => (l.updated_at || '').slice(0, 7) === m.key)
-       .reduce((a, l) => a + Number(l.budget || 0), 0));
-
-  new window.Chart(c, {
-    type: 'line',
-    data: {
-      labels: months.map(m => m.label),
-      datasets: [{
-        data: series,
-        borderColor: cssVar('var(--accent)'),
-        backgroundColor: 'rgba(90,141,238,.14)',
-        fill: true, tension: .35, pointRadius: 3
-      }]
-    },
-    options: {
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false } },
-        y: { beginAtZero: true, ticks: { callback: v => '₹' + v + 'L' } }
-      },
-      maintainAspectRatio: false
-    }
-  });
+  const data=months.map(m=>PROPOSALS.filter(p=>p.accepted_at?.slice(0,7)===m.key).reduce((a,p)=>a+Number(p.grand_total||0),0));
+  new Chart(el,{type:'line',data:{labels:months.map(m=>m.label),datasets:[{
+    data,borderColor:cssVar('--accent'),backgroundColor:'rgba(90,141,238,.14)',fill:true,tension:.35,pointRadius:3
+  }]},options:{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,ticks:{callback:v=>rupees(v)}}},maintainAspectRatio:false}});
+  const card=el.closest('.card');
+  const title=card?.querySelector('.card__title');
+  const sub=card?.querySelector('.card__sub');
+  const legend=card?.querySelector('.legend');
+  if(title)title.textContent='Accepted proposal value';
+  if(sub)sub.textContent='Monthly accepted commercial value';
+  if(legend)legend.innerHTML='<span><i style="background:var(--accent)"></i>Accepted value</span>';
 }
 
-/* ---------------------------------------------------------------
-   forecast — weighted by each stage's probability
---------------------------------------------------------------- */
-function paintForecast() {
-  const el = $('#forecastBody');
-  if (!el) return;
-
-  const prob = new Map(STAGES.map(s => [s.stage, Number(s.probability)]));
-  const open = LEADS.filter(l => !['won','lost'].includes(l.stage_key));
-
-  /* group by expected close month; with no close date, fall back to
-     "the further along, the sooner" — a lead in negotiation lands first */
-  const buckets = new Map();
-  for (const l of open) {
-    const p = prob.get(l.stage_key) ?? 0;
-    const monthsOut = p >= 0.7 ? 0 : p >= 0.5 ? 1 : p >= 0.35 ? 2 : 3;
-    const d = new Date();
-    d.setDate(1);
-    d.setMonth(d.getMonth() + monthsOut);
-    const key = d.toISOString().slice(0, 7);
-    if (!buckets.has(key)) buckets.set(key, { label: d.toLocaleString('en-IN', { month: 'short', year: 'numeric' }), leads: [], pipe: 0, weighted: 0 });
-    const b = buckets.get(key);
-    b.leads.push(l.name);
-    b.pipe     += Number(l.budget || 0);
-    b.weighted += Number(l.budget || 0) * p;
-  }
-
-  const rows = [...buckets.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(e => e[1]);
-  if (!rows.length) {
-    el.innerHTML = `<tr><td colspan="6" class="t-empty">No open leads to forecast.</td></tr>`;
-    return;
-  }
-
-  const maxPipe = Math.max(...rows.map(r => r.pipe), 1);
-  let pipeSum = 0, wSum = 0;
-
-  el.innerHTML = rows.map(r => {
-    pipeSum += r.pipe; wSum += r.weighted;
-    const pct  = r.pipe ? r.weighted / r.pipe : 0;
-    const conf = pct >= 0.6 ? 'high' : pct >= 0.4 ? 'mid' : 'low';
-    const cov  = Math.round(r.pipe / maxPipe * 100);
-    const deals = r.leads.length <= 2 ? r.leads.join(' · ') : `${r.leads.length} deals`;
-    return `<tr>
-      <td class="month">${esc(r.label)}</td>
-      <td style="color:var(--text-2)">${esc(deals)}</td>
-      <td class="r mono">${L(r.pipe)}</td>
-      <td class="r mono" style="color:var(--accent)">${L(r.weighted)}</td>
-      <td><div class="bar-cell"><div class="track"><div class="fill" style="width:${cov}%"></div></div></div></td>
-      <td class="r"><span class="pill ${conf}">${Math.round(pct * 100)}%</span></td>
-    </tr>`;
-  }).join('');
-
-  const set = (id, v) => { const el2 = document.getElementById(id); if (el2) el2.textContent = v; };
-  set('fcPipe', L(pipeSum));
-  set('fcWeighted', L(wSum));
-  set('fcDeals', String(open.length));
+function paintForecast(){
+  const host=$('#forecastBody');if(!host)return;
+  const open=LEADS.filter(l=>!['won','lost'].includes(l.stage));
+  const rows=STAGES.filter(s=>!['won','lost'].includes(s.id)).map(s=>{
+    const leads=open.filter(l=>l.stage===s.id);
+    const pipe=leads.reduce((a,l)=>a+Number(l.expected_value||0),0);
+    return {name:s.name,p:s.p,leads,pipe,weighted:pipe*s.p};
+  }).filter(r=>r.leads.length);
+  host.innerHTML=rows.length?rows.map(r=>`<tr>
+    <td class="month">${esc(r.name)}</td>
+    <td>${esc(r.leads.slice(0,2).map(x=>x.name).join(' · ')||'—')}</td>
+    <td class="r mono">${rupees(r.pipe)}</td>
+    <td class="r mono" style="color:var(--accent)">${rupees(r.weighted)}</td>
+    <td><div class="bar-cell"><div class="track"><div class="fill" style="width:${Math.round(r.p*100)}%"></div></div></div></td>
+    <td class="r"><span class="pill ${r.p>=.6?'high':r.p>=.35?'mid':'low'}">${Math.round(r.p*100)}%</span></td>
+  </tr>`).join(''):'<tr><td colspan="6" class="t-empty">No open leads yet.</td></tr>';
+  $('#fcDeals').textContent=String(open.length);
+  $('#fcPipe').textContent=rupees(rows.reduce((a,r)=>a+r.pipe,0));
+  $('#fcWeighted').textContent=rupees(rows.reduce((a,r)=>a+r.weighted,0));
 }
 
-/* ---------------------------------------------------------------
-   target achievement ring
---------------------------------------------------------------- */
-function paintRing(targets) {
-  const year = new Date().getFullYear();
-  const target = targets
-    .filter(t => t.period_month?.startsWith(String(year)))
-    .reduce((a, t) => a + Number(t.target_value || 0), 0);
+function paintRing(){
+  const sent=PROPOSALS.filter(p=>['sent','accepted'].includes(p.status));
+  const sentValue=sent.reduce((a,p)=>a+Number(p.grand_total||0),0);
+  const accepted=PROPOSALS.filter(p=>p.status==='accepted'||p.accepted_at);
+  const acceptedValue=accepted.reduce((a,p)=>a+Number(p.grand_total||0),0);
+  const pct=sentValue?Math.min(100,Math.round(acceptedValue/sentValue*100)):0;
 
-  const achieved = LEADS
-    .filter(l => l.stage_key === 'won')
-    .reduce((a, l) => a + Number(l.budget || 0), 0);
-
-  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  set('ringAch', CR(achieved));
-  set('ringGap', target ? CR(Math.max(target - achieved, 0)) : 'No target set');
-
-  const pct = target ? Math.min(Math.round(achieved / target * 100), 100) : 0;
-  set('ringPct', pct + '%');
-
-  const ring = $('#ringFill');
-  if (ring) {
-    const r = Number(ring.getAttribute('r')) || 84;
-    const circ = 2 * Math.PI * r;
-    ring.style.strokeDasharray  = String(circ);
-    ring.style.strokeDashoffset = String(circ * (1 - pct / 100));
+  const card=$('.ring-card');
+  if(card){
+    card.querySelector('.card__title').textContent='Proposal acceptance';
+    card.querySelector('.card__sub').textContent='Accepted value as a share of issued proposals';
+    const labels=card.querySelectorAll('.ring-meta .lbl');
+    if(labels[0])labels[0].textContent='Accepted';
+    if(labels[1])labels[1].textContent='Issued';
+    if(labels[2])labels[2].textContent='Open gap';
+    const vals=card.querySelectorAll('.ring-meta .val');
+    if(vals[1])vals[1].textContent=rupees(sentValue);
   }
-
-  if (!target) {
-    toast('No sales target set for this year — add one in sales_targets', 'err');
+  $('#ringPct').textContent=pct+'%';
+  $('#ringAch').textContent=rupees(acceptedValue);
+  $('#ringGap').textContent=rupees(Math.max(sentValue-acceptedValue,0));
+  const ring=$('#ringFill');
+  if(ring){
+    const r=Number(ring.getAttribute('r'))||84,circ=2*Math.PI*r;
+    ring.style.strokeDasharray=String(circ);
+    ring.style.strokeDashoffset=String(circ*(1-pct/100));
   }
 }
 
-$('#exportBtn')?.addEventListener('click', () => {
-  const rows = [['Lead','Service','Stage','Budget (L)']]
-    .concat(LEADS.map(l => [l.name, l.service || '', l.stage_key, l.budget]));
-  const csv = rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
-  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `bindbuild-pipeline-${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-  toast('Pipeline exported');
+function paintDocumentHub(){
+  let hub=$('#commercialDocs');
+  if(!hub){
+    hub=document.createElement('section');
+    hub.id='commercialDocs';
+    hub.className='grid g-2';
+    $('#content').appendChild(hub);
+  }
+  const est=ESTIMATES.slice(0,8);
+  const prop=PROPOSALS.slice(0,8);
+  hub.innerHTML=`
+    <article class="card tbl-card">
+      <div class="card__head" style="padding:0">
+        <div><span class="card__title">Estimates</span><div class="card__sub">Preliminary commercial working</div></div>
+      </div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>No.</th><th>Title</th><th>Status</th><th class="r">Total</th></tr></thead>
+      <tbody>${est.length?est.map(x=>`<tr data-est="${x.id}"><td class="mono">${esc(x.estimate_no||'DRAFT')}</td><td>${esc(x.title)}</td><td>${esc(x.status)}</td><td class="r mono">${rupees(x.total)}</td></tr>`).join(''):'<tr><td colspan="4">No estimates yet. Create one from a lead.</td></tr>'}</tbody></table></div>
+    </article>
+    <article class="card tbl-card">
+      <div class="card__head" style="padding:0">
+        <div><span class="card__title">Proposals</span><div class="card__sub">Client-facing commercial documents</div></div>
+      </div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>No.</th><th>Title</th><th>Status</th><th class="r">Value</th></tr></thead>
+      <tbody>${prop.length?prop.map(x=>`<tr data-prop="${x.id}"><td class="mono">${esc(x.proposal_no||'DRAFT')}</td><td>${esc(x.title)}</td><td>${esc(x.status)}</td><td class="r mono">${rupees(x.grand_total)}</td></tr>`).join(''):'<tr><td colspan="4">No proposals yet. Create one from a lead or estimate.</td></tr>'}</tbody></table></div>
+    </article>`;
+}
+
+document.addEventListener('click',e=>{
+  const er=e.target.closest('[data-est]');if(er)location.href='/estimate.html?id='+er.dataset.est;
+  const pr=e.target.closest('[data-prop]');if(pr)location.href='/proposal.html?id='+pr.dataset.prop;
 });
 
+$('#exportBtn')?.addEventListener('click',()=>{
+  const rows=[['Type','Number','Title','Status','Value']]
+    .concat(ESTIMATES.map(x=>['Estimate',x.estimate_no||'DRAFT',x.title,x.status,x.total]))
+    .concat(PROPOSALS.map(x=>['Proposal',x.proposal_no||'DRAFT',x.title,x.status,x.grand_total]));
+  const csv=rows.map(r=>r.map(c=>`"${String(c??'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  const a=document.createElement('a');a.href=url;a.download='bindbuild-commercials-'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(url);
+  toast('Commercial documents exported');
+});
+
+const head=$('.page-head__title');
+if(head)head.textContent='Sales & Commercials';
+const sub=$('.page-head__sub');
+if(sub)sub.textContent='Live CRM → Estimate → Proposal workflow';
+$('.page-head__acts .seg')?.remove();
+const newDeal=$('.page-head__acts .btn-new');
+if(newDeal){newDeal.href='/crm.html';newDeal.textContent='＋ New lead';}
+
 await load();
+if(new URLSearchParams(location.search).get('new')==='project'){
+  history.replaceState(null,'','/sales.html');
+  toast('Projects are created from an accepted Proposal so the Client, commercial value and audit trail stay linked.','info');
+}
